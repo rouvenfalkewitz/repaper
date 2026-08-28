@@ -1,0 +1,86 @@
+<title>RePaper Mark Candidates</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,800&family=Figtree:wght@400;600&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+  :root { --bg:#0C100F; --surface:#151A18; --border:#273029; --text:#EFF1EE; --text-2:#A7B0AA; --text-3:#6C756F; --green:#1EE3A5; --paper:#EFF1EE; --ink:#131614; --green-light:#14C48E; }
+  @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --bg:#EFF1EE; --surface:#FAFBF9; --border:#D6DAD6; --text:#131614; --text-2:#454B47; --text-3:#8B928E; } }
+  :root[data-theme="light"] { --bg:#EFF1EE; --surface:#FAFBF9; --border:#D6DAD6; --text:#131614; --text-2:#454B47; --text-3:#8B928E; }
+  * { box-sizing:border-box } body { margin:0; background:var(--bg); color:var(--text); font-family:Figtree,system-ui,sans-serif; font-size:16px; line-height:1.5; }
+  .wrap { max-width:1100px; margin:0 auto; padding:40px 24px 96px; }
+  h1 { font-family:Archivo,sans-serif; font-weight:800; font-stretch:125%; text-transform:uppercase; letter-spacing:-.02em; font-size:1.75rem; margin:0 0 6px; }
+  h2 { font-family:Archivo,sans-serif; font-weight:800; font-stretch:112%; text-transform:uppercase; letter-spacing:.08em; font-size:.75rem; color:var(--text-3); margin:40px 0 12px; }
+  p { color:var(--text-2); max-width:64ch; margin:0 0 12px } .mono { font-family:"JetBrains Mono",monospace; font-size:.75rem; color:var(--text-3) }
+  .cands { display:grid; grid-template-columns:repeat(auto-fit,minmax(420px,1fr)); gap:24px; }
+  .cand { border:1px solid var(--border); border-radius:16px; background:var(--surface); padding:20px; }
+  .cand h3 { font-family:Archivo,sans-serif; font-weight:800; font-size:1rem; margin:0 0 4px }
+  .row { display:flex; align-items:flex-end; gap:20px; flex-wrap:wrap; margin-top:16px }
+  .tile { display:grid; place-items:center; border-radius:12px; }
+  .tile.carbon { background:#0C100F } .tile.paper { background:#EFF1EE; border:1px solid #D6DAD6 } .tile.white { background:#fff; border:1px solid #D6DAD6 }
+  .cap { font-family:"JetBrains Mono",monospace; font-size:.6875rem; color:var(--text-3); text-align:center; margin-top:6px }
+  svg { display:block }
+  .lockup { display:flex; align-items:center; gap:.28em; font-family:Archivo,sans-serif; font-weight:800; font-stretch:125%; text-transform:uppercase; letter-spacing:-.03em; line-height:1; }
+  .lockup .re { color:var(--green) } .lockup .pa { color:#EFF1EE }
+  .lockup svg { height:.74em; width:.74em; margin-top:.02em }
+  .stage { background:#0C100F; border-radius:16px; padding:32px; display:grid; gap:28px; }
+  .stage.light { background:#EFF1EE } .stage.light .lockup .pa { color:#131614 } .stage.light .lockup .re { color:#14C48E }
+  .icon { border-radius:22%; display:grid; place-items:center; background:#0C100F }
+  .icon.g { background:#1EE3A5 }
+  .notes { border:1px solid var(--border); border-radius:16px; padding:20px; background:var(--surface) }
+  .notes ul { margin:0; padding-left:1.1em } .notes li { margin-bottom:4px; color:var(--text-2) }
+</style>
+<div class="wrap">
+  <h1>Mark candidates</h1>
+  <p>Two versions of one geometry, drawn as vectors: a 4:5 sheet with a folded corner whose inner edge continues into a return arrow. Same stroke everywhere (80 units on a 1024 grid). Judge shape first, then the small sizes.</p>
+
+  <div class="cands">
+    <div class="cand">
+      <h3>01 · Outline</h3>
+      <div class="mono">claude-01-outline.svg · sheet outline + fold edge → arrow</div>
+      <div class="row">
+        <div><div class="tile carbon" style="width:256px;height:256px"><svg viewBox="0 0 1024 1024" width="224" height="224"><g fill="none" stroke="#1EE3A5" stroke-width="80" stroke-linecap="round" stroke-linejoin="round"><path d="M772 382 V768 A64 64 0 0 1 708 832 H316 A64 64 0 0 1 252 768 V256 A64 64 0 0 1 316 192 H582 L772 382 Z"/><path d="M582 192 V382 A90 90 0 0 1 492 472 H452"/></g><path d="M350 472 L470 362 V582 Z" fill="#1EE3A5" stroke="#1EE3A5" stroke-width="40" stroke-linejoin="round"/></svg></div><div class="cap">256</div></div>
+        <div><div class="tile carbon" style="width:64px;height:64px"><svg viewBox="0 0 1024 1024" width="56" height="56"><g fill="none" stroke="#1EE3A5" stroke-width="80" stroke-linecap="round" stroke-linejoin="round"><path d="M772 382 V768 A64 64 0 0 1 708 832 H316 A64 64 0 0 1 252 768 V256 A64 64 0 0 1 316 192 H582 L772 382 Z"/><path d="M582 192 V382 A90 90 0 0 1 492 472 H452"/></g><path d="M350 472 L470 362 V582 Z" fill="#1EE3A5" stroke="#1EE3A5" stroke-width="40" stroke-linejoin="round"/></svg></div><div class="cap">64</div></div>
+        <div><div class="tile carbon" style="width:32px;height:32px"><svg viewBox="0 0 1024 1024" width="28" height="28"><g fill="none" stroke="#1EE3A5" stroke-width="80" stroke-linecap="round" stroke-linejoin="round"><path d="M772 382 V768 A64 64 0 0 1 708 832 H316 A64 64 0 0 1 252 768 V256 A64 64 0 0 1 316 192 H582 L772 382 Z"/><path d="M582 192 V382 A90 90 0 0 1 492 472 H452"/></g><path d="M350 472 L470 362 V582 Z" fill="#1EE3A5" stroke="#1EE3A5" stroke-width="40" stroke-linejoin="round"/></svg></div><div class="cap">32</div></div>
+        <div><div class="tile carbon" style="width:16px;height:16px"><svg viewBox="0 0 1024 1024" width="16" height="16"><g fill="none" stroke="#1EE3A5" stroke-width="80" stroke-linecap="round" stroke-linejoin="round"><path d="M772 382 V768 A64 64 0 0 1 708 832 H316 A64 64 0 0 1 252 768 V256 A64 64 0 0 1 316 192 H582 L772 382 Z"/><path d="M582 192 V382 A90 90 0 0 1 492 472 H452"/></g><path d="M350 472 L470 362 V582 Z" fill="#1EE3A5" stroke="#1EE3A5" stroke-width="40" stroke-linejoin="round"/></svg></div><div class="cap">16</div></div>
+        <div><div class="tile paper" style="width:96px;height:96px"><svg viewBox="0 0 1024 1024" width="84" height="84"><g fill="none" stroke="#14C48E" stroke-width="80" stroke-linecap="round" stroke-linejoin="round"><path d="M772 382 V768 A64 64 0 0 1 708 832 H316 A64 64 0 0 1 252 768 V256 A64 64 0 0 1 316 192 H582 L772 382 Z"/><path d="M582 192 V382 A90 90 0 0 1 492 472 H452"/></g><path d="M350 472 L470 362 V582 Z" fill="#14C48E" stroke="#14C48E" stroke-width="40" stroke-linejoin="round"/></svg></div><div class="cap">on paper</div></div>
+        <div><div class="tile white" style="width:96px;height:96px"><svg viewBox="0 0 1024 1024" width="84" height="84"><g fill="none" stroke="#000" stroke-width="80" stroke-linecap="round" stroke-linejoin="round"><path d="M772 382 V768 A64 64 0 0 1 708 832 H316 A64 64 0 0 1 252 768 V256 A64 64 0 0 1 316 192 H582 L772 382 Z"/><path d="M582 192 V382 A90 90 0 0 1 492 472 H452"/></g><path d="M350 472 L470 362 V582 Z" fill="#000" stroke="#000" stroke-width="40" stroke-linejoin="round"/></svg></div><div class="cap">1-bit</div></div>
+      </div>
+    </div>
+    <div class="cand">
+      <h3>01b · Solid</h3>
+      <div class="mono">claude-01b-solid.svg · same geometry, arrow as negative space</div>
+      <div class="row">
+        <div><div class="tile carbon" style="width:256px;height:256px"><svg viewBox="0 0 1024 1024" width="224" height="224"><path d="M812 366 V768 A104 104 0 0 1 708 872 H316 A104 104 0 0 1 212 768 V256 A104 104 0 0 1 316 152 H598 Z" fill="#1EE3A5"/><path d="M582 152 V382 A90 90 0 0 1 492 472 H452" fill="none" stroke="#0C100F" stroke-width="72" stroke-linecap="round" stroke-linejoin="round"/><path d="M350 472 L470 362 V582 Z" fill="#0C100F" stroke="#0C100F" stroke-width="36" stroke-linejoin="round"/></svg></div><div class="cap">256</div></div>
+        <div><div class="tile carbon" style="width:64px;height:64px"><svg viewBox="0 0 1024 1024" width="56" height="56"><path d="M812 366 V768 A104 104 0 0 1 708 872 H316 A104 104 0 0 1 212 768 V256 A104 104 0 0 1 316 152 H598 Z" fill="#1EE3A5"/><path d="M582 152 V382 A90 90 0 0 1 492 472 H452" fill="none" stroke="#0C100F" stroke-width="72" stroke-linecap="round" stroke-linejoin="round"/><path d="M350 472 L470 362 V582 Z" fill="#0C100F" stroke="#0C100F" stroke-width="36" stroke-linejoin="round"/></svg></div><div class="cap">64</div></div>
+        <div><div class="tile carbon" style="width:32px;height:32px"><svg viewBox="0 0 1024 1024" width="28" height="28"><path d="M812 366 V768 A104 104 0 0 1 708 872 H316 A104 104 0 0 1 212 768 V256 A104 104 0 0 1 316 152 H598 Z" fill="#1EE3A5"/><path d="M582 152 V382 A90 90 0 0 1 492 472 H452" fill="none" stroke="#0C100F" stroke-width="72" stroke-linecap="round" stroke-linejoin="round"/><path d="M350 472 L470 362 V582 Z" fill="#0C100F" stroke="#0C100F" stroke-width="36" stroke-linejoin="round"/></svg></div><div class="cap">32</div></div>
+        <div><div class="tile carbon" style="width:16px;height:16px"><svg viewBox="0 0 1024 1024" width="16" height="16"><path d="M812 366 V768 A104 104 0 0 1 708 872 H316 A104 104 0 0 1 212 768 V256 A104 104 0 0 1 316 152 H598 Z" fill="#1EE3A5"/><path d="M582 152 V382 A90 90 0 0 1 492 472 H452" fill="none" stroke="#0C100F" stroke-width="72" stroke-linecap="round" stroke-linejoin="round"/><path d="M350 472 L470 362 V582 Z" fill="#0C100F" stroke="#0C100F" stroke-width="36" stroke-linejoin="round"/></svg></div><div class="cap">16</div></div>
+        <div><div class="tile paper" style="width:96px;height:96px"><svg viewBox="0 0 1024 1024" width="84" height="84"><path d="M812 366 V768 A104 104 0 0 1 708 872 H316 A104 104 0 0 1 212 768 V256 A104 104 0 0 1 316 152 H598 Z" fill="#14C48E"/><path d="M582 152 V382 A90 90 0 0 1 492 472 H452" fill="none" stroke="#EFF1EE" stroke-width="72" stroke-linecap="round" stroke-linejoin="round"/><path d="M350 472 L470 362 V582 Z" fill="#EFF1EE" stroke="#EFF1EE" stroke-width="36" stroke-linejoin="round"/></svg></div><div class="cap">on paper</div></div>
+        <div><div class="tile white" style="width:96px;height:96px"><svg viewBox="0 0 1024 1024" width="84" height="84"><path d="M812 366 V768 A104 104 0 0 1 708 872 H316 A104 104 0 0 1 212 768 V256 A104 104 0 0 1 316 152 H598 Z" fill="#000"/><path d="M582 152 V382 A90 90 0 0 1 492 472 H452" fill="none" stroke="#fff" stroke-width="72" stroke-linecap="round" stroke-linejoin="round"/><path d="M350 472 L470 362 V582 Z" fill="#fff" stroke="#fff" stroke-width="36" stroke-linejoin="round"/></svg></div><div class="cap">1-bit</div></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Next to the wordmark</h2>
+  <div class="stage">
+    <div class="lockup" style="font-size:88px"><svg viewBox="0 0 1024 1024"><g fill="none" stroke="#1EE3A5" stroke-width="80" stroke-linecap="round" stroke-linejoin="round"><path d="M772 382 V768 A64 64 0 0 1 708 832 H316 A64 64 0 0 1 252 768 V256 A64 64 0 0 1 316 192 H582 L772 382 Z"/><path d="M582 192 V382 A90 90 0 0 1 492 472 H452"/></g><path d="M350 472 L470 362 V582 Z" fill="#1EE3A5" stroke="#1EE3A5" stroke-width="40" stroke-linejoin="round"/></svg><span><span class="re">Re</span><span class="pa">Paper</span></span></div>
+    <div class="lockup" style="font-size:88px"><svg viewBox="0 0 1024 1024"><path d="M812 366 V768 A104 104 0 0 1 708 872 H316 A104 104 0 0 1 212 768 V256 A104 104 0 0 1 316 152 H598 Z" fill="#1EE3A5"/><path d="M582 152 V382 A90 90 0 0 1 492 472 H452" fill="none" stroke="#0C100F" stroke-width="72" stroke-linecap="round" stroke-linejoin="round"/><path d="M350 472 L470 362 V582 Z" fill="#0C100F" stroke="#0C100F" stroke-width="36" stroke-linejoin="round"/></svg><span><span class="re">Re</span><span class="pa">Paper</span></span></div>
+    <div class="lockup" style="font-size:28px"><svg viewBox="0 0 1024 1024"><g fill="none" stroke="#1EE3A5" stroke-width="80" stroke-linecap="round" stroke-linejoin="round"><path d="M772 382 V768 A64 64 0 0 1 708 832 H316 A64 64 0 0 1 252 768 V256 A64 64 0 0 1 316 192 H582 L772 382 Z"/><path d="M582 192 V382 A90 90 0 0 1 492 472 H452"/></g><path d="M350 472 L470 362 V582 Z" fill="#1EE3A5" stroke="#1EE3A5" stroke-width="40" stroke-linejoin="round"/></svg><span><span class="re">Re</span><span class="pa">Paper</span></span></div>
+  </div>
+  <div class="stage light" style="margin-top:16px">
+    <div class="lockup" style="font-size:88px"><svg viewBox="0 0 1024 1024"><g fill="none" stroke="#14C48E" stroke-width="80" stroke-linecap="round" stroke-linejoin="round"><path d="M772 382 V768 A64 64 0 0 1 708 832 H316 A64 64 0 0 1 252 768 V256 A64 64 0 0 1 316 192 H582 L772 382 Z"/><path d="M582 192 V382 A90 90 0 0 1 492 472 H452"/></g><path d="M350 472 L470 362 V582 Z" fill="#14C48E" stroke="#14C48E" stroke-width="40" stroke-linejoin="round"/></svg><span><span class="re">Re</span><span class="pa">Paper</span></span></div>
+  </div>
+
+  <h2>As an app icon and as a silhouette</h2>
+  <div class="row">
+    <div><div class="icon" style="width:128px;height:128px"><svg viewBox="0 0 1024 1024" width="80" height="80"><g fill="none" stroke="#1EE3A5" stroke-width="80" stroke-linecap="round" stroke-linejoin="round"><path d="M772 382 V768 A64 64 0 0 1 708 832 H316 A64 64 0 0 1 252 768 V256 A64 64 0 0 1 316 192 H582 L772 382 Z"/><path d="M582 192 V382 A90 90 0 0 1 492 472 H452"/></g><path d="M350 472 L470 362 V582 Z" fill="#1EE3A5" stroke="#1EE3A5" stroke-width="40" stroke-linejoin="round"/></svg></div><div class="cap">icon · 01</div></div>
+    <div><div class="icon" style="width:128px;height:128px"><svg viewBox="0 0 1024 1024" width="80" height="80"><path d="M812 366 V768 A104 104 0 0 1 708 872 H316 A104 104 0 0 1 212 768 V256 A104 104 0 0 1 316 152 H598 Z" fill="#1EE3A5"/><path d="M582 152 V382 A90 90 0 0 1 492 472 H452" fill="none" stroke="#0C100F" stroke-width="72" stroke-linecap="round" stroke-linejoin="round"/><path d="M350 472 L470 362 V582 Z" fill="#0C100F" stroke="#0C100F" stroke-width="36" stroke-linejoin="round"/></svg></div><div class="cap">icon · 01b</div></div>
+    <div><div class="icon g" style="width:128px;height:128px"><svg viewBox="0 0 1024 1024" width="80" height="80"><path d="M812 366 V768 A104 104 0 0 1 708 872 H316 A104 104 0 0 1 212 768 V256 A104 104 0 0 1 316 152 H598 Z" fill="#0C100F"/><path d="M582 152 V382 A90 90 0 0 1 492 472 H452" fill="none" stroke="#1EE3A5" stroke-width="72" stroke-linecap="round" stroke-linejoin="round"/><path d="M350 472 L470 362 V582 Z" fill="#1EE3A5" stroke="#1EE3A5" stroke-width="36" stroke-linejoin="round"/></svg></div><div class="cap">sticker · 01b inverted</div></div>
+    <div><div class="tile carbon" style="width:128px;height:128px"><svg viewBox="0 0 1024 1024" width="80" height="80"><path d="M812 366 V768 A104 104 0 0 1 708 872 H316 A104 104 0 0 1 212 768 V256 A104 104 0 0 1 316 152 H598 Z" fill="#1EE3A5"/></svg></div><div class="cap">silhouette (diffuser / emboss)</div></div>
+  </div>
+
+  <h2>Notes</h2>
+  <div class="notes"><ul>
+    <li>Geometry: sheet 520 × 640 (4:5), corner radius 64 (12 %), fold 190 (35 % of width), stroke 80 (15 %), arrow hook radius 90, arrowhead 120 long.</li>
+    <li>The fold's inner edge is the arrow's tail — the "page comes back" idea is literal, not decorative.</li>
+    <li>01 and 01b share one geometry, so they can coexist: 01 for UI and lockups, 01b for icons, stickers and 1-bit on-sheet use. Pick one as primary.</li>
+    <li>Known risk: it is close to generic "import / reply" document icons. The wide-caps wordmark and the two-tone RE/PAPER do a lot of the distinguishing — decide if that's enough or if the mark needs more of its own idea.</li>
+  </ul></div>
+</div>

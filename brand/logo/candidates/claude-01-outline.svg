@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- RePaper mark candidate 01 · outline · stroke 80 · sheet 520×640 · fold 190 · viewBox 1024 -->
+  <rect width="1024" height="1024" fill="#0C100F"/>
+  <g fill="none" stroke="#1EE3A5" stroke-width="80" stroke-linecap="round" stroke-linejoin="round">
+    <!-- sheet with dog-ear cut, closed -->
+    <path d="M772 382 V768 A64 64 0 0 1 708 832 H316 A64 64 0 0 1 252 768 V256 A64 64 0 0 1 316 192 H582 L772 382 Z"/>
+    <!-- fold's inner edge continuing into the return arrow -->
+    <path d="M582 192 V382 A90 90 0 0 1 492 472 H452"/>
+  </g>
+  <!-- arrowhead -->
+  <path d="M350 472 L470 362 V582 Z" fill="#1EE3A5" stroke="#1EE3A5" stroke-width="40" stroke-linejoin="round"/>
+</svg>
