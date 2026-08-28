@@ -18,7 +18,7 @@ docs/
 brand/
   guidelines.html         Visual brand guide — open in a browser
   tokens.css / .json      Design tokens for every UI (web + native + firmware LED table)
-  logo-prompt.md          Logo brief, AI prompts, evaluation checklist
+  logo/                   Logo pipeline: generation prompts, vectorising, full asset brief
 ```
 
 Software for each product will live alongside this later (e.g. `core/`, `go/`, `dock/`, `cloud/`).

@@ -35,7 +35,7 @@ Sheet sizes use paper analogies in customer-facing copy: *Sheet Label* (2.9"), *
 
 ## Logo
 
-Being generated with an AI tool from `brand/logo-prompt.md`; direction: a sheet whose folded corner becomes a return arrow, drawn in the same blocky geometry as the wordmark. Until then the typographic wordmark (REPAPER in Archivo Extra-Bold wide caps, "RE" in Re Green) is the logo.
+Being generated with an AI tool from `brand/logo/prompt-logo.md` (pipeline in `brand/logo/README.md`); direction: a sheet whose folded corner becomes a return arrow, drawn in the same blocky geometry as the wordmark. Until then the typographic wordmark (REPAPER in Archivo Extra-Bold wide caps, "RE" in Re Green) is the logo.
 
 ## Look, in one line
 

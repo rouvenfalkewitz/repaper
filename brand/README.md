@@ -7,8 +7,7 @@ Source of truth for how RePaper looks, sounds and behaves: the Go app, the Dock'
 | `guidelines.html` | The visual brand guide — open in a browser (dark-first; switch your OS theme to see Paper mode). |
 | `tokens.css` | Design tokens as CSS custom properties, Carbon (dark) default + Paper (light). Import in every web UI. |
 | `tokens.json` | Same tokens for native apps and firmware (LED colours + state table). |
-| `logo-prompt.md` | Logo brief, prompts for AI image tools, evaluation checklist. |
-| `logo/` | (later) final SVG/PNG logo files. |
+| `logo/` | The logo pipeline: `README.md` (three stages), `prompt-logo.md` (image-model prompts + scoring), `prompt-assets.md` (full asset/icon brief). Masters land in `logo/src/`, exports in `logo/export/`. |
 
 ## The system in ten lines
 
