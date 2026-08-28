@@ -1,39 +1,40 @@
-# RePaper brand system
+# RePaper brand system — v1.0
 
-Source of truth for how RePaper looks, sounds and behaves across every surface: the Go app, the Dock's web UI, the cloud console, the website, packaging and the device itself.
+Source of truth for how RePaper looks, sounds and behaves: the Go app, the Dock's web UI, the cloud console, the website, merch, booths and the device itself.
 
 | File | What it is |
 |---|---|
-| `guidelines.html` | The visual brand guide — open it in a browser. Identity, colour, type, layout, components, sheet & LED language, motion, voice, tokens. |
-| `tokens.css` | Design tokens as CSS custom properties (light + dark). Import this in every web UI. |
-| `tokens.json` | The same tokens in a W3C-style JSON format for native apps (Android, Tauri, Pi firmware LED table). |
-| `logo-prompt.md` | Logo brief + prompts for AI image tools + evaluation checklist. |
+| `guidelines.html` | The visual brand guide — open in a browser (dark-first; switch your OS theme to see Paper mode). |
+| `tokens.css` | Design tokens as CSS custom properties, Carbon (dark) default + Paper (light). Import in every web UI. |
+| `tokens.json` | Same tokens for native apps and firmware (LED colours + state table). |
+| `logo-prompt.md` | Logo brief, prompts for AI image tools, evaluation checklist. |
 | `logo/` | (later) final SVG/PNG logo files. |
 
 ## The system in ten lines
 
-1. **Name:** RePaper — one word, capital R and P. `repaper` in code.
-2. **Feel:** like e-paper — matte, high-contrast, flat, plain and confident, one playful note.
-3. **Ground:** Paper `#EFF1EE`, surfaces Sheet `#FAFBF9`, text Ink `#131614`. Neutrals lean slightly green.
-4. **Accent:** Re Green `#14A37F` for fills, icons, LED and the "Re" in the wordmark; `#0B7259` for links/text on light, `#2FCB9F` for text on dark.
-5. **Primary button = Re Green fill + Ink text.** Never white on Re Green for body-size text.
-6. **Functional colours:** Label Red `#D6402F`, Amber `#E0A21B`, Signal Blue `#2A62D6`. They only ever mean their state.
-7. **Type:** Bricolage Grotesque (display/wordmark), Figtree (UI/body, also on-sheet at weight ≥ 500), IBM Plex Mono (IDs, sizes, code). Base 16 px, 4 px grid.
-8. **Shape:** radius 4 (sheets) / 6 (controls) / 12 (cards). Hairline borders, no resting shadows, no gradients — dither instead.
-9. **Signature motion:** the e-ink refresh flash (stepped invert, 1.6 s, once). LED patterns are stepped too.
-10. **Voice:** "It's just a printer." Say *sheet*, *print*, *hold a sheet to…*, *printed*. Never tag, sync, gateway, firmware, smart.
+1. **Name:** RePaper — one word, capital R and P in prose; the wordmark is caps. `repaper` in code.
+2. **Feel:** modern hardware start-up. One luminous colour on carbon, confident type, soft shapes, no noise.
+3. **Ground:** Carbon `#0C100F` is home (surfaces `#151A18` / `#1C2320`, borders `#273029`, text Paper `#EFF1EE`). Paper mode (`#EFF1EE` / `#FAFBF9` / Ink `#131614`) for docs, print, and as an app option.
+4. **Accent:** Re Green. `#1EE3A5` "Glow" on dark (fills, text, LED, merch); `#14C48E` fills and `#0B7259` text on light. Nothing else is ever a brand colour — no orange, no purple.
+5. **Primary button = Re Green fill + Carbon/Ink text.** On carbon it's the only element that glows.
+6. **Functional:** Label Red, Amber, Signal Blue — dark/light variants in the tokens; they only ever mean their state.
+7. **Type:** Archivo (wordmark at width 125 caps, headings at width 100), Figtree body/UI, JetBrains Mono for IDs. 4 px grid, base 16 px.
+8. **Shape:** radius 4 (sheets) / 8 (controls) / 16 (cards) / 28 (device) / pill (tags). Hairline borders; depth from light, not from grey.
+9. **Signatures:** the e-ink refresh flash (stepped) and the light-ring breathe (3 s). 1-bit dither as the only texture.
+10. **Voice:** "It's just a printer." Plain sentences; caps two-word states. Say *sheet, print, hold a sheet to…, printed*. Never tag, sync, gateway, firmware, smart, eco.
+
+## Off-screen
+
+Merch and booths: black + Re Green + white type, nothing else. Real light wherever possible (LED strips, edge-lit logo, the Dock's ring). No white merch, no printed gradients, no eco imagery.
 
 ## Working with the tokens
 
-Web (any framework):
 ```html
 <link rel="stylesheet" href="/brand/tokens.css">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,600;62..125,700;62..125,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 ```
-Then style through the semantic aliases (`--bg`, `--surface`, `--text`, `--accent`, `--accent-text`, `--on-accent`, `--border`), never through raw hex — that is what makes dark mode free.
-
-Native / firmware: read `tokens.json`. The `color.led` block holds the RGB triplets and `led` the state → pattern table the Dock firmware and the app's status pills must both follow.
+Style through the aliases (`--bg`, `--surface`, `--text`, `--accent`, `--accent-text`, `--on-accent`, `--border`, `--glow`) — that is what makes Paper mode free. Native/firmware: `tokens.json` → `theme.carbon` / `theme.paper`, `color.led`, `led`.
 
 ## Changing the system
 
-Edit `tokens.css` **and** `tokens.json` together, then update `guidelines.html` (its `<style>` `:root` block mirrors the tokens) and bump the version in all three. Fonts are Google Fonts; if we ever self-host, keep the same families.
+Edit `tokens.css` **and** `tokens.json` together, mirror the `:root` block in `guidelines.html`, bump the version in all three.

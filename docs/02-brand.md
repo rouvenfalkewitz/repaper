@@ -35,7 +35,11 @@ Sheet sizes use paper analogies in customer-facing copy: *Sheet Label* (2.9"), *
 
 ## Logo
 
-Being generated with an AI tool from `brand/logo-prompt.md`; direction: a sheet whose folded corner becomes a return arrow. Until then the typographic wordmark (Bricolage Grotesque Bold, "Re" in Re Green) is the logo.
+Being generated with an AI tool from `brand/logo-prompt.md`; direction: a sheet whose folded corner becomes a return arrow, drawn in the same blocky geometry as the wordmark. Until then the typographic wordmark (REPAPER in Archivo Extra-Bold wide caps, "RE" in Re Green) is the logo.
+
+## Look, in one line
+
+Dark-first: Carbon `#0C100F` ground, one luminous Re Green `#1EE3A5`, wide caps wordmark, soft 8/16 px corners, 1-bit dither as texture. Paper (light) mode for docs and as an app option. Full system in `brand/`.
 
 ## Domains / handles (to check)
 

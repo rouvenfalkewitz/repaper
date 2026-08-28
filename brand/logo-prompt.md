@@ -13,11 +13,13 @@ A page that comes back: a sheet of paper whose folded corner turns into a return
 - Reads instantly as "paper / a page". Secondary read: "reuse / return / again".
 - Square-ish footprint so it works as an app icon and a favicon.
 - Friendly, confident, slightly playful — not corporate, not "eco leaf", not "recycling triangle".
-- Pairs with the wordmark: **RePaper** in Bricolage Grotesque Bold, "Re" in green `#14A37F`, "Paper" in near-black `#131614`.
+- Pairs with the wordmark: **REPAPER** in Archivo Extra-Bold, width 125 %, caps — "RE" in Re Green (`#1EE3A5` on carbon, `#14C48E` on light), "PAPER" in Paper `#EFF1EE` on carbon / Ink `#131614` on light.
+- The brand is dark-first: the mark's home is carbon `#0C100F`, where it is shown in Re Green (and, as real light, behind the Dock's frosted ring). It must still work as solid black on white.
+- Same material as the letters: blocky, even-stroke geometry that matches the wide Archivo capitals.
 
 ## Three directions to generate
 
-**A · Folded corner arrow (primary)** — A rounded-rectangle sheet with its top-right corner folded down; the fold's edge continues into a small curved arrow pointing back into the page.
+**A · Folded corner arrow (primary)** — A rounded-rectangle sheet with its top-right corner folded down; the fold's edge continues into a small, blocky arrow pointing back into the page. Stroke weight matches the wordmark's letter stems.
 
 **B · The looping R** — A bold geometric capital R whose leg curves back and re-enters the bowl, forming a loop; the counter of the R is a small page/rectangle.
 
@@ -53,13 +55,13 @@ minimalist flat vector logo mark, silhouette of a sheet of paper with one folded
 Only for exploring lockups; the shipping wordmark is typeset, not generated.
 
 ```
-Logo design for "RePaper", a company making reusable e-paper you print on like a normal printer. Layout: a small icon to the left of the word "RePaper" in a bold geometric sans-serif (similar to Bricolage Grotesque or Sora). The icon is a sheet of paper with a folded corner that turns into a small return arrow. The letters "Re" are green (#14A37F), the letters "Paper" are near-black (#131614). Flat vector, white background, no gradients, no shadows, no 3D, no tagline, no other text. Clean, confident, slightly playful tech brand.
+Logo design for "REPAPER", a company making reusable e-paper you print on like a normal printer. Layout: a small icon to the left of the word "REPAPER" in an extra-bold, extra-wide grotesque sans-serif, all caps (similar to Archivo Expanded). The icon is a sheet of paper with a folded corner that turns into a small blocky return arrow, drawn with the same stroke weight as the letters. Background is near-black (#0C100F); the letters "RE" and the icon are a luminous mint-teal green (#1EE3A5) with a very subtle glow; the letters "PAPER" are off-white (#EFF1EE). Flat vector, no gradients except the soft glow, no 3D, no tagline, no other text. Modern hardware start-up brand, confident, clean.
 ```
 
 ### App icon / LED diffuser exploration
 
 ```
-app icon, rounded square, solid green background (#14A37F), a single black minimalist flat vector symbol centered: a sheet of paper with a folded corner that turns into a small return arrow, no text, no gradient, no shadow, flat design, large margins
+app icon, rounded square, near-black background (#0C100F), a single minimalist flat vector symbol centered in luminous mint-teal green (#1EE3A5) with a soft glow: a sheet of paper with a folded corner that turns into a small blocky return arrow, no text, no other colours, flat design, large margins
 ```
 
 ## Evaluation checklist (score each candidate 0–2)
@@ -72,11 +74,12 @@ app icon, rounded square, solid green background (#14A37F), a single black minim
 | 4 | 1-bit | Threshold to pure black/white; no grey needed, no thin bits vanish |
 | 5 | Emboss / diffuser | Fill solid; silhouette alone still works (no inner detail required) |
 | 6 | Not a cliché | Not a leaf, not the recycling triangle, not a printer, not a cloud |
-| 7 | Sits next to the wordmark | Cap-height of the mark = cap-height of the "R"; visually equal weight to the letters |
+| 7 | Sits next to the wordmark | Mark height = cap height of the wide Archivo "R"; stroke weight equal to the letter stems |
+| 9 | Glows well | Render in #1EE3A5 on #0C100F with a soft glow; does the silhouette still read, or does it blur into a blob? |
 | 8 | Ownable | Search similar-image; nothing close from a major brand |
 
 Keep the top 2–3, redraw them cleanly as SVG (the AI output is a reference, not the final file), then test again at 16 px and 1-bit.
 
 ## Deliverables once chosen
 
-`brand/logo/` with: `mark.svg`, `mark-mono-black.svg`, `mark-mono-white.svg`, `lockup-horizontal.svg` (mark + wordmark), `lockup-mono.svg`, `app-icon-1024.png`, `favicon.svg`, plus a `1bit/` folder with the mark rasterised at 32/64/128 px pure black-and-white for on-sheet use.
+`brand/logo/` with: `mark-green-on-carbon.svg` (primary), `mark-mono-black.svg`, `mark-mono-white.svg`, `lockup-horizontal-dark.svg` and `lockup-horizontal-light.svg` (mark + wordmark), `lockup-mono.svg`, `app-icon-1024.png` (carbon + green), `favicon.svg`, plus a `1bit/` folder with the mark rasterised at 32/64/128 px pure black-and-white for on-sheet use.
