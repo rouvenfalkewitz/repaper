@@ -22,6 +22,8 @@
 
 ## Step 1 — open brief (paste as your first message)
 
+Also saved as plain text in `prompt-logo-step1.txt` — open it, select all, copy.
+
 The brief deliberately does **not** describe a shape. Telling a model "a sheet with a folded corner and an arrow" produces the same clip-art every time. It gets the brand, the design system and the hard constraints, and has to find the idea itself.
 
 ```
@@ -102,7 +104,7 @@ Six new concepts, same brief and same two colours, all built around "the same su
 Six new concepts, same brief and same two colours, all built from 1-bit pixel patterns on a coarse grid (about 8×10 to 12×14 pixels): shapes that emerge from dither, from a diagonal fade of pixels, from a single missing pixel, from a pixel that steps out of line. No letters.
 ```
 
-## Step 5 — finalise the one you like
+## Step 4 — finalise the one you like
 
 The cleanest version of the winner — this is the file that gets traced:
 
