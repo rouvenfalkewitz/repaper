@@ -2,6 +2,8 @@
 
 **What you're making:** the logo *mark* only (the icon). No letters, no words, in any image. The wordmark "REPAPER" is typeset later from the real Archivo font.
 
+**How this brief works:** it tells the model what RePaper is, what the design system looks like, and what the hard constraints are — and then makes the model find the idea. It never prescribes a shape. A prescribed shape ("a sheet with a folded corner and an arrow") gives you the same generic icon every time.
+
 **What "done" looks like:** 1–3 PNGs of a mark you like, mint-teal green on near-black, saved in `brand/logo/candidates/`. Everything after that (vectorising, recolouring, icons) happens in the repo.
 
 **Exact colours used in every prompt:** background near-black `#0C100F` (RGB 12, 16, 15) · mark mint-teal green `#1EE3A5` (RGB 30, 227, 165). Nothing else.
@@ -12,87 +14,93 @@
 
 1. Use ChatGPT with image generation. Start a **new chat**.
 2. Every image: **square**, **as large as possible**. If there's a size/quality option, take the largest.
-3. **Download at full resolution** (download button, not a screenshot). Name files `a-01.png`, `a-02.png`, … and put them in `brand/logo/candidates/`.
+3. **Download at full resolution** (download button, not a screenshot). Name files `sheet-01.png` for concept sheets and `mark-01.png`, `mark-02.png`, … for isolated marks; put them in `brand/logo/candidates/`.
 4. Judge the **shape** only. Ignore any letters it sneaks in and small wobbles. If it adds text, extra colours or decoration: "Remove the text and extra colours, keep the mark exactly as it is" and regenerate.
 5. Prompts are single blocks with no blank lines — paste them exactly as they are.
 
 ---
 
-## Step 1 — the primary direction (paste as your first message)
+## Step 1 — open brief (paste as your first message)
+
+The brief deliberately does **not** describe a shape. Telling a model "a sheet with a folded corner and an arrow" produces the same clip-art every time. It gets the brand, the design system and the hard constraints, and has to find the idea itself.
 
 ```
-TASK: Design a logo mark (icon only) for the brand RePaper. Output one square image, as large as possible (2048×2048 pixels if you can), showing 4 different options of the mark in a 2×2 grid, each option centred on its own square tile.
-BRAND: RePaper is a hardware start-up. Its devices show up on any network as a normal printer, but instead of printing on paper they print onto reusable e-paper displays ("sheets"). Print jobs land on the device, an LED ring blinks, you hold a sheet to it, and the page appears on the sheet — reusable thousands of times, with zero integration effort because every system already knows how to print. Customers are warehouses, factories, labs, offices and hospitality first; consumers later. The brand promise: "Reusable paper. Printed the way you already print."
-DESIGN SYSTEM CONTEXT (the mark must belong to this system): The identity is dark-first and looks like modern hardware: matte carbon black, one luminous mint-teal green, off-white type, soft rounded shapes, hairline borders, no noise. Colour palette: Carbon #0C100F (primary ground), Carbon surfaces #151A18 / #1C2320, Paper off-white #EFF1EE (text on dark), Re Green #1EE3A5 (the single brand accent on dark), Re Green #14C48E (accent on light), Ink #131614 (text on light). Functional colours (never in the logo): red #FF5C4D, amber #FFB020, blue #4D8DFF. Typography: the wordmark is "REPAPER" in Archivo Extra-Bold at 125% width, all caps, tight tracking, with "RE" in Re Green and "PAPER" in off-white — the mark will sit directly to the left of it at exactly the capital-letter height, so its strokes must match the weight of those extra-bold, extra-wide capitals. Body text is Figtree; identifiers are JetBrains Mono. Shape language: corner radius 4 px on sheets, 8 px on controls, 16 px on cards, 28 px on the device itself; buttons are rounded rectangles, tags are pills; everything is flat with 1-pixel hairlines; depth only ever comes from real light (the device's LED ring, a glow on the primary button on screen), never from shadows or gradients. Visual motifs: 1-bit ordered dither (Bayer pattern) as the only texture, and the e-ink "refresh flash" as the signature motion. Product hardware: the RePaper Dock is a matte carbon rounded-square puck with a frosted light ring that breathes green when ready and blinks green when a job is waiting; the logo mark will be the illuminated silhouette behind that frosted diffuser, and will be embossed in the carbon plastic. Merch: black garments and stickers with the mark and wordmark in flat green — so the mark must work as one flat spot colour on black. Tone of voice: plain, confident, a little warm — "it's just a printer"; never "smart", never "eco". Visual references for the level of finish: Apple SF Symbols and Google Material Symbols at their heaviest weight; hardware brands like ProGlove and Razer for one shiny colour on black — but our mark is always flat, never glowing, never gradient. The mark must feel like it was cut from the same material as the wide Archivo capitals: blocky, even, geometric, friendly through its rounded corners.
-COLOURS (exact, only these two in the entire image): background near-black hex #0C100F (RGB 12, 16, 15) on every tile and in the gutters between tiles; the mark itself is one flat mint-teal green hex #1EE3A5 (RGB 30, 227, 165). No other colours, no tints, no shades, no white, no grey, no anti-aliasing halos in other colours.
-THE MARK — WHAT IT IS: a sheet of paper whose folded corner turns into a return arrow. Meaning: "the page comes back — reusable paper".
-THE MARK — GEOMETRY: a portrait rectangle (about 4 wide to 5 high) with softly rounded corners (corner radius about 12% of the width). The top-right corner is folded down towards the centre as a right-angled triangle whose legs are about 35% of the sheet's width. The edge of that fold continues into a short, thick, blocky arrow that curves back and points into the sheet (towards the sheet's centre-left). The arrow's stroke is as thick as the sheet's outline (about 14% of the sheet's width) and its arrowhead is a simple solid triangle. The mark is one or two solid shapes at most. All strokes have exactly the same thickness. No thin lines anywhere.
-THE MARK — MUST: read clearly at 16 pixels; work as a solid silhouette with no inner detail; be cuttable as a stencil (no floating islands, no thin bridges); sit visually at the weight of extra-bold, extra-wide capital letters.
-THE 4 OPTIONS (one per tile, all following the geometry above): Option 1: the sheet is a solid filled shape and the arrow is cut out of the folded corner as negative space (background colour showing through). Option 2: the sheet is a thick outline of even stroke and the folded corner is solid; the arrow grows out of the fold as a solid shape. Option 3: fold and arrow are one single continuous thick stroke, the sheet is a thick outline. Option 4: the whole mark is built from square pixels on a coarse grid (about 12×15 pixels), like a 1-bit e-ink icon, still following the same shape.
-LAYOUT: 2×2 grid; each tile is a square with the mark centred and filling about 55% of the tile's width; equal generous margins; no borders, no frames, no dividing lines other than the tiles' own background; no labels, no numbers, no captions.
-STYLE — STRICTLY: flat vector illustration. No glow, no gradients, no shadows, no 3D, no bevels, no gloss, no texture, no grain, no paper texture, no sketch or hand-drawn style, no outlines around shapes, no perspective.
-DO NOT INCLUDE: any letters, words, numbers or text; any tagline; any background shapes, circles, badges or shields around the mark; mockups, devices, screens, photos, hands; leaves, plants, earth, recycling triangles or recycling arrows; printers, ink drops, clouds, gears, wifi symbols.
+ROLE: You are a senior brand designer at a studio known for abstract, memorable logo marks (think of the level of Pentagram or Koto). You are designing the logo mark for RePaper.
+TASK: Propose 6 distinct logo mark concepts, each based on a different idea, presented in one square image as a 3×2 grid, each concept centred on its own square tile. Icon only — no letters, no words, no text anywhere in the image. Output as large as possible (2048×2048 pixels if you can).
+WHAT REPAPER IS: a hardware start-up. Its devices appear on any network as an ordinary printer. But instead of printing on paper, they "print" onto reusable e-paper displays ("sheets"): a print job arrives, a light on the device blinks, you hold a sheet to it, and the page appears on the sheet. A sheet can be reprinted thousands of times. Nothing has to be integrated, because every system in the world already knows how to print. Customers are warehouses, factories, labs, offices and hotels first; consumers later. The promise: "Reusable paper. Printed the way you already print." Themes to draw from: reuse and return; the same surface used again and again; printing without paper; e-ink (1-bit black and white, pixels, the panel's refresh flash); the printer as a familiar, trusted object; plug-and-play simplicity; the "Re" in the name.
+DESIGN SYSTEM THE MARK MUST BELONG TO: dark-first, modern hardware brand — matte carbon black, one luminous mint-teal green, off-white type, soft rounded geometry, hairline borders, no noise. Palette: Carbon #0C100F (ground), Paper off-white #EFF1EE (text on dark), Re Green #1EE3A5 (the one accent), Ink #131614 (text on light). The wordmark is "REPAPER" in Archivo Extra-Bold at 125% width, all caps, tight tracking, "RE" in green and "PAPER" in off-white; the mark sits to the left of it at capital-letter height, so its visual weight must match extra-bold, extra-wide capitals. Shape language: rounded rectangles (radius 4–28 px), pills, flat surfaces, depth only from real light. Motifs already in the system: 1-bit ordered dither (Bayer pattern) as the only texture; the e-ink refresh flash as the signature motion. The product is a matte carbon puck with a frosted light ring; the mark will be the illuminated silhouette behind that diffuser, embossed in the plastic, printed flat on black merch, and rendered in 1-bit on the e-paper sheets themselves. References for finish: Apple SF Symbols and Material Symbols at their heaviest weight; ProGlove and Razer for one colour on black — but always flat.
+WHAT MAKES A GOOD ANSWER: abstract rather than literal; one idea per mark, executed in one or two shapes; memorable enough to be drawn from memory after seeing it once; ownable — nothing that already exists as a common icon; reads at 16 pixels; works as a solid silhouette; stencil-safe (no floating islands, no thin bridges); strokes all the same thickness, no thin lines; friendly through rounded corners, confident through weight. The mark may be built from geometry, from negative space, from a pixel grid, from a single continuous line, from a repeated element, or from a letterform derived from "R" or "Re" — your choice, but the 6 concepts must use 6 different approaches.
+DO NOT DO THE OBVIOUS: no document icon with a folded corner; no sheet with an arrow; no recycling triangle or circular arrows; no printer; no leaves, plants, earth, drops or clouds; no lightbulb; no wifi symbol; no gears; no badge, circle or shield around the mark; no mascots.
+COLOURS (exact, only these two in the entire image): background near-black hex #0C100F (RGB 12, 16, 15) on every tile and in the gutters; every mark is one flat mint-teal green hex #1EE3A5 (RGB 30, 227, 165). No other colours, no tints, no white, no grey.
+LAYOUT: 3×2 grid of equal square tiles; each mark centred, filling about 50% of its tile; equal generous margins; no borders, no frames, no dividing lines, no labels, no numbers, no captions.
+STYLE — STRICTLY: flat vector. No glow, no gradients, no shadows, no 3D, no bevels, no gloss, no texture, no grain, no sketch or hand-drawn style, no outlines around shapes, no perspective, no mockups, no photos, no letters, no words, no text.
 ```
 
-If the results are weak, don't rewrite the brief — paste one of these:
+Then make it explain itself — this is where the good ideas surface:
 
 ```
-Again, exactly the same brief and the same two colours (#0C100F background, #1EE3A5 mark). Simpler: each mark is one shape, strokes thicker, folded corner bigger (about 40% of the width), arrow clearly readable as an arrow with a solid triangular head.
+For each of the 6 concepts, in one sentence each: what is the idea, and why would someone remember it? Then tell me which two you would take forward and why.
 ```
 
-```
-Again, exactly the same brief and the same two colours (#0C100F background, #1EE3A5 mark). Make all four marks chunkier, like a bold app-icon glyph: rounded corners everywhere, no thin lines at all, no detail smaller than 10% of the mark's width.
-```
-
-Once one tile looks right, isolate it (replace the option number):
+If the sheet is generic, push once (don't rewrite the brief):
 
 ```
-Show option 2 on its own: exactly the same mark, one square image as large as possible, the mark centred and filling about 60% of the width, flat mint-teal green #1EE3A5 (RGB 30, 227, 165) on solid near-black #0C100F (RGB 12, 16, 15), no other colours, no text, no grid, no frame, nothing else.
-```
-
-## Step 2 — explore the mark (paste one at a time, same chat)
-
-Run these on the isolated mark. Each changes exactly one thing; colours never change. Save any result you like.
-
-```
-Same mark, same two colours (#0C100F background, #1EE3A5 mark), same layout, one change: make the fold and the arrow one continuous shape.
+Again, same brief and the same two colours (#0C100F background, #1EE3A5 marks). These are too literal. Go more abstract: pure geometry, negative space, rhythm, a pixel grid, a single continuous line. Every concept must be something I haven't seen as an icon before.
 ```
 
 ```
-Same mark, same two colours (#0C100F background, #1EE3A5 mark), same layout, one change: the folded corner becomes a solid triangle and the rest of the sheet a thick outline of equal stroke weight.
+Again, same brief and the same two colours. Six new concepts, each derived from a different one of these starting points: (1) the letter R reduced to its simplest geometric gesture; (2) "Re" as one shape; (3) a rectangle that is used twice; (4) a 1-bit pixel pattern that forms a shape; (5) a single continuous thick line; (6) negative space in a solid rounded square.
+```
+
+Isolate one (replace the number; count tiles left-to-right, top-to-bottom):
+
+```
+Show concept 4 on its own: exactly the same mark, one square image as large as possible, the mark centred and filling about 60% of the width, flat mint-teal green #1EE3A5 (RGB 30, 227, 165) on solid near-black #0C100F (RGB 12, 16, 15), no other colours, no text, no grid, no frame, nothing else.
+```
+
+## Step 2 — refine the isolated mark (paste one at a time, same chat)
+
+Each changes exactly one thing; colours never change. Save any result you like.
+
+```
+Same mark, same two colours (#0C100F background, #1EE3A5 mark), same layout, one change: simplify — remove everything that is not essential to the idea.
 ```
 
 ```
-Same mark, same two colours (#0C100F background, #1EE3A5 mark), same layout, one change: cut the arrow out of the folded corner as negative space so the background shows through.
+Same mark, same two colours (#0C100F background, #1EE3A5 mark), same layout, one change: make it heavier — thicker strokes, so it matches extra-bold, extra-wide capital letters.
 ```
 
 ```
-Same mark, same two colours (#0C100F background, #1EE3A5 mark), same layout, one change: rebuild it from square pixels on a coarse grid of about 12×15 pixels, like a 1-bit e-ink icon.
+Same mark, same two colours (#0C100F background, #1EE3A5 mark), same layout, one change: rounder corners everywhere, still flat and geometric.
 ```
 
 ```
-Same mark, same two colours (#0C100F background, #1EE3A5 mark), same layout, one change: make the arrow larger and the sheet smaller so the "return" idea is the first thing you see.
+Same mark, same two colours (#0C100F background, #1EE3A5 mark), same layout, one change: rebuild it as a solid shape with the idea carried by negative space.
 ```
 
 ```
-Same mark, same two colours (#0C100F background, #1EE3A5 mark), same layout, one change: rounder — larger corner radii on the sheet and a softer arrow, still thick and flat.
+Same mark, same two colours (#0C100F background, #1EE3A5 mark), same layout, one change: rebuild it from square pixels on a coarse grid, like a 1-bit e-ink icon.
 ```
 
-## Step 3 — the alternative direction (optional, same chat)
-
 ```
-NEW DIRECTION, same rules. TASK: one square image, as large as possible, showing one logo mark centred and filling about 60% of the width. COLOURS (exact, only these two): background near-black #0C100F (RGB 12, 16, 15); mark flat mint-teal green #1EE3A5 (RGB 30, 227, 165). THE MARK: a bold, extra-wide geometric capital letter R whose right leg curves back around and re-enters the letter, forming one continuous loop like a return arrow with a solid triangular arrowhead where it re-enters. The inner counter (hole) of the R is a small portrait rectangle, like a page. Stroke thickness identical everywhere, about 22% of the letter's height; no thin lines. Must read at 16 pixels and work as a solid silhouette. STYLE: flat vector, no glow, no gradients, no shadows, no 3D, no texture, no outlines. DO NOT INCLUDE: any other letters, words, numbers or text; background shapes; mockups; leaves; recycling symbols; printers.
+Same mark, same two colours (#0C100F background, #1EE3A5 mark), same layout, one change: make it more asymmetric and dynamic while keeping it stencil-safe.
 ```
 
-Name these `b-01.png`, `b-02.png`, …
+## Step 3 — seed a direction (optional, same chat)
 
-## Step 4 — a cheap overview (optional)
+Only if you want to steer. One seed per message, everything else unchanged:
 
 ```
-TASK: a designer's exploration sheet — one square image, as large as possible, showing a 3×3 grid of nine different logo mark concepts for RePaper, a brand about reusable e-paper. COLOURS (exact, only these two): every cell has a near-black #0C100F (RGB 12, 16, 15) background; every mark is flat mint-teal green #1EE3A5 (RGB 30, 227, 165). CONCEPTS: every one combines a sheet of paper with a folded corner and the idea of "again / return / reuse" — through an arrow, a loop, or a repeated shape — each in a clearly different way. STYLE: thick even strokes, geometric, minimal, flat; no gradients, no glow, no shadows, no 3D. LAYOUT: each mark centred in its own cell, filling about 55% of the cell, no borders, no labels, no numbers, no text of any kind. DO NOT INCLUDE: leaves, plants, recycling triangles, printers, clouds, letters.
+Six new concepts, same brief and same two colours, all built around the letter R: R as a single continuous thick line; R reduced to two rectangles; R where the leg returns into the bowl; R cut out of a rounded square as negative space; R on a 1-bit pixel grid; R that reads as an "e" upside down. No other letters, no words.
 ```
 
-Pull one out: "Show cell 5 (centre) on its own, same rules, one mark filling about 60% of a square image, #1EE3A5 on #0C100F, nothing else."
+```
+Six new concepts, same brief and same two colours, all built around "the same surface used again": a rectangle repeated, offset, mirrored, stacked, rotated or overlapped — each in a different way, always one or two shapes, always stencil-safe.
+```
+
+```
+Six new concepts, same brief and same two colours, all built from 1-bit pixel patterns on a coarse grid (about 8×10 to 12×14 pixels): shapes that emerge from dither, from a diagonal fade of pixels, from a single missing pixel, from a pixel that steps out of line. No letters.
+```
 
 ## Step 5 — finalise the one you like
 
@@ -124,7 +132,8 @@ Same mark, same size and position, one change: the mark is solid black #000000 o
 | 4 | Silhouette | Imagine it filled solid with no inner detail — still recognisable? (emboss, diffuser) |
 | 5 | Stencil-safe | No floating islands, no thin bridges |
 | 6 | Heavy enough | Stroke weight looks like it belongs next to extra-bold wide capitals |
-| 7 | Not a cliché | Not a leaf, recycling triangle, printer, cloud, or plain "document" icon |
+| 7 | Not a cliché | Not a leaf, recycling triangle, printer, cloud, folded-corner document or sheet-with-arrow |
+| 9 | Has an idea | You can say in one sentence what it means, and it isn't "it's a page" |
 | 8 | Ownable | Reverse-image search — nothing close from a known brand |
 
 Ignore completely: letters, canvas proportions, tiny wobbles in the strokes, slight colour drift. All of that is fixed in stage 2.
