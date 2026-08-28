@@ -14,7 +14,7 @@ A page that comes back: a sheet of paper whose folded corner turns into a return
 - Square-ish footprint so it works as an app icon and a favicon.
 - Friendly, confident, slightly playful — not corporate, not "eco leaf", not "recycling triangle".
 - Pairs with the wordmark: **REPAPER** in Archivo Extra-Bold, width 125 %, caps — "RE" in Re Green (`#1EE3A5` on carbon, `#14C48E` on light), "PAPER" in Paper `#EFF1EE` on carbon / Ink `#131614` on light.
-- The brand is dark-first: the mark's home is carbon `#0C100F`, where it is shown in Re Green (and, as real light, behind the Dock's frosted ring). It must still work as solid black on white.
+- The brand is dark-first: the mark's home is carbon `#0C100F`, where it is shown in flat Re Green (and, as real light, behind the Dock's frosted ring). The logo itself never glows — no halo, shadow or gradient, on screen or in print. It must still work as solid black on white.
 - Same material as the letters: blocky, even-stroke geometry that matches the wide Archivo capitals.
 
 ## Three directions to generate
@@ -55,13 +55,13 @@ minimalist flat vector logo mark, silhouette of a sheet of paper with one folded
 Only for exploring lockups; the shipping wordmark is typeset, not generated.
 
 ```
-Logo design for "REPAPER", a company making reusable e-paper you print on like a normal printer. Layout: a small icon to the left of the word "REPAPER" in an extra-bold, extra-wide grotesque sans-serif, all caps (similar to Archivo Expanded). The icon is a sheet of paper with a folded corner that turns into a small blocky return arrow, drawn with the same stroke weight as the letters. Background is near-black (#0C100F); the letters "RE" and the icon are a luminous mint-teal green (#1EE3A5) with a very subtle glow; the letters "PAPER" are off-white (#EFF1EE). Flat vector, no gradients except the soft glow, no 3D, no tagline, no other text. Modern hardware start-up brand, confident, clean.
+Logo design for "REPAPER", a company making reusable e-paper you print on like a normal printer. Layout: a small icon to the left of the word "REPAPER" in an extra-bold, extra-wide grotesque sans-serif, all caps (similar to Archivo Expanded). The icon is a sheet of paper with a folded corner that turns into a small blocky return arrow, drawn with the same stroke weight as the letters. Background is near-black (#0C100F); the letters "RE" and the icon are a flat mint-teal green (#1EE3A5); the letters "PAPER" are off-white (#EFF1EE). Flat vector, no glow, no gradients, no shadows, no 3D, no tagline, no other text. Modern hardware start-up brand, confident, clean.
 ```
 
 ### App icon / LED diffuser exploration
 
 ```
-app icon, rounded square, near-black background (#0C100F), a single minimalist flat vector symbol centered in luminous mint-teal green (#1EE3A5) with a soft glow: a sheet of paper with a folded corner that turns into a small blocky return arrow, no text, no other colours, flat design, large margins
+app icon, rounded square, near-black background (#0C100F), a single minimalist flat vector symbol centered in flat mint-teal green (#1EE3A5): a sheet of paper with a folded corner that turns into a small blocky return arrow, no text, no other colours, flat design, large margins
 ```
 
 ## Evaluation checklist (score each candidate 0–2)
@@ -75,7 +75,7 @@ app icon, rounded square, near-black background (#0C100F), a single minimalist f
 | 5 | Emboss / diffuser | Fill solid; silhouette alone still works (no inner detail required) |
 | 6 | Not a cliché | Not a leaf, not the recycling triangle, not a printer, not a cloud |
 | 7 | Sits next to the wordmark | Mark height = cap height of the wide Archivo "R"; stroke weight equal to the letter stems |
-| 9 | Glows well | Render in #1EE3A5 on #0C100F with a soft glow; does the silhouette still read, or does it blur into a blob? |
+| 9 | Works as light | Imagine it as the silhouette behind the Dock's frosted ring — does it still read when it's a blurry light source? (The logo file itself stays flat.) |
 | 8 | Ownable | Search similar-image; nothing close from a major brand |
 
 Keep the top 2–3, redraw them cleanly as SVG (the AI output is a reference, not the final file), then test again at 16 px and 1-bit.

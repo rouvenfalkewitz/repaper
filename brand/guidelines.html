@@ -39,7 +39,6 @@
     --accent-tint: var(--re-900); --red: var(--red-500); --red-tint: var(--red-900); --amber: var(--amber-500); --amber-tint: var(--amber-900); --blue: var(--blue-500); --blue-tint: var(--blue-900);
     --code-bg: #090C0B;
     --glow: 0 0 0 1px rgba(30,227,165,.35), 0 0 28px rgba(30,227,165,.35);
-    --glow-text: 0 0 24px rgba(30,227,165,.45);
     --shadow-float: 0 12px 32px rgba(0,0,0,.5);
     --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
     --font-body: "Figtree", "Segoe UI", Helvetica, Arial, sans-serif;
@@ -54,7 +53,7 @@
       --text: var(--ink); --text-2: var(--graphite); --text-3: var(--ash);
       --accent: var(--re-500); --accent-hover: var(--re-600); --accent-text: var(--re-700); --on-accent: var(--ink);
       --accent-tint: #DCF3EA; --red: var(--red-700); --red-tint: var(--red-100); --amber: var(--amber-700); --amber-tint: var(--amber-100); --blue: var(--blue-700); --blue-tint: var(--blue-100);
-      --code-bg: #E4E7E3; --glow: none; --glow-text: none; --shadow-float: 0 8px 24px rgba(0,0,0,.18);
+      --code-bg: #E4E7E3; --glow: none; --shadow-float: 0 8px 24px rgba(0,0,0,.18);
     }
   }
   :root[data-theme="light"] {
@@ -62,7 +61,7 @@
     --text: var(--ink); --text-2: var(--graphite); --text-3: var(--ash);
     --accent: var(--re-500); --accent-hover: var(--re-600); --accent-text: var(--re-700); --on-accent: var(--ink);
     --accent-tint: #DCF3EA; --red: var(--red-700); --red-tint: var(--red-100); --amber: var(--amber-700); --amber-tint: var(--amber-100); --blue: var(--blue-700); --blue-tint: var(--blue-100);
-    --code-bg: #E4E7E3; --glow: none; --glow-text: none; --shadow-float: 0 8px 24px rgba(0,0,0,.18);
+    --code-bg: #E4E7E3; --glow: none; --shadow-float: 0 8px 24px rgba(0,0,0,.18);
   }
 
   * { box-sizing: border-box; }
@@ -105,7 +104,7 @@
   .stage { background: #0C100F; color: #EFF1EE; border-radius: var(--r-card); padding: clamp(28px, 5vw, 56px); margin-top: var(--s-6); position: relative; overflow: hidden; border: 1px solid #1C2320; }
   .stage .eyebrow { color: #1EE3A5; }
   .stage .wordmark { font-family: var(--font-display); font-weight: 800; font-stretch: 125%; text-transform: uppercase; font-size: clamp(3rem, 9.5vw, 7rem); letter-spacing: -.03em; line-height: .9; margin: 0 0 var(--s-4); }
-  .stage .wordmark span { color: #1EE3A5; text-shadow: 0 0 24px rgba(30,227,165,.45); }
+  .stage .wordmark span { color: #1EE3A5; }
   .stage .tag { font-family: var(--font-display); font-weight: 500; font-size: clamp(1.125rem, 2.2vw, 1.5rem); color: #A7B0AA; max-width: 30ch; }
   .stage .dither { display: block; width: 100%; height: 64px; margin-top: var(--s-6); border-radius: var(--r-sheet); image-rendering: pixelated; }
   .stage .glow-dot { position: absolute; right: -120px; top: -120px; width: 360px; height: 360px; border-radius: 50%; background: radial-gradient(circle, rgba(30,227,165,.22), rgba(30,227,165,0) 60%); pointer-events: none; }
@@ -225,7 +224,7 @@
   .wm span { color: var(--accent); } .wm-mono span { color: inherit; }
   .wm-row { display: flex; gap: var(--s-6); flex-wrap: wrap; align-items: center; }
   .wm-row > div { display: grid; gap: var(--s-2); justify-items: start; } .wm-row .cap { font-family: var(--font-mono); font-size: .6875rem; color: var(--text-3); }
-  .on-carbon { background: #0C100F; color: #EFF1EE; padding: var(--s-4) var(--s-5); border-radius: var(--r-card); border: 1px solid #273029; } .on-carbon .wm span { color: #1EE3A5; text-shadow: 0 0 20px rgba(30,227,165,.5); }
+  .on-carbon { background: #0C100F; color: #EFF1EE; padding: var(--s-4) var(--s-5); border-radius: var(--r-card); border: 1px solid #273029; } .on-carbon .wm span { color: #1EE3A5; }
   .on-paper { background: #EFF1EE; color: #131614; padding: var(--s-4) var(--s-5); border-radius: var(--r-card); border: 1px solid #D6DAD6; } .on-paper .wm span { color: #14C48E; }
   .on-green { background: #1EE3A5; color: #0C100F; padding: var(--s-4) var(--s-5); border-radius: var(--r-card); }
   .logo-slot { display: grid; place-items: center; height: 170px; border: 1px dashed var(--border-strong); border-radius: var(--r-card); color: var(--text-3); font-size: .875rem; text-align: center; padding: var(--s-4); background: var(--surface); }
@@ -251,7 +250,7 @@
         <p class="tag">Reusable paper. Printed the way you already print.</p>
         <canvas class="dither" id="dither" width="1200" height="64" aria-hidden="true"></canvas>
       </div>
-      <p class="small muted" style="margin-top:12px">This is the brand at full volume: Carbon ground, one glowing colour, a wide caps wordmark, and a strip of real 1-bit dither — the same thing our renderer does to every page. Booths, merch, the website hero and the Dock itself all look like this. Product UI turns the volume down (see Color).</p>
+      <p class="small muted" style="margin-top:12px">This is the brand at full volume: Carbon ground, one flat luminous colour, a wide caps wordmark, and a strip of real 1-bit dither — the same thing our renderer does to every page. Booths, merch, the website hero and the Dock itself all look like this. Product UI turns the volume down (see Color).</p>
     </header>
 
     <section id="identity">
@@ -261,10 +260,10 @@
       <h3>Name</h3>
       <p><strong>RePaper</strong> — one word, capital R and P in prose. The wordmark is set in caps. <code>repaper</code> in code, domains and handles. Never "Re-Paper", "rePaper", "RE PAPER".</p>
       <h3>Wordmark</h3>
-      <p>Archivo Extra-Bold, width 125 %, caps, tracking −3 %. "RE" in Re Green, "PAPER" in Paper (on dark) or Ink (on light). On screens showing carbon, "RE" carries a soft glow (<code>text-shadow 0 0 24px</code> at 45 %). <strong>Glow is light, never ink:</strong> it exists on screens and as real light (the Dock's ring, LED strips, edge-lit signs) — never on anything printed or stitched, and never on light grounds.</p>
+      <p>Archivo Extra-Bold, width 125 %, caps, tracking −3 %. "RE" in Re Green, "PAPER" in Paper (on dark) or Ink (on light). <strong>The wordmark and the mark never glow</strong> — flat colour everywhere, on screen and in print. Glow is reserved for interactive elements (the primary button) and for real light (the Dock's ring, LED strips, edge-lit signs), which keeps the logo one file, one colour, one rule.</p>
       <div class="demo"><div class="wm-row">
-        <div><div class="on-carbon"><div class="wm" style="font-size:2.5rem"><span>Re</span>Paper</div></div><div class="cap">PRIMARY · ON CARBON, GLOW</div></div>
-        <div><div class="on-paper"><div class="wm" style="font-size:2.5rem"><span>Re</span>Paper</div></div><div class="cap">ON PAPER · NO GLOW</div></div>
+        <div><div class="on-carbon"><div class="wm" style="font-size:2.5rem"><span>Re</span>Paper</div></div><div class="cap">PRIMARY · ON CARBON</div></div>
+        <div><div class="on-paper"><div class="wm" style="font-size:2.5rem"><span>Re</span>Paper</div></div><div class="cap">ON PAPER</div></div>
         <div><div class="on-green"><div class="wm wm-mono" style="font-size:2.5rem"><span>Re</span>Paper</div></div><div class="cap">ON RE GREEN · MONO CARBON</div></div>
         <div><div class="wm wm-mono" style="font-size:2.5rem"><span>Re</span>Paper</div><div class="cap">MONO · 1-BIT · E-PAPER</div></div>
       </div></div>
@@ -273,7 +272,7 @@
       <div class="logo-slot">LOGO MARK — PENDING<br><span class="mono">Square slot. Reads at 16 px · in pure 1-bit black · embossed on plastic · as the glowing silhouette behind the Dock's LED diffuser.</span></div>
       <div class="rule" style="margin-top:var(--s-4)">
         <div class="do"><ul><li>Mark left of the wordmark, mark height = cap height of "R"</li><li>Clear space around the lockup = the height of the "E"</li><li>Minimum: mark 16 px, wordmark 90 px wide</li><li>Mono versions in Carbon, Paper or Re Green only</li></ul></div>
-        <div class="dont"><ul><li>No gradients inside the logo, no 3D, no outline-only versions</li><li>No glow on light grounds; no glow on the "PAPER" half</li><li>Never lower-case or condensed wordmark</li><li>Don't put the wordmark on photos without a carbon panel behind it</li></ul></div>
+        <div class="dont"><ul><li>No gradients inside the logo, no 3D, no outline-only versions</li><li>No glow, shadow or halo on the wordmark or mark — anywhere</li><li>Never lower-case or condensed wordmark</li><li>Don't put the wordmark on photos without a carbon panel behind it</li></ul></div>
       </div>
     </section>
 
@@ -326,7 +325,7 @@
         <div class="pair" style="background:#FFFFFF;color:#1EE3A5;border-color:#D6DAD6">Re Glow on White<span class="ratio">1.7 : 1 · never for text</span></div>
       </div>
       <div class="rule" style="margin-top:var(--s-5)">
-        <div class="do"><ul><li>Primary button = Re Green fill + Carbon/Ink text, on both grounds</li><li>Glow (box-shadow, text-shadow) only on screens showing carbon, only on the one primary element and on LED renders</li><li>In print: Re Green is a flat spot colour on black — the "printed glow" is a 1-bit dither fade</li><li>One accent per screen; Carbon, Mist and Paper do the rest</li><li>Charts: Re 200/400/700 + Mist</li></ul></div>
+        <div class="do"><ul><li>Primary button = Re Green fill + Carbon/Ink text, on both grounds</li><li>Glow (box-shadow) only on screens showing carbon, only on the primary button and on LED renders — never on type or the logo</li><li>In print: Re Green is a flat spot colour on black — the "printed glow" is a 1-bit dither fade</li><li>One accent per screen; Carbon, Mist and Paper do the rest</li><li>Charts: Re 200/400/700 + Mist</li></ul></div>
         <div class="dont"><ul><li>No gradients as fills — a radial glow behind the on-screen hero is the single exception</li><li>No glow in print, ever: no halos, no soft edges, no gradients on fabric or paper</li><li>No Re Glow text on light grounds (fails contrast badly)</li><li>No second accent, no orange, no purple</li><li>Don't use Re Green to mean "success" and as decoration on the same screen</li></ul></div>
       </div>
       <h3>On-sheet palette</h3>
@@ -377,7 +376,7 @@
       <p class="lede">The pieces every RePaper UI is built from. Switch your OS theme to see them in Paper mode — same tokens.</p>
       <h4>Buttons</h4>
       <div class="demo"><div class="row"><button class="btn btn-primary">Print to this sheet</button><button class="btn btn-secondary">Choose another sheet</button><button class="btn btn-ghost">Skip</button><button class="btn btn-danger">Cancel job</button><button class="btn btn-primary" disabled>Printing…</button></div></div>
-      <p class="small muted">One primary per view; it's the only thing that glows. Labels are verbs.</p>
+      <p class="small muted">One primary per view; on carbon it's the only thing on the screen that glows. Labels are verbs.</p>
       <h4>Inputs</h4>
       <div class="demo"><div class="field"><label for="pn">Printer name</label><input id="pn" value="Warehouse A – RePaper"><div class="hint">This is what people see in their print dialog.</div></div></div>
       <h4>Job states</h4>

@@ -16,7 +16,7 @@ Source of truth for how RePaper looks, sounds and behaves: the Go app, the Dock'
 2. **Feel:** modern hardware start-up. One luminous colour on carbon, confident type, soft shapes, no noise.
 3. **Ground:** Carbon `#0C100F` is home (surfaces `#151A18` / `#1C2320`, borders `#273029`, text Paper `#EFF1EE`). Paper mode (`#EFF1EE` / `#FAFBF9` / Ink `#131614`) for docs, print, and as an app option.
 4. **Accent:** Re Green. `#1EE3A5` "Glow" on dark (fills, text, LED, merch); `#14C48E` fills and `#0B7259` text on light. Nothing else is ever a brand colour — no orange, no purple.
-5. **Primary button = Re Green fill + Carbon/Ink text.** On carbon it's the only element that glows. **Glow is light, never ink** — screens and real light sources only, never print.
+5. **Primary button = Re Green fill + Carbon/Ink text.** On carbon it's the only element that glows. **The wordmark and mark never glow** — flat colour everywhere. Glow is light, never ink: buttons on screen and real light sources only, never type, never print.
 6. **Functional:** Label Red, Amber, Signal Blue — dark/light variants in the tokens; they only ever mean their state.
 7. **Type:** Archivo (wordmark at width 125 caps, headings at width 100), Figtree body/UI, JetBrains Mono for IDs. 4 px grid, base 16 px.
 8. **Shape:** radius 4 (sheets) / 8 (controls) / 16 (cards) / 28 (device) / pill (tags). Hairline borders; depth from light, not from grey.
