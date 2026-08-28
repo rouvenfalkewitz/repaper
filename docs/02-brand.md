@@ -35,11 +35,11 @@ Sheet sizes use paper analogies in customer-facing copy: *Sheet Label* (2.9"), *
 
 ## Logo
 
-Being generated with an AI tool from `brand/logo/prompt-logo.md` (pipeline in `brand/logo/README.md`); direction: a sheet whose folded corner becomes a return arrow, drawn in the same blocky geometry as the wordmark. Until then the typographic wordmark (REPAPER in Archivo Extra-Bold wide caps, "RE" in Re Green) is the logo.
+The light ring around RE, followed by PAPER — the Dock's ring carrying the brand colour, the letters in Paper or Ink. Generated from the Archivo font by `brand/logo/build.py`; masters in `brand/logo/svg/`, every icon/social/print/hardware file in `brand/logo/export/`. Rules, sizes and colour variants are in `brand/guidelines.html` (Identity) and `brand/logo/README.md`.
 
 ## Look, in one line
 
-Dark-first: Carbon `#0C100F` ground, one luminous Re Green `#1EE3A5`, wide caps wordmark, soft 8/16 px corners, 1-bit dither as texture. Paper (light) mode for docs and as an app option. Full system in `brand/`.
+Dark-first: Carbon `#0C100F` ground, one luminous Re Green `#1EE3A5` (the ring), wide caps wordmark, soft 8/16 px corners, 1-bit dither as texture. Paper (light) mode for docs and as an app option. Full system in `brand/`.
 
 ## Domains / handles (to check)
 

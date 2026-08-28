@@ -1,0 +1,488 @@
+{
+  "font": {
+    "family": "Archivo",
+    "wdth": 125,
+    "wght": 800,
+    "tracking_em": -0.03,
+    "unitsPerEm": 1000,
+    "capHeight": 686
+  },
+  "ring": {
+    "stroke": 203.6,
+    "stroke_over_cap": 0.2968,
+    "inner_radius": 965.7,
+    "outer_radius": 1169.3,
+    "outer_diameter_over_cap": 3.409,
+    "clearance_over_cap": 0.12,
+    "centre": "x = centre of the RE bounding box, y = cap height / 2"
+  },
+  "lockup": {
+    "gap_ring_to_P_over_cap": 0.22,
+    "width": 6629.1,
+    "height": 2338.6,
+    "aspect": 2.8347,
+    "baseline_from_top_over_height": 0.6467
+  },
+  "stacked": {
+    "gap_over_cap": 0.22
+  },
+  "clear_space_over_cap": 1.0,
+  "minimum_sizes_px": {
+    "lockup_cap_height": 24,
+    "lockup_height": 82,
+    "mark": 24,
+    "ring_only": 16
+  },
+  "files": {
+    "lockup-on-carbon.svg": {
+      "composition": "lockup",
+      "variant": "on-carbon",
+      "width": 8001.1,
+      "height": 3710.6,
+      "background": "#0C100F",
+      "ring": "#1EE3A5",
+      "letters": "#EFF1EE"
+    },
+    "lockup-on-paper.svg": {
+      "composition": "lockup",
+      "variant": "on-paper",
+      "width": 8001.1,
+      "height": 3710.6,
+      "background": "#EFF1EE",
+      "ring": "#14C48E",
+      "letters": "#131614"
+    },
+    "lockup-dark.svg": {
+      "composition": "lockup",
+      "variant": "dark",
+      "width": 6629.1,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#1EE3A5",
+      "letters": "#EFF1EE"
+    },
+    "lockup-light.svg": {
+      "composition": "lockup",
+      "variant": "light",
+      "width": 6629.1,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#14C48E",
+      "letters": "#131614"
+    },
+    "lockup-mono-re400.svg": {
+      "composition": "lockup",
+      "variant": "mono-re400",
+      "width": 6629.1,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#1EE3A5",
+      "letters": "#1EE3A5"
+    },
+    "lockup-mono-re500.svg": {
+      "composition": "lockup",
+      "variant": "mono-re500",
+      "width": 6629.1,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#14C48E",
+      "letters": "#14C48E"
+    },
+    "lockup-mono-paper.svg": {
+      "composition": "lockup",
+      "variant": "mono-paper",
+      "width": 6629.1,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#EFF1EE",
+      "letters": "#EFF1EE"
+    },
+    "lockup-mono-ink.svg": {
+      "composition": "lockup",
+      "variant": "mono-ink",
+      "width": 6629.1,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#131614",
+      "letters": "#131614"
+    },
+    "lockup-mono-black.svg": {
+      "composition": "lockup",
+      "variant": "mono-black",
+      "width": 6629.1,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#000000",
+      "letters": "#000000"
+    },
+    "lockup-mono-white.svg": {
+      "composition": "lockup",
+      "variant": "mono-white",
+      "width": 6629.1,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#FFFFFF",
+      "letters": "#FFFFFF"
+    },
+    "stacked-on-carbon.svg": {
+      "composition": "stacked",
+      "variant": "on-carbon",
+      "width": 5511.6,
+      "height": 4547.5,
+      "background": "#0C100F",
+      "ring": "#1EE3A5",
+      "letters": "#EFF1EE"
+    },
+    "stacked-on-paper.svg": {
+      "composition": "stacked",
+      "variant": "on-paper",
+      "width": 5511.6,
+      "height": 4547.5,
+      "background": "#EFF1EE",
+      "ring": "#14C48E",
+      "letters": "#131614"
+    },
+    "stacked-dark.svg": {
+      "composition": "stacked",
+      "variant": "dark",
+      "width": 4139.6,
+      "height": 3175.5,
+      "background": null,
+      "ring": "#1EE3A5",
+      "letters": "#EFF1EE"
+    },
+    "stacked-light.svg": {
+      "composition": "stacked",
+      "variant": "light",
+      "width": 4139.6,
+      "height": 3175.5,
+      "background": null,
+      "ring": "#14C48E",
+      "letters": "#131614"
+    },
+    "stacked-mono-re400.svg": {
+      "composition": "stacked",
+      "variant": "mono-re400",
+      "width": 4139.6,
+      "height": 3175.5,
+      "background": null,
+      "ring": "#1EE3A5",
+      "letters": "#1EE3A5"
+    },
+    "stacked-mono-re500.svg": {
+      "composition": "stacked",
+      "variant": "mono-re500",
+      "width": 4139.6,
+      "height": 3175.5,
+      "background": null,
+      "ring": "#14C48E",
+      "letters": "#14C48E"
+    },
+    "stacked-mono-paper.svg": {
+      "composition": "stacked",
+      "variant": "mono-paper",
+      "width": 4139.6,
+      "height": 3175.5,
+      "background": null,
+      "ring": "#EFF1EE",
+      "letters": "#EFF1EE"
+    },
+    "stacked-mono-ink.svg": {
+      "composition": "stacked",
+      "variant": "mono-ink",
+      "width": 4139.6,
+      "height": 3175.5,
+      "background": null,
+      "ring": "#131614",
+      "letters": "#131614"
+    },
+    "stacked-mono-black.svg": {
+      "composition": "stacked",
+      "variant": "mono-black",
+      "width": 4139.6,
+      "height": 3175.5,
+      "background": null,
+      "ring": "#000000",
+      "letters": "#000000"
+    },
+    "stacked-mono-white.svg": {
+      "composition": "stacked",
+      "variant": "mono-white",
+      "width": 4139.6,
+      "height": 3175.5,
+      "background": null,
+      "ring": "#FFFFFF",
+      "letters": "#FFFFFF"
+    },
+    "mark-on-carbon.svg": {
+      "composition": "mark",
+      "variant": "on-carbon",
+      "width": 3710.6,
+      "height": 3710.6,
+      "background": "#0C100F",
+      "ring": "#1EE3A5",
+      "letters": "#EFF1EE"
+    },
+    "mark-on-paper.svg": {
+      "composition": "mark",
+      "variant": "on-paper",
+      "width": 3710.6,
+      "height": 3710.6,
+      "background": "#EFF1EE",
+      "ring": "#14C48E",
+      "letters": "#131614"
+    },
+    "mark-dark.svg": {
+      "composition": "mark",
+      "variant": "dark",
+      "width": 2338.6,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#1EE3A5",
+      "letters": "#EFF1EE"
+    },
+    "mark-light.svg": {
+      "composition": "mark",
+      "variant": "light",
+      "width": 2338.6,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#14C48E",
+      "letters": "#131614"
+    },
+    "mark-mono-re400.svg": {
+      "composition": "mark",
+      "variant": "mono-re400",
+      "width": 2338.6,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#1EE3A5",
+      "letters": "#1EE3A5"
+    },
+    "mark-mono-re500.svg": {
+      "composition": "mark",
+      "variant": "mono-re500",
+      "width": 2338.6,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#14C48E",
+      "letters": "#14C48E"
+    },
+    "mark-mono-paper.svg": {
+      "composition": "mark",
+      "variant": "mono-paper",
+      "width": 2338.6,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#EFF1EE",
+      "letters": "#EFF1EE"
+    },
+    "mark-mono-ink.svg": {
+      "composition": "mark",
+      "variant": "mono-ink",
+      "width": 2338.6,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#131614",
+      "letters": "#131614"
+    },
+    "mark-mono-black.svg": {
+      "composition": "mark",
+      "variant": "mono-black",
+      "width": 2338.6,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#000000",
+      "letters": "#000000"
+    },
+    "mark-mono-white.svg": {
+      "composition": "mark",
+      "variant": "mono-white",
+      "width": 2338.6,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#FFFFFF",
+      "letters": "#FFFFFF"
+    },
+    "ring-on-carbon.svg": {
+      "composition": "ring",
+      "variant": "on-carbon",
+      "width": 3710.6,
+      "height": 3710.6,
+      "background": "#0C100F",
+      "ring": "#1EE3A5",
+      "letters": "#EFF1EE"
+    },
+    "ring-on-paper.svg": {
+      "composition": "ring",
+      "variant": "on-paper",
+      "width": 3710.6,
+      "height": 3710.6,
+      "background": "#EFF1EE",
+      "ring": "#14C48E",
+      "letters": "#131614"
+    },
+    "ring-dark.svg": {
+      "composition": "ring",
+      "variant": "dark",
+      "width": 2338.6,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#1EE3A5",
+      "letters": "#EFF1EE"
+    },
+    "ring-light.svg": {
+      "composition": "ring",
+      "variant": "light",
+      "width": 2338.6,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#14C48E",
+      "letters": "#131614"
+    },
+    "ring-mono-re400.svg": {
+      "composition": "ring",
+      "variant": "mono-re400",
+      "width": 2338.6,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#1EE3A5",
+      "letters": "#1EE3A5"
+    },
+    "ring-mono-re500.svg": {
+      "composition": "ring",
+      "variant": "mono-re500",
+      "width": 2338.6,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#14C48E",
+      "letters": "#14C48E"
+    },
+    "ring-mono-paper.svg": {
+      "composition": "ring",
+      "variant": "mono-paper",
+      "width": 2338.6,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#EFF1EE",
+      "letters": "#EFF1EE"
+    },
+    "ring-mono-ink.svg": {
+      "composition": "ring",
+      "variant": "mono-ink",
+      "width": 2338.6,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#131614",
+      "letters": "#131614"
+    },
+    "ring-mono-black.svg": {
+      "composition": "ring",
+      "variant": "mono-black",
+      "width": 2338.6,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#000000",
+      "letters": "#000000"
+    },
+    "ring-mono-white.svg": {
+      "composition": "ring",
+      "variant": "mono-white",
+      "width": 2338.6,
+      "height": 2338.6,
+      "background": null,
+      "ring": "#FFFFFF",
+      "letters": "#FFFFFF"
+    },
+    "wordmark-on-carbon.svg": {
+      "composition": "wordmark",
+      "variant": "on-carbon",
+      "width": 7246.6,
+      "height": 2058.0,
+      "background": "#0C100F",
+      "ring": "#1EE3A5",
+      "letters": "#EFF1EE"
+    },
+    "wordmark-on-paper.svg": {
+      "composition": "wordmark",
+      "variant": "on-paper",
+      "width": 7246.6,
+      "height": 2058.0,
+      "background": "#EFF1EE",
+      "ring": "#14C48E",
+      "letters": "#131614"
+    },
+    "wordmark-dark.svg": {
+      "composition": "wordmark",
+      "variant": "dark",
+      "width": 5874.6,
+      "height": 686.0,
+      "background": null,
+      "ring": "#1EE3A5",
+      "letters": "#EFF1EE"
+    },
+    "wordmark-light.svg": {
+      "composition": "wordmark",
+      "variant": "light",
+      "width": 5874.6,
+      "height": 686.0,
+      "background": null,
+      "ring": "#14C48E",
+      "letters": "#131614"
+    },
+    "wordmark-mono-re400.svg": {
+      "composition": "wordmark",
+      "variant": "mono-re400",
+      "width": 5874.6,
+      "height": 686.0,
+      "background": null,
+      "ring": "#1EE3A5",
+      "letters": "#1EE3A5"
+    },
+    "wordmark-mono-re500.svg": {
+      "composition": "wordmark",
+      "variant": "mono-re500",
+      "width": 5874.6,
+      "height": 686.0,
+      "background": null,
+      "ring": "#14C48E",
+      "letters": "#14C48E"
+    },
+    "wordmark-mono-paper.svg": {
+      "composition": "wordmark",
+      "variant": "mono-paper",
+      "width": 5874.6,
+      "height": 686.0,
+      "background": null,
+      "ring": "#EFF1EE",
+      "letters": "#EFF1EE"
+    },
+    "wordmark-mono-ink.svg": {
+      "composition": "wordmark",
+      "variant": "mono-ink",
+      "width": 5874.6,
+      "height": 686.0,
+      "background": null,
+      "ring": "#131614",
+      "letters": "#131614"
+    },
+    "wordmark-mono-black.svg": {
+      "composition": "wordmark",
+      "variant": "mono-black",
+      "width": 5874.6,
+      "height": 686.0,
+      "background": null,
+      "ring": "#000000",
+      "letters": "#000000"
+    },
+    "wordmark-mono-white.svg": {
+      "composition": "wordmark",
+      "variant": "mono-white",
+      "width": 5874.6,
+      "height": 686.0,
+      "background": null,
+      "ring": "#FFFFFF",
+      "letters": "#FFFFFF"
+    }
+  }
+}

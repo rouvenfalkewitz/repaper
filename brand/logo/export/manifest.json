@@ -1,0 +1,2091 @@
+{
+  "brand": "RePaper",
+  "generated": "2026-08-28",
+  "source": "brand/logo/svg via export.py",
+  "geometry": {
+    "stroke": 203.6,
+    "stroke_over_cap": 0.2968,
+    "inner_radius": 965.7,
+    "outer_radius": 1169.3,
+    "outer_diameter_over_cap": 3.409,
+    "clearance_over_cap": 0.12,
+    "centre": "x = centre of the RE bounding box, y = cap height / 2"
+  },
+  "files": [
+    {
+      "file": "app-icon/android/adaptive/ic_launcher_background.png",
+      "width": 432,
+      "height": 432,
+      "alpha": false,
+      "purpose": "adaptive background"
+    },
+    {
+      "file": "app-icon/android/adaptive/ic_launcher_foreground.png",
+      "width": 432,
+      "height": 432,
+      "alpha": true,
+      "purpose": "adaptive foreground (mark in the 66 dp safe zone)"
+    },
+    {
+      "file": "app-icon/android/adaptive/ic_launcher_monochrome.png",
+      "width": 432,
+      "height": 432,
+      "alpha": true,
+      "purpose": "Android 13 themed-icon layer (alpha only)"
+    },
+    {
+      "file": "app-icon/android/mipmap-anydpi-v26/ic_launcher.xml",
+      "purpose": "adaptive icon XML (also use as ic_launcher_round.xml)"
+    },
+    {
+      "file": "app-icon/android/mipmap-hdpi/ic_launcher.png",
+      "width": 72,
+      "height": 72,
+      "alpha": true,
+      "purpose": "legacy launcher icon"
+    },
+    {
+      "file": "app-icon/android/mipmap-hdpi/ic_launcher_round.png",
+      "width": 72,
+      "height": 72,
+      "alpha": true,
+      "purpose": "legacy round launcher icon"
+    },
+    {
+      "file": "app-icon/android/mipmap-mdpi/ic_launcher.png",
+      "width": 48,
+      "height": 48,
+      "alpha": true,
+      "purpose": "legacy launcher icon"
+    },
+    {
+      "file": "app-icon/android/mipmap-mdpi/ic_launcher_round.png",
+      "width": 48,
+      "height": 48,
+      "alpha": true,
+      "purpose": "legacy round launcher icon"
+    },
+    {
+      "file": "app-icon/android/mipmap-xhdpi/ic_launcher.png",
+      "width": 96,
+      "height": 96,
+      "alpha": true,
+      "purpose": "legacy launcher icon"
+    },
+    {
+      "file": "app-icon/android/mipmap-xhdpi/ic_launcher_round.png",
+      "width": 96,
+      "height": 96,
+      "alpha": true,
+      "purpose": "legacy round launcher icon"
+    },
+    {
+      "file": "app-icon/android/mipmap-xxhdpi/ic_launcher.png",
+      "width": 144,
+      "height": 144,
+      "alpha": true,
+      "purpose": "legacy launcher icon"
+    },
+    {
+      "file": "app-icon/android/mipmap-xxhdpi/ic_launcher_round.png",
+      "width": 144,
+      "height": 144,
+      "alpha": true,
+      "purpose": "legacy round launcher icon"
+    },
+    {
+      "file": "app-icon/android/mipmap-xxxhdpi/ic_launcher.png",
+      "width": 192,
+      "height": 192,
+      "alpha": true,
+      "purpose": "legacy launcher icon"
+    },
+    {
+      "file": "app-icon/android/mipmap-xxxhdpi/ic_launcher_round.png",
+      "width": 192,
+      "height": 192,
+      "alpha": true,
+      "purpose": "legacy round launcher icon"
+    },
+    {
+      "file": "app-icon/android/play-store-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": false,
+      "purpose": "Play Store listing icon (no alpha)"
+    },
+    {
+      "file": "app-icon/android/values/ic_launcher_background.xml",
+      "purpose": "adaptive background colour resource"
+    },
+    {
+      "file": "app-icon/ios/AppIcon-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": false,
+      "purpose": "App Store marketing icon (no alpha)"
+    },
+    {
+      "file": "app-icon/ios/AppIcon.appiconset/AppIcon-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": false,
+      "purpose": "iOS app icon (no alpha)"
+    },
+    {
+      "file": "app-icon/ios/AppIcon.appiconset/AppIcon-dark-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "iOS 18 dark appearance (system supplies the dark background)"
+    },
+    {
+      "file": "app-icon/ios/AppIcon.appiconset/AppIcon-tinted-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "iOS 18 tinted appearance (greyscale mask)"
+    },
+    {
+      "file": "app-icon/ios/AppIcon.appiconset/Contents.json",
+      "purpose": "Xcode asset catalog"
+    },
+    {
+      "file": "app-icon/macos/AppIcon.icns",
+      "purpose": "macOS app icon"
+    },
+    {
+      "file": "app-icon/macos/AppIcon.iconset/icon_128x128.png",
+      "width": 128,
+      "height": 128,
+      "alpha": true,
+      "purpose": "macOS iconset"
+    },
+    {
+      "file": "app-icon/macos/AppIcon.iconset/icon_128x128@2x.png",
+      "width": 256,
+      "height": 256,
+      "alpha": true,
+      "purpose": "macOS iconset"
+    },
+    {
+      "file": "app-icon/macos/AppIcon.iconset/icon_16x16.png",
+      "width": 16,
+      "height": 16,
+      "alpha": true,
+      "purpose": "macOS iconset"
+    },
+    {
+      "file": "app-icon/macos/AppIcon.iconset/icon_16x16@2x.png",
+      "width": 32,
+      "height": 32,
+      "alpha": true,
+      "purpose": "macOS iconset"
+    },
+    {
+      "file": "app-icon/macos/AppIcon.iconset/icon_256x256.png",
+      "width": 256,
+      "height": 256,
+      "alpha": true,
+      "purpose": "macOS iconset"
+    },
+    {
+      "file": "app-icon/macos/AppIcon.iconset/icon_256x256@2x.png",
+      "width": 512,
+      "height": 512,
+      "alpha": true,
+      "purpose": "macOS iconset"
+    },
+    {
+      "file": "app-icon/macos/AppIcon.iconset/icon_32x32.png",
+      "width": 32,
+      "height": 32,
+      "alpha": true,
+      "purpose": "macOS iconset"
+    },
+    {
+      "file": "app-icon/macos/AppIcon.iconset/icon_32x32@2x.png",
+      "width": 64,
+      "height": 64,
+      "alpha": true,
+      "purpose": "macOS iconset"
+    },
+    {
+      "file": "app-icon/macos/AppIcon.iconset/icon_512x512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": true,
+      "purpose": "macOS iconset"
+    },
+    {
+      "file": "app-icon/macos/AppIcon.iconset/icon_512x512@2x.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "macOS iconset"
+    },
+    {
+      "file": "app-icon/windows/Square150x150Logo.png",
+      "width": 150,
+      "height": 150,
+      "alpha": true,
+      "purpose": "Windows tile"
+    },
+    {
+      "file": "app-icon/windows/Square44x44Logo.png",
+      "width": 44,
+      "height": 44,
+      "alpha": true,
+      "purpose": "Windows tile"
+    },
+    {
+      "file": "app-icon/windows/StoreLogo.png",
+      "width": 50,
+      "height": 50,
+      "alpha": true,
+      "purpose": "Windows Store logo"
+    },
+    {
+      "file": "app-icon/windows/Wide310x150Logo.png",
+      "width": 310,
+      "height": 150,
+      "alpha": true,
+      "purpose": "Windows wide tile"
+    },
+    {
+      "file": "app-icon/windows/app.ico",
+      "purpose": "Windows app icon, 16\u2013256 layers"
+    },
+    {
+      "file": "contact-sheet.png",
+      "width": 1400,
+      "height": 560,
+      "alpha": false,
+      "purpose": "quick visual check"
+    },
+    {
+      "file": "favicon/android-chrome-192.png",
+      "width": 192,
+      "height": 192,
+      "alpha": false,
+      "purpose": "PWA / Android Chrome"
+    },
+    {
+      "file": "favicon/android-chrome-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": false,
+      "purpose": "PWA / Android Chrome"
+    },
+    {
+      "file": "favicon/apple-touch-icon.png",
+      "width": 180,
+      "height": 180,
+      "alpha": false,
+      "purpose": "iOS home-screen bookmark (iOS rounds it)"
+    },
+    {
+      "file": "favicon/favicon-16.png",
+      "width": 16,
+      "height": 16,
+      "alpha": true,
+      "purpose": "favicon"
+    },
+    {
+      "file": "favicon/favicon-32.png",
+      "width": 32,
+      "height": 32,
+      "alpha": true,
+      "purpose": "favicon"
+    },
+    {
+      "file": "favicon/favicon-48.png",
+      "width": 48,
+      "height": 48,
+      "alpha": true,
+      "purpose": "favicon"
+    },
+    {
+      "file": "favicon/favicon.ico",
+      "purpose": "favicon, 16/32/48 layers"
+    },
+    {
+      "file": "favicon/favicon.svg",
+      "purpose": "SVG favicon \u2014 the ring on carbon"
+    },
+    {
+      "file": "favicon/head.html",
+      "purpose": "paste into <head>"
+    },
+    {
+      "file": "favicon/maskable-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": false,
+      "purpose": "PWA maskable (mark inside the 80 % safe zone)"
+    },
+    {
+      "file": "favicon/site.webmanifest",
+      "purpose": "web app manifest"
+    },
+    {
+      "file": "hardware/mark-1bit/mark-128-inv.png",
+      "width": 128,
+      "height": 128,
+      "alpha": false,
+      "purpose": "1-bit white on black"
+    },
+    {
+      "file": "hardware/mark-1bit/mark-128.png",
+      "width": 128,
+      "height": 128,
+      "alpha": false,
+      "purpose": "1-bit black on white, for e-paper rendering"
+    },
+    {
+      "file": "hardware/mark-1bit/mark-256-inv.png",
+      "width": 256,
+      "height": 256,
+      "alpha": false,
+      "purpose": "1-bit white on black"
+    },
+    {
+      "file": "hardware/mark-1bit/mark-256.png",
+      "width": 256,
+      "height": 256,
+      "alpha": false,
+      "purpose": "1-bit black on white, for e-paper rendering"
+    },
+    {
+      "file": "hardware/mark-1bit/mark-32-inv.png",
+      "width": 32,
+      "height": 32,
+      "alpha": false,
+      "purpose": "1-bit white on black"
+    },
+    {
+      "file": "hardware/mark-1bit/mark-32.png",
+      "width": 32,
+      "height": 32,
+      "alpha": false,
+      "purpose": "1-bit black on white, for e-paper rendering"
+    },
+    {
+      "file": "hardware/mark-1bit/mark-64-inv.png",
+      "width": 64,
+      "height": 64,
+      "alpha": false,
+      "purpose": "1-bit white on black"
+    },
+    {
+      "file": "hardware/mark-1bit/mark-64.png",
+      "width": 64,
+      "height": 64,
+      "alpha": false,
+      "purpose": "1-bit black on white, for e-paper rendering"
+    },
+    {
+      "file": "hardware/mark-outline-24mm.dxf",
+      "purpose": "DXF polylines, 1 unit = 1 mm, ring \u00d8 24 mm, origin at ring centre"
+    },
+    {
+      "file": "hardware/mark-outline.svg",
+      "purpose": "single-colour outline for emboss / laser / diffuser masks"
+    },
+    {
+      "file": "png/lockup-dark-1024.png",
+      "width": 1024,
+      "height": 362,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-dark-2048.png",
+      "width": 2047,
+      "height": 722,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-dark-256.png",
+      "width": 256,
+      "height": 91,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-dark-512.png",
+      "width": 512,
+      "height": 181,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-light-1024.png",
+      "width": 1024,
+      "height": 362,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-light-2048.png",
+      "width": 2047,
+      "height": 722,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-light-256.png",
+      "width": 256,
+      "height": 91,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-light-512.png",
+      "width": 512,
+      "height": 181,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-black-1024.png",
+      "width": 1024,
+      "height": 362,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-black-2048.png",
+      "width": 2047,
+      "height": 722,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-black-256.png",
+      "width": 256,
+      "height": 91,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-black-512.png",
+      "width": 512,
+      "height": 181,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-ink-1024.png",
+      "width": 1024,
+      "height": 362,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-ink-2048.png",
+      "width": 2047,
+      "height": 722,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-ink-256.png",
+      "width": 256,
+      "height": 91,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-ink-512.png",
+      "width": 512,
+      "height": 181,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-paper-1024.png",
+      "width": 1024,
+      "height": 362,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-paper-2048.png",
+      "width": 2047,
+      "height": 722,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-paper-256.png",
+      "width": 256,
+      "height": 91,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-paper-512.png",
+      "width": 512,
+      "height": 181,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-re400-1024.png",
+      "width": 1024,
+      "height": 362,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-re400-2048.png",
+      "width": 2047,
+      "height": 722,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-re400-256.png",
+      "width": 256,
+      "height": 91,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-re400-512.png",
+      "width": 512,
+      "height": 181,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-re500-1024.png",
+      "width": 1024,
+      "height": 362,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-re500-2048.png",
+      "width": 2047,
+      "height": 722,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-re500-256.png",
+      "width": 256,
+      "height": 91,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-re500-512.png",
+      "width": 512,
+      "height": 181,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-white-1024.png",
+      "width": 1024,
+      "height": 362,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-white-2048.png",
+      "width": 2047,
+      "height": 722,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-white-256.png",
+      "width": 256,
+      "height": 91,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-mono-white-512.png",
+      "width": 512,
+      "height": 181,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-on-carbon-1024.png",
+      "width": 1024,
+      "height": 475,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-on-carbon-2048.png",
+      "width": 2048,
+      "height": 950,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-on-carbon-256.png",
+      "width": 256,
+      "height": 119,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-on-carbon-512.png",
+      "width": 511,
+      "height": 237,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-on-paper-1024.png",
+      "width": 1024,
+      "height": 475,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-on-paper-2048.png",
+      "width": 2048,
+      "height": 950,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-on-paper-256.png",
+      "width": 256,
+      "height": 119,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/lockup-on-paper-512.png",
+      "width": 511,
+      "height": 237,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-dark-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-dark-2048.png",
+      "width": 2048,
+      "height": 2048,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-dark-256.png",
+      "width": 256,
+      "height": 256,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-dark-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-light-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-light-2048.png",
+      "width": 2048,
+      "height": 2048,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-light-256.png",
+      "width": 256,
+      "height": 256,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-light-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-black-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-black-2048.png",
+      "width": 2048,
+      "height": 2048,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-black-256.png",
+      "width": 256,
+      "height": 256,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-black-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-ink-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-ink-2048.png",
+      "width": 2048,
+      "height": 2048,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-ink-256.png",
+      "width": 256,
+      "height": 256,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-ink-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-paper-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-paper-2048.png",
+      "width": 2048,
+      "height": 2048,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-paper-256.png",
+      "width": 256,
+      "height": 256,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-paper-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-re400-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-re400-2048.png",
+      "width": 2048,
+      "height": 2048,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-re400-256.png",
+      "width": 256,
+      "height": 256,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-re400-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-re500-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-re500-2048.png",
+      "width": 2048,
+      "height": 2048,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-re500-256.png",
+      "width": 256,
+      "height": 256,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-re500-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-white-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-white-2048.png",
+      "width": 2048,
+      "height": 2048,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-white-256.png",
+      "width": 256,
+      "height": 256,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-mono-white-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-on-carbon-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-on-carbon-2048.png",
+      "width": 2048,
+      "height": 2048,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-on-carbon-256.png",
+      "width": 256,
+      "height": 256,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-on-carbon-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-on-paper-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-on-paper-2048.png",
+      "width": 2048,
+      "height": 2048,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-on-paper-256.png",
+      "width": 256,
+      "height": 256,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/mark-on-paper-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-dark-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-dark-2048.png",
+      "width": 2048,
+      "height": 2048,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-dark-256.png",
+      "width": 256,
+      "height": 256,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-dark-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-light-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-light-2048.png",
+      "width": 2048,
+      "height": 2048,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-light-256.png",
+      "width": 256,
+      "height": 256,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-light-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-black-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-black-2048.png",
+      "width": 2048,
+      "height": 2048,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-black-256.png",
+      "width": 256,
+      "height": 256,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-black-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-ink-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-ink-2048.png",
+      "width": 2048,
+      "height": 2048,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-ink-256.png",
+      "width": 256,
+      "height": 256,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-ink-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-paper-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-paper-2048.png",
+      "width": 2048,
+      "height": 2048,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-paper-256.png",
+      "width": 256,
+      "height": 256,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-paper-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-re400-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-re400-2048.png",
+      "width": 2048,
+      "height": 2048,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-re400-256.png",
+      "width": 256,
+      "height": 256,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-re400-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-re500-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-re500-2048.png",
+      "width": 2048,
+      "height": 2048,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-re500-256.png",
+      "width": 256,
+      "height": 256,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-re500-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-white-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-white-2048.png",
+      "width": 2048,
+      "height": 2048,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-white-256.png",
+      "width": 256,
+      "height": 256,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-mono-white-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-on-carbon-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-on-carbon-2048.png",
+      "width": 2048,
+      "height": 2048,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-on-carbon-256.png",
+      "width": 256,
+      "height": 256,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-on-carbon-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-on-paper-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-on-paper-2048.png",
+      "width": 2048,
+      "height": 2048,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-on-paper-256.png",
+      "width": 256,
+      "height": 256,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/ring-on-paper-512.png",
+      "width": 512,
+      "height": 512,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-dark-1024.png",
+      "width": 1024,
+      "height": 786,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-dark-2048.png",
+      "width": 2048,
+      "height": 1572,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-dark-256.png",
+      "width": 256,
+      "height": 197,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-dark-512.png",
+      "width": 512,
+      "height": 393,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-light-1024.png",
+      "width": 1024,
+      "height": 786,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-light-2048.png",
+      "width": 2048,
+      "height": 1572,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-light-256.png",
+      "width": 256,
+      "height": 197,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-light-512.png",
+      "width": 512,
+      "height": 393,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-black-1024.png",
+      "width": 1024,
+      "height": 786,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-black-2048.png",
+      "width": 2048,
+      "height": 1572,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-black-256.png",
+      "width": 256,
+      "height": 197,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-black-512.png",
+      "width": 512,
+      "height": 393,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-ink-1024.png",
+      "width": 1024,
+      "height": 786,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-ink-2048.png",
+      "width": 2048,
+      "height": 1572,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-ink-256.png",
+      "width": 256,
+      "height": 197,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-ink-512.png",
+      "width": 512,
+      "height": 393,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-paper-1024.png",
+      "width": 1024,
+      "height": 786,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-paper-2048.png",
+      "width": 2048,
+      "height": 1572,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-paper-256.png",
+      "width": 256,
+      "height": 197,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-paper-512.png",
+      "width": 512,
+      "height": 393,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-re400-1024.png",
+      "width": 1024,
+      "height": 786,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-re400-2048.png",
+      "width": 2048,
+      "height": 1572,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-re400-256.png",
+      "width": 256,
+      "height": 197,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-re400-512.png",
+      "width": 512,
+      "height": 393,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-re500-1024.png",
+      "width": 1024,
+      "height": 786,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-re500-2048.png",
+      "width": 2048,
+      "height": 1572,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-re500-256.png",
+      "width": 256,
+      "height": 197,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-re500-512.png",
+      "width": 512,
+      "height": 393,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-white-1024.png",
+      "width": 1024,
+      "height": 786,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-white-2048.png",
+      "width": 2048,
+      "height": 1572,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-white-256.png",
+      "width": 256,
+      "height": 197,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-mono-white-512.png",
+      "width": 512,
+      "height": 393,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-on-carbon-1024.png",
+      "width": 1024,
+      "height": 845,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-on-carbon-2048.png",
+      "width": 2048,
+      "height": 1690,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-on-carbon-256.png",
+      "width": 256,
+      "height": 212,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-on-carbon-512.png",
+      "width": 512,
+      "height": 423,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-on-paper-1024.png",
+      "width": 1024,
+      "height": 845,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-on-paper-2048.png",
+      "width": 2048,
+      "height": 1690,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-on-paper-256.png",
+      "width": 256,
+      "height": 212,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/stacked-on-paper-512.png",
+      "width": 512,
+      "height": 423,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-dark-1024.png",
+      "width": 1024,
+      "height": 120,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-dark-2048.png",
+      "width": 2047,
+      "height": 239,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-dark-256.png",
+      "width": 256,
+      "height": 30,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-dark-512.png",
+      "width": 512,
+      "height": 60,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-light-1024.png",
+      "width": 1024,
+      "height": 120,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-light-2048.png",
+      "width": 2047,
+      "height": 239,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-light-256.png",
+      "width": 256,
+      "height": 30,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-light-512.png",
+      "width": 512,
+      "height": 60,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-black-1024.png",
+      "width": 1024,
+      "height": 120,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-black-2048.png",
+      "width": 2047,
+      "height": 239,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-black-256.png",
+      "width": 256,
+      "height": 30,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-black-512.png",
+      "width": 512,
+      "height": 60,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-ink-1024.png",
+      "width": 1024,
+      "height": 120,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-ink-2048.png",
+      "width": 2047,
+      "height": 239,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-ink-256.png",
+      "width": 256,
+      "height": 30,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-ink-512.png",
+      "width": 512,
+      "height": 60,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-paper-1024.png",
+      "width": 1024,
+      "height": 120,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-paper-2048.png",
+      "width": 2047,
+      "height": 239,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-paper-256.png",
+      "width": 256,
+      "height": 30,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-paper-512.png",
+      "width": 512,
+      "height": 60,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-re400-1024.png",
+      "width": 1024,
+      "height": 120,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-re400-2048.png",
+      "width": 2047,
+      "height": 239,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-re400-256.png",
+      "width": 256,
+      "height": 30,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-re400-512.png",
+      "width": 512,
+      "height": 60,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-re500-1024.png",
+      "width": 1024,
+      "height": 120,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-re500-2048.png",
+      "width": 2047,
+      "height": 239,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-re500-256.png",
+      "width": 256,
+      "height": 30,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-re500-512.png",
+      "width": 512,
+      "height": 60,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-white-1024.png",
+      "width": 1024,
+      "height": 120,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-white-2048.png",
+      "width": 2047,
+      "height": 239,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-white-256.png",
+      "width": 256,
+      "height": 30,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-mono-white-512.png",
+      "width": 512,
+      "height": 60,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-on-carbon-1024.png",
+      "width": 1024,
+      "height": 291,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-on-carbon-2048.png",
+      "width": 2048,
+      "height": 582,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-on-carbon-256.png",
+      "width": 256,
+      "height": 73,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-on-carbon-512.png",
+      "width": 511,
+      "height": 145,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-on-paper-1024.png",
+      "width": 1024,
+      "height": 291,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-on-paper-2048.png",
+      "width": 2048,
+      "height": 582,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-on-paper-256.png",
+      "width": 256,
+      "height": 73,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "png/wordmark-on-paper-512.png",
+      "width": 511,
+      "height": 145,
+      "alpha": true,
+      "purpose": "master raster"
+    },
+    {
+      "file": "print/lockup-mono-black-120mm.pdf",
+      "purpose": "vector lockup, black, transparent"
+    },
+    {
+      "file": "print/lockup-on-carbon-120mm.pdf",
+      "purpose": "vector lockup on carbon, 120 mm wide"
+    },
+    {
+      "file": "print/lockup-on-paper-120mm.pdf",
+      "purpose": "vector lockup on paper, 120 mm wide"
+    },
+    {
+      "file": "print/mark-mono-black-40mm.pdf",
+      "purpose": "vector mark, black, transparent"
+    },
+    {
+      "file": "print/sticker-lockup-diecut-80mm.pdf",
+      "purpose": "die-cut lockup sticker on carbon, 80 mm wide, dieline magenta"
+    },
+    {
+      "file": "print/sticker-mark-round-50mm.pdf",
+      "purpose": "round sticker, 50 mm + 3 mm bleed, dieline magenta"
+    },
+    {
+      "file": "social/avatar-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": false,
+      "purpose": "profile avatar (X, LinkedIn, GitHub, YouTube, Slack, Discord, Bluesky)"
+    },
+    {
+      "file": "social/avatar-400.png",
+      "width": 400,
+      "height": 400,
+      "alpha": false,
+      "purpose": "profile avatar (X, LinkedIn, GitHub, YouTube, Slack, Discord, Bluesky)"
+    },
+    {
+      "file": "social/avatar-500.png",
+      "width": 500,
+      "height": 500,
+      "alpha": false,
+      "purpose": "profile avatar (X, LinkedIn, GitHub, YouTube, Slack, Discord, Bluesky)"
+    },
+    {
+      "file": "social/avatar-800.png",
+      "width": 800,
+      "height": 800,
+      "alpha": false,
+      "purpose": "profile avatar (X, LinkedIn, GitHub, YouTube, Slack, Discord, Bluesky)"
+    },
+    {
+      "file": "social/avatar-lockup-stacked-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "alpha": false,
+      "purpose": "avatar with the stacked lockup"
+    },
+    {
+      "file": "social/github-social-preview-1280x640.png",
+      "width": 1280,
+      "height": 640,
+      "alpha": false,
+      "purpose": "GitHub social preview"
+    },
+    {
+      "file": "social/linkedin-banner-1128x191.png",
+      "width": 1128,
+      "height": 191,
+      "alpha": false,
+      "purpose": "LinkedIn page banner"
+    },
+    {
+      "file": "social/og-default-1200x630.png",
+      "width": 1200,
+      "height": 630,
+      "alpha": false,
+      "purpose": "Open Graph / link preview"
+    },
+    {
+      "file": "social/x-header-1500x500.png",
+      "width": 1500,
+      "height": 500,
+      "alpha": false,
+      "purpose": "X header"
+    },
+    {
+      "file": "social/youtube-banner-2560x1440.png",
+      "width": 2560,
+      "height": 1440,
+      "alpha": false,
+      "purpose": "YouTube banner (lockup inside the 1546\u00d7423 safe area)"
+    },
+    {
+      "file": "svg/lockup-dark.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/lockup-light.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/lockup-mono-black.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/lockup-mono-ink.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/lockup-mono-paper.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/lockup-mono-re400.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/lockup-mono-re500.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/lockup-mono-white.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/lockup-on-carbon.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/lockup-on-paper.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/mark-dark.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/mark-light.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/mark-mono-black.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/mark-mono-ink.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/mark-mono-paper.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/mark-mono-re400.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/mark-mono-re500.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/mark-mono-white.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/mark-on-carbon.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/mark-on-paper.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/ring-dark.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/ring-light.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/ring-mono-black.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/ring-mono-ink.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/ring-mono-paper.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/ring-mono-re400.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/ring-mono-re500.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/ring-mono-white.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/ring-on-carbon.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/ring-on-paper.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/stacked-dark.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/stacked-light.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/stacked-mono-black.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/stacked-mono-ink.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/stacked-mono-paper.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/stacked-mono-re400.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/stacked-mono-re500.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/stacked-mono-white.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/stacked-on-carbon.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/stacked-on-paper.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/wordmark-dark.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/wordmark-light.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/wordmark-mono-black.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/wordmark-mono-ink.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/wordmark-mono-paper.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/wordmark-mono-re400.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/wordmark-mono-re500.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/wordmark-mono-white.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/wordmark-on-carbon.svg",
+      "purpose": "master vector"
+    },
+    {
+      "file": "svg/wordmark-on-paper.svg",
+      "purpose": "master vector"
+    }
+  ],
+  "problems": []
+}
