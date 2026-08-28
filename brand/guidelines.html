@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>RePaper Brand Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    /* ── Core neutrals (light) ───────────────────────── */
+    --paper: #EFF1EE;      /* page ground: e-paper panel grey */
+    --sheet: #FAFBF9;      /* raised surfaces, cards, inputs */
+    --ink: #131614;        /* primary text, primary fills */
+    --graphite: #454B47;   /* secondary text */
+    --ash: #8B928E;        /* tertiary text, placeholders */
+    --line: #D6DAD6;       /* hairlines, borders */
+    --line-strong: #B9BFBA;
+    /* ── Accent: Re Green ────────────────────────────── */
+    --re-100: #DCF3EA;
+    --re-300: #7DDBBF;
+    --re-500: #14A37F;     /* fills, LED "ready/success", icons */
+    --re-600: #0F8A6B;     /* hover fills */
+    --re-700: #0B7259;     /* text & links on light */
+    --re-text: var(--re-700);
+    /* ── Functional ──────────────────────────────────── */
+    --red-500: #D6402F;    /* error, "urgent", BWR red */
+    --red-100: #FBE3DF;
+    --amber-500: #E0A21B;
+    --amber-700: #8F6100;
+    --amber-100: #FCEFD0;
+    --blue-500: #2A62D6;
+    --blue-100: #DEE7FA;
+    /* ── Derived ─────────────────────────────────────── */
+    --text: var(--ink);
+    --text-2: var(--graphite);
+    --text-3: var(--ash);
+    --bg: var(--paper);
+    --surface: var(--sheet);
+    --border: var(--line);
+    --on-accent: var(--ink);
+    --code-bg: #E4E7E3;
+    /* ── Type ────────────────────────────────────────── */
+    --font-display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+    --font-body: "Figtree", "Segoe UI", Helvetica, Arial, sans-serif;
+    --font-mono: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+    /* ── Radius / spacing ────────────────────────────── */
+    --r-control: 6px;
+    --r-card: 12px;
+    --r-sheet: 4px;
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px;
+    --ease-out: cubic-bezier(.2,.7,.2,1);
+    --dur-fast: 150ms; --dur-base: 220ms; --dur-slow: 400ms;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #131614; --surface: #1C201D; --border: #2E3430; --line-strong: #414843;
+      --text: #EFF1EE; --text-2: #B9BFBA; --text-3: #7E857F;
+      --re-text: #2FCB9F; --on-accent: #131614; --code-bg: #0E100F;
+      --re-100: #163A30; --red-100: #3E1D18; --amber-100: #3B2E10; --blue-100: #1A2A4D;
+      --amber-700: #F2B84B;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #131614; --surface: #1C201D; --border: #2E3430; --line-strong: #414843;
+    --text: #EFF1EE; --text-2: #B9BFBA; --text-3: #7E857F;
+    --re-text: #2FCB9F; --on-accent: #131614; --code-bg: #0E100F;
+    --re-100: #163A30; --red-100: #3E1D18; --amber-100: #3B2E10; --blue-100: #1A2A4D;
+    --amber-700: #F2B84B;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--font-body); font-size: 16px; line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
+  a { color: var(--re-text); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--re-500); outline-offset: 2px; }
+  h1, h2, h3, h4 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.1; letter-spacing: -0.01em; }
+  h2 { font-size: 2rem; font-weight: 700; margin-bottom: var(--s-3); }
+  h3 { font-size: 1.25rem; font-weight: 600; margin: var(--s-6) 0 var(--s-3); }
+  h4 { font-family: var(--font-body); font-size: .8125rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--text-2); margin: var(--s-5) 0 var(--s-2); }
+  p { margin: 0 0 var(--s-3); max-width: 64ch; }
+  .lede { font-size: 1.125rem; color: var(--text-2); max-width: 58ch; }
+  code, kbd { font-family: var(--font-mono); font-size: .875em; background: var(--code-bg); padding: .1em .35em; border-radius: 4px; }
+  pre { font-family: var(--font-mono); font-size: .8125rem; line-height: 1.5; background: var(--code-bg); padding: var(--s-4); border-radius: var(--r-card); overflow-x: auto; margin: 0; }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  table { border-collapse: collapse; width: 100%; font-size: .9375rem; }
+  th, td { text-align: left; padding: var(--s-2) var(--s-3); border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--text-2); font-weight: 600; }
+  td { font-variant-numeric: tabular-nums; }
+  .table-wrap { overflow-x: auto; }
+  .muted { color: var(--text-2); }
+  .small { font-size: .875rem; }
+  .mono { font-family: var(--font-mono); font-size: .8125rem; }
+
+  /* ── Page frame ───────────────────────────────────── */
+  .frame { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: var(--s-8); max-width: 1180px; margin: 0 auto; padding: 0 var(--s-5) var(--s-9); }
+  nav.toc { position: sticky; top: 0; align-self: start; padding-top: var(--s-6); max-height: 100vh; overflow-y: auto; }
+  nav.toc .mark { font-family: var(--font-display); font-weight: 700; font-size: 1.125rem; margin-bottom: var(--s-5); display: block; text-decoration: none; color: var(--text); }
+  nav.toc .mark span { color: var(--re-text); }
+  nav.toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+  nav.toc a { display: block; padding: 6px 10px; border-radius: var(--r-control); text-decoration: none; color: var(--text-2); font-size: .9375rem; }
+  nav.toc a:hover { background: var(--surface); color: var(--text); }
+  nav.toc .meta { margin-top: var(--s-6); font-size: .75rem; color: var(--text-3); line-height: 1.5; }
+  main { min-width: 0; }
+  section { padding: var(--s-8) 0; border-bottom: 1px solid var(--border); scroll-margin-top: var(--s-5); }
+  section:last-of-type { border-bottom: 0; }
+  .eyebrow { font-size: .75rem; text-transform: uppercase; letter-spacing: .1em; color: var(--re-text); font-weight: 600; margin-bottom: var(--s-2); }
+  @media (max-width: 900px) {
+    .frame { grid-template-columns: 1fr; gap: 0; }
+    nav.toc { position: static; max-height: none; padding-top: var(--s-5); }
+    nav.toc ol { flex-direction: row; flex-wrap: wrap; gap: 4px; }
+    nav.toc .meta { display: none; }
+  }
+
+  /* ── Hero ─────────────────────────────────────────── */
+  .hero { padding: var(--s-8) 0 var(--s-7); border-bottom: 1px solid var(--border); }
+  .hero .wordmark { font-family: var(--font-display); font-weight: 700; font-size: clamp(3.5rem, 10vw, 7.5rem); letter-spacing: -0.035em; line-height: .95; margin: 0 0 var(--s-4); }
+  .hero .wordmark span { color: var(--re-500); }
+  .hero .tag { font-family: var(--font-display); font-size: clamp(1.25rem, 2.5vw, 1.75rem); font-weight: 500; color: var(--text-2); max-width: 30ch; }
+  .dither-band { display: block; width: 100%; height: 72px; margin-top: var(--s-6); border-radius: var(--r-sheet); image-rendering: pixelated; }
+
+  /* ── Swatches ─────────────────────────────────────── */
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--s-3); }
+  .sw { border: 1px solid var(--border); border-radius: var(--r-card); overflow: hidden; background: var(--surface); }
+  .sw .chip { height: 84px; border-bottom: 1px solid var(--border); }
+  .sw .info { padding: var(--s-2) var(--s-3) var(--s-3); }
+  .sw .name { font-weight: 600; font-size: .9375rem; }
+  .sw .hex { font-family: var(--font-mono); font-size: .75rem; color: var(--text-2); text-transform: uppercase; }
+  .sw .use { font-size: .75rem; color: var(--text-3); margin-top: 2px; line-height: 1.4; }
+  .pairs { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--s-3); }
+  .pair { border-radius: var(--r-card); padding: var(--s-4); border: 1px solid var(--border); }
+  .pair .ratio { font-family: var(--font-mono); font-size: .75rem; opacity: .85; margin-top: var(--s-2); display: block; }
+  .rule { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s-4); }
+  .rule .do, .rule .dont { border-radius: var(--r-card); padding: var(--s-4); background: var(--surface); border: 1px solid var(--border); font-size: .9375rem; }
+  .rule .do::before { content: "Do"; } .rule .dont::before { content: "Don't"; }
+  .rule .do::before, .rule .dont::before { display: inline-block; font-size: .6875rem; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-bottom: var(--s-2); }
+  .rule .do::before { background: var(--re-100); color: var(--re-text); }
+  .rule .dont::before { background: var(--red-100); color: var(--red-500); }
+  .rule ul { margin: 0; padding-left: 1.1em; } .rule li { margin-bottom: 4px; }
+
+  /* ── Type specimens ───────────────────────────────── */
+  .specimen { border: 1px solid var(--border); border-radius: var(--r-card); background: var(--surface); padding: var(--s-5); margin-bottom: var(--s-3); }
+  .specimen .label { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); margin-bottom: var(--s-3); font-weight: 600; }
+  .specimen .big { font-family: var(--font-display); font-size: 3rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; }
+  .specimen .body { font-family: var(--font-body); font-size: 1.0625rem; max-width: 60ch; }
+  .specimen .monoline { font-family: var(--font-mono); font-size: .9375rem; }
+  .scale td:first-child { font-family: var(--font-mono); font-size: .8125rem; }
+
+  /* ── Spacing / radius demo ────────────────────────── */
+  .spacing { display: flex; align-items: flex-end; gap: var(--s-3); flex-wrap: wrap; }
+  .spacing div { background: var(--re-500); border-radius: 2px; }
+  .spacing span { display: block; font-family: var(--font-mono); font-size: .6875rem; color: var(--text-2); margin-top: 4px; text-align: center; }
+  .radii { display: flex; gap: var(--s-4); flex-wrap: wrap; }
+  .radii div { width: 96px; height: 64px; border: 2px solid var(--ink); display: grid; place-items: center; font-family: var(--font-mono); font-size: .75rem; background: var(--surface); color: var(--text); }
+  :root[data-theme="dark"] .radii div { border-color: var(--text); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .radii div { border-color: var(--text); } }
+
+  /* ── Components ───────────────────────────────────── */
+  .row { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
+  .demo { border: 1px solid var(--border); border-radius: var(--r-card); background: var(--surface); padding: var(--s-5); margin-bottom: var(--s-3); }
+  .btn { font-family: var(--font-body); font-weight: 600; font-size: .9375rem; padding: 10px 18px; border-radius: var(--r-control); border: 1px solid transparent; cursor: pointer; line-height: 1.2; transition: background var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out); }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--re-500); color: var(--on-accent); }
+  .btn-primary:hover { background: var(--re-600); }
+  .btn-secondary { background: transparent; color: var(--text); border-color: var(--line-strong); }
+  .btn-secondary:hover { background: var(--bg); }
+  .btn-ghost { background: transparent; color: var(--re-text); }
+  .btn-ghost:hover { background: var(--re-100); }
+  .btn-danger { background: transparent; color: var(--red-500); border-color: var(--red-500); }
+  .btn[disabled] { opacity: .45; cursor: not-allowed; }
+  .field { display: grid; gap: 6px; max-width: 320px; }
+  .field label { font-size: .875rem; font-weight: 600; }
+  .field input { font: inherit; font-size: .9375rem; padding: 9px 12px; border-radius: var(--r-control); border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); }
+  .field input::placeholder { color: var(--text-3); }
+  .field .hint { font-size: .8125rem; color: var(--text-3); }
+  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: .8125rem; font-weight: 600; padding: 3px 10px; border-radius: 999px; line-height: 1.4; }
+  .pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .pill-ready { background: var(--re-100); color: var(--re-text); }
+  .pill-waiting { background: var(--re-100); color: var(--re-text); } .pill-waiting::before { animation: blink 1s steps(1) infinite; }
+  .pill-sending { background: var(--blue-100); color: var(--blue-500); }
+  .pill-done { background: var(--ink); color: var(--paper); }
+  .pill-warn { background: var(--amber-100); color: var(--amber-700); }
+  .pill-error { background: var(--red-100); color: var(--red-500); }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .job { display: grid; grid-template-columns: 96px 1fr auto; gap: var(--s-4); align-items: center; border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--s-4); background: var(--surface); max-width: 620px; }
+  .job .preview { width: 96px; height: 72px; background: #fff; border: 1px solid var(--line-strong); border-radius: var(--r-sheet); display: grid; grid-template-rows: repeat(6, 1fr); padding: 8px; gap: 3px; }
+  .job .preview i { display: block; background: #131614; height: 3px; border-radius: 1px; }
+  .job .preview i:nth-child(1) { width: 70%; height: 5px; } .job .preview i:nth-child(3) { width: 85%; } .job .preview i:nth-child(4) { width: 60%; } .job .preview i:nth-child(6) { width: 40%; background: #D6402F; }
+  .job .title { font-weight: 600; } .job .sub { font-size: .875rem; color: var(--text-2); }
+  .job .actions { display: grid; gap: 6px; }
+  @media (max-width: 560px) { .job { grid-template-columns: 1fr; } }
+
+  .toast { display: flex; align-items: center; gap: var(--s-3); background: var(--ink); color: var(--paper); border-radius: var(--r-card); padding: var(--s-3) var(--s-4); max-width: 440px; box-shadow: 0 8px 24px rgba(0,0,0,.18); }
+  .toast .led { width: 12px; height: 12px; border-radius: 50%; background: var(--re-500); animation: blink 1s steps(1) infinite; flex: none; }
+  .toast b { display: block; font-weight: 600; } .toast span { font-size: .875rem; opacity: .8; }
+
+  /* ── Sheet frames ─────────────────────────────────── */
+  .sheets { display: flex; gap: var(--s-5); flex-wrap: wrap; align-items: flex-end; }
+  .sheet { background: #2A2E2B; padding: 10px; border-radius: 10px; box-shadow: inset 0 0 0 1px #3A3F3C; }
+  .sheet .panel { background: #E9EBE6; border-radius: 2px; position: relative; overflow: hidden; color: #131614; font-family: var(--font-body); }
+  .sheet .panel.refresh { animation: eink 1.6s steps(1) 1; }
+  @keyframes eink { 0% { filter: invert(1); } 25% { filter: invert(0); } 50% { filter: invert(1); } 75% { filter: invert(0); } 100% { filter: none; } }
+  .sheet .cap { font-family: var(--font-mono); font-size: .6875rem; color: var(--text-3); text-align: center; margin-top: 6px; }
+  .label-29 .panel { width: 148px; height: 64px; }
+  .card-42 .panel { width: 200px; height: 150px; }
+  .page-75 .panel { width: 266px; height: 160px; }
+  .panel .t { position: absolute; left: 10px; right: 10px; }
+  .panel .h { font-weight: 700; font-size: 14px; letter-spacing: -.01em; }
+  .panel .b { font-size: 10px; line-height: 1.3; font-weight: 500; }
+  .panel .red { background: #C8102E; color: #fff; font-weight: 700; font-size: 9px; padding: 2px 6px; display: inline-block; border-radius: 2px; }
+  .panel .code { font-family: var(--font-mono); font-size: 9px; }
+  .panel .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; font-size: 9px; }
+
+  /* ── LED language ─────────────────────────────────── */
+  .led { display: inline-block; width: 18px; height: 18px; border-radius: 50%; vertical-align: middle; box-shadow: 0 0 0 3px var(--surface), 0 0 0 4px var(--border); }
+  .led-breathe { animation: breathe 3s ease-in-out infinite; }
+  .led-blink { animation: blink 1s steps(1) infinite; }
+  .led-fast { animation: blink .3s steps(1) infinite; }
+  .led-pulse { animation: breathe 1.4s ease-in-out infinite; }
+  @keyframes breathe { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+
+  /* ── Voice ────────────────────────────────────────── */
+  .vocab td:first-child { color: var(--red-500); text-decoration: line-through; text-decoration-color: currentColor; }
+  .vocab td:nth-child(2) { color: var(--re-text); font-weight: 600; }
+  .copy { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--s-3); }
+  .copy div { border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--s-4); background: var(--surface); }
+  .copy .when { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); font-weight: 600; margin-bottom: 6px; }
+  .copy .line { font-weight: 600; } .copy .line + .line { font-weight: 400; color: var(--text-2); font-size: .9375rem; margin-top: 2px; }
+
+  /* ── Logo ─────────────────────────────────────────── */
+  .logo-slot { display: grid; place-items: center; height: 180px; border: 1px dashed var(--line-strong); border-radius: var(--r-card); color: var(--text-3); font-size: .875rem; text-align: center; padding: var(--s-4); background: var(--surface); }
+  .wm { font-family: var(--font-display); font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+  .wm span { color: var(--re-500); }
+  .wm-mono span { color: inherit; }
+  .wm-row { display: flex; gap: var(--s-6); flex-wrap: wrap; align-items: center; }
+  .wm-row > div { display: grid; gap: var(--s-2); justify-items: start; }
+  .wm-row .cap { font-family: var(--font-mono); font-size: .6875rem; color: var(--text-3); }
+  .on-ink { background: var(--ink); color: var(--paper); padding: var(--s-4) var(--s-5); border-radius: var(--r-card); }
+  .on-green { background: var(--re-500); color: var(--ink); padding: var(--s-4) var(--s-5); border-radius: var(--r-card); }
+</style>
+</head>
+<body>
+
+<div class="frame">
+  <nav class="toc" aria-label="Sections">
+    <a class="mark" href="#top"><span>Re</span>Paper</a>
+    <ol>
+      <li><a href="#identity">Identity &amp; logo</a></li>
+      <li><a href="#color">Color</a></li>
+      <li><a href="#type">Typography</a></li>
+      <li><a href="#layout">Layout &amp; spacing</a></li>
+      <li><a href="#components">Components</a></li>
+      <li><a href="#sheets">Sheets &amp; LED</a></li>
+      <li><a href="#motion">Motion</a></li>
+      <li><a href="#voice">Voice &amp; language</a></li>
+      <li><a href="#tokens">Tokens</a></li>
+    </ol>
+    <div class="meta">Brand guide v0.1 · August 2026<br>Source of truth: <code>brand/</code> in the repo.</div>
+  </nav>
+
+  <main id="top">
+    <header class="hero">
+      <div class="eyebrow">Brand guide · v0.1</div>
+      <h1 class="wordmark"><span>Re</span>Paper</h1>
+      <p class="tag">Reusable paper. Printed the way you already print.</p>
+      <canvas class="dither-band" id="dither" width="1200" height="72" aria-hidden="true"></canvas>
+      <p class="small muted" style="margin-top:8px">The band above is an ordered dither from ink to paper — the brand's texture. Real 1-bit dithering, the same thing our renderer does to every page. Use it as the one decorative motif; never gradients.</p>
+    </header>
+
+    <!-- ───────────────────────── IDENTITY ───────────────────────── -->
+    <section id="identity">
+      <div class="eyebrow">01</div>
+      <h2>Identity &amp; logo</h2>
+      <p class="lede">RePaper is a printer that prints onto reusable e-paper. The brand should feel like the product: matte, high-contrast, plain and confident — with one warm, playful note.</p>
+
+      <h3>Name</h3>
+      <p><strong>RePaper</strong>, always one word, capital R and capital P. In code, domains and handles: <code>repaper</code>. Never "Re-Paper", "rePaper" or "RE PAPER". The "Re" is the whole idea — reusable, reprint, rethink — so the wordmark sets it in Re Green.</p>
+
+      <h3>Wordmark</h3>
+      <p>The wordmark is typographic: Bricolage Grotesque Bold, tracking −3%, "Re" in Re Green 500, "Paper" in Ink. On dark or coloured grounds use the single-colour version. This is usable today, before a logo mark exists.</p>
+      <div class="demo">
+        <div class="wm-row">
+          <div><div class="wm" style="font-size:2.75rem"><span>Re</span>Paper</div><div class="cap">Primary · light ground</div></div>
+          <div><div class="on-ink"><div class="wm" style="font-size:2.75rem"><span>Re</span>Paper</div></div><div class="cap">On Ink · green stays</div></div>
+          <div><div class="on-green"><div class="wm wm-mono" style="font-size:2.75rem"><span>Re</span>Paper</div></div><div class="cap">On Re Green · mono ink</div></div>
+          <div><div class="wm wm-mono" style="font-size:2.75rem"><span>Re</span>Paper</div><div class="cap">Mono · 1-bit, e-paper, print</div></div>
+        </div>
+      </div>
+
+      <h3>Logo mark</h3>
+      <p>The mark is being generated with an AI tool from the brief in <code>brand/logo-prompt.md</code>. Direction: a sheet with a folded corner where the fold becomes a return arrow — "the page comes back". Requirements the result must pass, whatever it looks like:</p>
+      <div class="logo-slot">Logo mark — pending<br><span class="mono">Reserve a square slot. The mark must read at 16 px, in pure 1-bit black, embossed on plastic, and as an LED diffuser silhouette.</span></div>
+      <div class="rule" style="margin-top:var(--s-4)">
+        <div class="do"><ul><li>Mark + wordmark side by side, mark cap-height aligned to the "R"</li><li>Clear space around the lockup = the height of the "e"</li><li>Minimum size: mark 16 px, wordmark 80 px wide</li><li>Mono versions in Ink or Paper only</li></ul></div>
+        <div class="dont"><ul><li>No gradients, no shadows, no 3D, no gloss</li><li>No outline or "hollow" versions</li><li>Don't recolour "Re" in anything but Re Green or the mono ink</li><li>Don't put the wordmark on photos without a solid panel behind it</li></ul></div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── COLOR ───────────────────────── -->
+    <section id="color">
+      <div class="eyebrow">02</div>
+      <h2>Color</h2>
+      <p class="lede">The palette is an e-paper panel: a cool paper grey, ink black, and one accent. Neutrals lean slightly green so they belong to the accent. Everything else is functional and used sparingly.</p>
+
+      <h4>Core neutrals</h4>
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#EFF1EE"></div><div class="info"><div class="name">Paper</div><div class="hex">#EFF1EE</div><div class="use">Page ground. The grey of an e-ink panel.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#FAFBF9"></div><div class="info"><div class="name">Sheet</div><div class="hex">#FAFBF9</div><div class="use">Cards, inputs, raised surfaces.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#131614"></div><div class="info"><div class="name">Ink</div><div class="hex">#131614</div><div class="use">Text, primary fills, dark ground.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#454B47"></div><div class="info"><div class="name">Graphite</div><div class="hex">#454B47</div><div class="use">Secondary text.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#8B928E"></div><div class="info"><div class="name">Ash</div><div class="hex">#8B928E</div><div class="use">Tertiary text, placeholders, captions.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#D6DAD6"></div><div class="info"><div class="name">Line</div><div class="hex">#D6DAD6</div><div class="use">Borders, hairlines, dividers.</div></div></div>
+      </div>
+
+      <h4>Accent — Re Green</h4>
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#DCF3EA"></div><div class="info"><div class="name">Re Green 100</div><div class="hex">#DCF3EA</div><div class="use">Tints, selected rows, pill backgrounds.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#7DDBBF"></div><div class="info"><div class="name">Re Green 300</div><div class="hex">#7DDBBF</div><div class="use">Illustration, charts. Text on Ink: #2FCB9F.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#14A37F"></div><div class="info"><div class="name">Re Green 500</div><div class="hex">#14A37F</div><div class="use">The brand colour. Fills, icons, LED, wordmark.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#0F8A6B"></div><div class="info"><div class="name">Re Green 600</div><div class="hex">#0F8A6B</div><div class="use">Hover / pressed fills.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#0B7259"></div><div class="info"><div class="name">Re Green 700</div><div class="hex">#0B7259</div><div class="use">Links and text on light grounds (AA).</div></div></div>
+      </div>
+
+      <h4>Functional</h4>
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#D6402F"></div><div class="info"><div class="name">Label Red</div><div class="hex">#D6402F</div><div class="use">Errors, destructive, "urgent". Also stands in for the red of BWR sheets.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#E0A21B"></div><div class="info"><div class="name">Amber</div><div class="hex">#E0A21B</div><div class="use">Warnings, needs attention. Text: #8F6100.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#2A62D6"></div><div class="info"><div class="name">Signal Blue</div><div class="hex">#2A62D6</div><div class="use">Info, setup mode, in-progress transfers.</div></div></div>
+      </div>
+
+      <h3>Approved text / ground pairs</h3>
+      <p class="small muted">All pairs meet WCAG AA for body text (≥ 4.5:1) unless marked "large only".</p>
+      <div class="pairs">
+        <div class="pair" style="background:#EFF1EE;color:#131614;border-color:#D6DAD6">Ink on Paper<span class="ratio">16.2 : 1</span></div>
+        <div class="pair" style="background:#EFF1EE;color:#454B47;border-color:#D6DAD6">Graphite on Paper<span class="ratio">8.0 : 1</span></div>
+        <div class="pair" style="background:#EFF1EE;color:#0B7259;border-color:#D6DAD6">Re Green 700 on Paper<span class="ratio">5.2 : 1 · links</span></div>
+        <div class="pair" style="background:#14A37F;color:#131614">Ink on Re Green 500<span class="ratio">5.7 : 1 · primary button</span></div>
+        <div class="pair" style="background:#131614;color:#EFF1EE">Paper on Ink<span class="ratio">16.2 : 1</span></div>
+        <div class="pair" style="background:#131614;color:#2FCB9F">Green 300-text on Ink<span class="ratio">8.8 : 1 · dark links</span></div>
+        <div class="pair" style="background:#14A37F;color:#FFFFFF">White on Re Green 500<span class="ratio">3.2 : 1 · large only</span></div>
+        <div class="pair" style="background:#FAFBF9;color:#D6402F;border-color:#D6DAD6">Label Red on Sheet<span class="ratio">4.5 : 1</span></div>
+      </div>
+
+      <div class="rule" style="margin-top:var(--s-5)">
+        <div class="do"><ul><li>Primary buttons: Re Green 500 fill with <em>Ink</em> text — this is our signature</li><li>One accent per screen; let Ink and Paper do the work</li><li>Use the 100-tints for state backgrounds, never the 500 as a big background</li><li>Semantic colours only mean their state (red = error/urgent, amber = warning, blue = info)</li></ul></div>
+        <div class="dont"><ul><li>No gradients — dither instead if you need a transition</li><li>No white text on Re Green 500 for body copy (fails AA)</li><li>Don't use Re Green to mean "success" <em>and</em> as decoration on the same screen</li><li>Don't introduce new hues; charts use Green 300/500/700 + Graphite + Ash</li></ul></div>
+      </div>
+
+      <h3>Dark mode</h3>
+      <p>Ground becomes Ink <code>#131614</code>, surfaces <code>#1C201D</code>, borders <code>#2E3430</code>, text Paper. Accent fills stay Re Green 500 with Ink text; accent <em>text</em> becomes <code>#2FCB9F</code>. Dark mode is the device's own look — the Dock's web UI defaults to it.</p>
+
+      <h3>On-sheet palette</h3>
+      <p>Content rendered to an e-paper sheet uses the panel's physical colours, not brand tokens: black <code>#000000</code>, white <code>#FFFFFF</code>, red <code>#C8102E</code> (BWR), yellow <code>#F2C400</code> (BWRY). Renders are 1-bit per plane; everything in between is dithered.</p>
+    </section>
+
+    <!-- ───────────────────────── TYPE ───────────────────────── -->
+    <section id="type">
+      <div class="eyebrow">03</div>
+      <h2>Typography</h2>
+      <p class="lede">Three faces, three jobs. Bricolage Grotesque gives headlines and the wordmark a voice; Figtree carries UI and body; IBM Plex Mono is for anything that is an identifier — sheet IDs, sizes, code.</p>
+
+      <div class="specimen">
+        <div class="label">Display · Bricolage Grotesque · 600–800 · headlines, wordmark, numbers that matter</div>
+        <div class="big">Hold a sheet to print.</div>
+      </div>
+      <div class="specimen">
+        <div class="label">Body &amp; UI · Figtree · 400/500/600 · everything people read and click</div>
+        <div class="body">Your systems keep printing exactly as they do today. Instead of a printer, they print to RePaper — and the page appears on a reusable e-paper sheet. Reuse it thousands of times. No paper, no toner, no integration project.</div>
+      </div>
+      <div class="specimen">
+        <div class="label">Mono · IBM Plex Mono · 400/500 · sheet IDs, sizes, addresses, code</div>
+        <div class="monoline">sheet RP-4C-01F3 · 400×300 · BWR · 84.8×63.6 mm · repaper-dock.local</div>
+      </div>
+
+      <h3>Scale</h3>
+      <p class="small muted">Base 16 px, ratio ≈ 1.25. Line heights are fixed values, not multipliers, so components stay on the 4 px grid.</p>
+      <div class="table-wrap"><table class="scale">
+        <tr><th>Token</th><th>Size / line</th><th>Face · weight</th><th>Use</th></tr>
+        <tr><td>display-xl</td><td>64 / 64</td><td>Bricolage 700, −3%</td><td>Wordmark, hero</td></tr>
+        <tr><td>display-l</td><td>40 / 44</td><td>Bricolage 700, −2%</td><td>Page titles</td></tr>
+        <tr><td>display-m</td><td>28 / 32</td><td>Bricolage 600, −1%</td><td>Section titles, big numbers</td></tr>
+        <tr><td>title</td><td>20 / 28</td><td>Figtree 600</td><td>Card titles, dialogs</td></tr>
+        <tr><td>body-l</td><td>18 / 28</td><td>Figtree 400</td><td>Lede paragraphs</td></tr>
+        <tr><td>body</td><td>16 / 24</td><td>Figtree 400/500</td><td>Default</td></tr>
+        <tr><td>body-s</td><td>14 / 20</td><td>Figtree 400/600</td><td>Secondary text, table cells</td></tr>
+        <tr><td>label</td><td>12 / 16</td><td>Figtree 600, caps, +8%</td><td>Eyebrows, column headers</td></tr>
+        <tr><td>mono</td><td>13 / 20</td><td>Plex Mono 400/500</td><td>IDs, code</td></tr>
+      </table></div>
+
+      <h3>On the sheet</h3>
+      <p>Text rendered onto e-paper is 1-bit: no anti-aliasing, no thin strokes. Use Figtree 500 or 600, never lighter. Minimum sizes at the usual ~130 ppi of a 4.2" panel: <strong>12 px body, 9 px mono</strong>. Prefer a strong hierarchy (one big line, few small ones) over many medium lines; from a metre away only the headline survives.</p>
+    </section>
+
+    <!-- ───────────────────────── LAYOUT ───────────────────────── -->
+    <section id="layout">
+      <div class="eyebrow">04</div>
+      <h2>Layout &amp; spacing</h2>
+      <p class="lede">A 4 px base grid, a short spacing scale, and paper-like surfaces: flat, bordered by hairlines, almost never shadowed.</p>
+
+      <h4>Spacing scale</h4>
+      <div class="spacing">
+        <div style="width:4px;height:4px"><span>4</span></div>
+        <div style="width:8px;height:8px"><span>8</span></div>
+        <div style="width:12px;height:12px"><span>12</span></div>
+        <div style="width:16px;height:16px"><span>16</span></div>
+        <div style="width:24px;height:24px"><span>24</span></div>
+        <div style="width:32px;height:32px"><span>32</span></div>
+        <div style="width:48px;height:48px"><span>48</span></div>
+        <div style="width:64px;height:64px"><span>64</span></div>
+      </div>
+      <p class="small muted" style="margin-top:var(--s-4)">Tokens <code>--s-1</code> … <code>--s-9</code> (4 → 96). Inside a component: 8–16. Between components: 16–24. Between sections: 48–96.</p>
+
+      <h4>Radius</h4>
+      <div class="radii">
+        <div style="border-radius:4px">4 · sheet</div>
+        <div style="border-radius:6px">6 · control</div>
+        <div style="border-radius:12px">12 · card</div>
+        <div style="border-radius:999px">pill</div>
+      </div>
+      <p class="small muted" style="margin-top:var(--s-3)">Sheets and previews of sheets are nearly square-cornered (4 px) — e-paper panels are. Controls 6 px, cards 12 px. Nothing else.</p>
+
+      <h4>Surfaces &amp; elevation</h4>
+      <p>Cards are Sheet on Paper with a 1 px Line border. No drop shadows on resting elements. Only floating things — toasts, menus, dialogs — get a single soft shadow (<code>0 8px 24px rgba(0,0,0,.18)</code>). Dividers are 1 px Line, full width.</p>
+
+      <h4>Page grid</h4>
+      <p>Content max-width 1180 px; reading text max 64 characters. Two-column layouts split 220 / rest (navigation / content) or 1 / 1. On mobile everything stacks with 16 px side padding. Left-aligned by default; centre only single short statements.</p>
+    </section>
+
+    <!-- ───────────────────────── COMPONENTS ───────────────────────── -->
+    <section id="components">
+      <div class="eyebrow">05</div>
+      <h2>Components</h2>
+      <p class="lede">The handful of pieces every RePaper UI is built from — the Go app, the Dock's web UI, the cloud console and the website share these.</p>
+
+      <h4>Buttons</h4>
+      <div class="demo"><div class="row">
+        <button class="btn btn-primary">Print to this sheet</button>
+        <button class="btn btn-secondary">Choose another sheet</button>
+        <button class="btn btn-ghost">Skip</button>
+        <button class="btn btn-danger">Cancel job</button>
+        <button class="btn btn-primary" disabled>Printing…</button>
+      </div></div>
+      <p class="small muted">One primary per view. Labels are verbs that say what happens. Primary = Re Green 500 + Ink text; secondary = outline; ghost = text only; danger = red outline, never a red fill.</p>
+
+      <h4>Inputs</h4>
+      <div class="demo"><div class="field">
+        <label for="pn">Printer name</label>
+        <input id="pn" placeholder="e.g. Warehouse A – RePaper" value="Rouven's RePaper">
+        <div class="hint">This is the name people see in their print dialog.</div>
+      </div></div>
+
+      <h4>Job states</h4>
+      <div class="demo"><div class="row">
+        <span class="pill pill-ready">Ready</span>
+        <span class="pill pill-waiting">Waiting for a sheet</span>
+        <span class="pill pill-sending">Printing</span>
+        <span class="pill pill-done">Printed</span>
+        <span class="pill pill-warn">Sheet too small</span>
+        <span class="pill pill-error">Failed</span>
+      </div></div>
+      <p class="small muted">Pills carry the same colours as the Dock's LED (below), so an app screen and the device always agree.</p>
+
+      <h4>Job card</h4>
+      <div class="demo">
+        <div class="job">
+          <div class="preview" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div><div class="title">Pick list 4711</div><div class="sub">1 page · from WMS-PRINT-02 · 12 s ago</div><div style="margin-top:6px"><span class="pill pill-waiting">Waiting for a sheet</span></div></div>
+          <div class="actions"><button class="btn btn-primary">Hold a sheet</button><button class="btn btn-ghost">Discard</button></div>
+        </div>
+      </div>
+
+      <h4>Notification</h4>
+      <div class="demo">
+        <div class="toast" role="status"><div class="led"></div><div><b>Print job waiting</b><span>Pick list 4711 · Hold a sheet to your phone to print.</span></div></div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── SHEETS & LED ───────────────────────── -->
+    <section id="sheets">
+      <div class="eyebrow">06</div>
+      <h2>Sheets &amp; LED</h2>
+      <p class="lede">Two things only RePaper has: the sheet as a visual object, and a single LED that is the entire interface of the Dock. Both follow the same rules everywhere.</p>
+
+      <h3>Sheet frames</h3>
+      <p>Whenever a UI shows a sheet, show it as a sheet: dark graphite bezel, 10 px inset, panel in e-paper grey <code>#E9EBE6</code>, content in pure black (and red where the panel has it). Size names are paper analogies, not inch numbers, in customer-facing copy.</p>
+      <div class="sheets">
+        <div class="sheet label-29"><div class="panel refresh"><div class="t" style="top:8px"><div class="h">CART 12</div></div><div class="t" style="top:30px"><div class="code">Zone B · Bay 04</div></div><div class="t" style="top:44px"><span class="red">URGENT</span></div></div><div class="cap">Sheet Label · 2.9" · 296×128</div></div>
+        <div class="sheet card-42"><div class="panel refresh"><div class="t" style="top:10px"><div class="h">Meeting room 3.02</div></div><div class="t" style="top:36px"><div class="b">09:00 – 10:30<br>Sprint planning · Team Dock</div></div><div class="t" style="top:78px"><div class="b">11:00 – 12:00<br>SoluM call</div></div><div class="t" style="top:122px"><div class="code">Booked via Outlook · updated 08:58</div></div></div><div class="cap">Sheet Card · 4.2" · 400×300</div></div>
+        <div class="sheet page-75"><div class="panel refresh"><div class="t" style="top:10px"><div class="h">Pick list 4711</div></div><div class="t" style="top:34px"><div class="grid"><span>3× Bracket M8</span><span>B-04-12</span><span>12× Bolt M8×40</span><span>B-04-15</span><span>1× Motor 750 W</span><span>C-01-02</span><span>2× Belt 1200</span><span>C-02-08</span></div></div><div class="t" style="top:120px"><div class="code">Order 88213 · Route 3 · printed 10:41</div></div><div class="t" style="top:136px"><span class="red">PRIORITY</span></div></div><div class="cap">Sheet Page · 7.5" · 800×480</div></div>
+      </div>
+      <p class="small muted" style="margin-top:var(--s-4)">The panels above play the e-ink refresh flash once on load — that flash is our loading animation (see Motion).</p>
+
+      <h3>LED language</h3>
+      <p>One RGB LED behind a diffuser. Colours are brand tokens; patterns are the only vocabulary. Apps mirror these exactly in their status pills.</p>
+      <div class="table-wrap"><table>
+        <tr><th></th><th>State</th><th>Pattern</th><th>Colour</th><th>Meaning / what to do</th></tr>
+        <tr><td><span class="led led-pulse" style="background:#2A62D6"></span></td><td>Starting / connecting</td><td>Slow pulse</td><td class="mono">Signal Blue</td><td>Wait.</td></tr>
+        <tr><td><span class="led led-blink" style="background:#2A62D6"></span></td><td>Setup mode</td><td>Blink 1 Hz</td><td class="mono">Signal Blue</td><td>Open the setup page on your phone.</td></tr>
+        <tr><td><span class="led led-breathe" style="background:#14A37F"></span></td><td>Ready</td><td>Breathe, dim (30 %)</td><td class="mono">Re Green 500</td><td>Printer is online. Nothing to do.</td></tr>
+        <tr><td><span class="led led-blink" style="background:#14A37F"></span></td><td><strong>Job waiting</strong></td><td>Blink 1 Hz, full</td><td class="mono">Re Green 500</td><td>Hold a sheet to the Dock.</td></tr>
+        <tr><td><span class="led led-fast" style="background:#14A37F"></span></td><td>Printing</td><td>Fast blink 3 Hz</td><td class="mono">Re Green 500</td><td>Keep the sheet in place.</td></tr>
+        <tr><td><span class="led" style="background:#14A37F"></span></td><td><strong>Printed</strong></td><td>Solid 3 s, then Ready</td><td class="mono">Re Green 500</td><td>Done. Take the sheet.</td></tr>
+        <tr><td><span class="led" style="background:#E0A21B"></span></td><td>Needs a decision</td><td>Solid</td><td class="mono">Amber</td><td>e.g. sheet too small. Press to fit anyway, hold to cancel.</td></tr>
+        <tr><td><span class="led led-blink" style="background:#D6402F"></span></td><td>Failed</td><td>Blink 1 Hz</td><td class="mono">Label Red</td><td>Hold the sheet again to retry.</td></tr>
+        <tr><td><span class="led" style="background:#D6402F"></span></td><td>No network</td><td>Solid</td><td class="mono">Label Red</td><td>Check cable / Wi-Fi; see setup page.</td></tr>
+      </table></div>
+      <p class="small muted" style="margin-top:var(--s-3)">Green means "go / good", red means "stop / broken", blue means "talking to you about setup", amber means "your call". Multi-page jobs: a short double-flash between pages, then back to Job waiting. WS2812 values: Re Green (20,163,127) · Label Red (214,64,47) · Amber (224,162,27) · Signal Blue (42,98,214).</p>
+    </section>
+
+    <!-- ───────────────────────── MOTION ───────────────────────── -->
+    <section id="motion">
+      <div class="eyebrow">07</div>
+      <h2>Motion</h2>
+      <p class="lede">Motion is functional and short. The one signature move is borrowed from the hardware: the e-ink refresh flash.</p>
+      <div class="table-wrap"><table>
+        <tr><th>Token</th><th>Value</th><th>Use</th></tr>
+        <tr><td class="mono">--dur-fast</td><td>150 ms</td><td>Hover, press, toggles</td></tr>
+        <tr><td class="mono">--dur-base</td><td>220 ms</td><td>Reveal, slide, panel open</td></tr>
+        <tr><td class="mono">--dur-slow</td><td>400 ms</td><td>Page transitions, sheet preview updates</td></tr>
+        <tr><td class="mono">--ease-out</td><td>cubic-bezier(.2,.7,.2,1)</td><td>Everything that enters</td></tr>
+        <tr><td class="mono">eink-refresh</td><td>1.6 s, 4 steps of invert</td><td>When a sheet preview gets new content; as a loading state</td></tr>
+      </table></div>
+      <p style="margin-top:var(--s-4)">The refresh flash is a <em>stepped</em> animation (<code>steps(1)</code>) — never eased, never faded. It's what a real panel does. Use it once per event, never looping longer than three seconds. LED patterns are stepped too. Respect <code>prefers-reduced-motion</code>: replace the flash with an instant swap and the LED blink pill with a static dot.</p>
+    </section>
+
+    <!-- ───────────────────────── VOICE ───────────────────────── -->
+    <section id="voice">
+      <div class="eyebrow">08</div>
+      <h2>Voice &amp; language</h2>
+      <p class="lede">We sell "it's just a printer". The words should never make it sound like more than that.</p>
+
+      <h4>Principles</h4>
+      <div class="rule">
+        <div class="do"><ul><li><strong>Plain.</strong> "Hold a sheet to print." Short verbs, present tense.</li><li><strong>Confident.</strong> Say what happened: "Printed." Not "Successfully completed the print operation".</li><li><strong>Warm.</strong> A little delight is allowed at the moment of magic — the print landing on the sheet.</li><li><strong>Green with numbers.</strong> "2,140 sheets of paper saved this month." Never "eco-friendly".</li></ul></div>
+        <div class="dont"><ul><li>No IoT / tech vocabulary in customer-facing copy: gateway, sync, provision, firmware, tag, ESL, MQTT.</li><li>No exclamation marks in system messages.</li><li>No apologising in error messages — say what went wrong and what to do.</li><li>No "smart" as an adjective. The point is that nothing is smart; it's a printer.</li></ul></div>
+      </div>
+
+      <h4>Vocabulary</h4>
+      <div class="table-wrap"><table class="vocab">
+        <tr><th>Don't say</th><th>Say</th><th>Why</th></tr>
+        <tr><td>tag, ESL, label device, display</td><td>sheet</td><td>It's paper you print on.</td></tr>
+        <tr><td>push, sync, update, upload, flash</td><td>print</td><td>The whole product is one verb.</td></tr>
+        <tr><td>the gateway / the device / the box</td><td>the Dock (or the printer)</td><td>Product name, or the thing it pretends to be.</td></tr>
+        <tr><td>tap, scan, pair</td><td>hold a sheet to…</td><td>Describes the gesture; no NFC knowledge assumed.</td></tr>
+        <tr><td>render, raster, job spooled</td><td>ready to print / printing / printed</td><td>Printer language people already know.</td></tr>
+        <tr><td>2.9", 4.2", 7.5"</td><td>Sheet Label, Sheet Card, Sheet Page</td><td>Paper analogies; inch sizes go in the mono spec line.</td></tr>
+        <tr><td>onboarding, provisioning</td><td>setup</td><td></td></tr>
+      </table></div>
+
+      <h4>Microcopy</h4>
+      <div class="copy">
+        <div><div class="when">Job arrives</div><div class="line">Print job waiting</div><div class="line">Pick list 4711 · Hold a sheet to print.</div></div>
+        <div><div class="when">While printing</div><div class="line">Printing…</div><div class="line">Keep the sheet in place.</div></div>
+        <div><div class="when">Done</div><div class="line">Printed.</div><div class="line">Cart 12 now shows Pick list 4711.</div></div>
+        <div><div class="when">Sheet too small</div><div class="line">This page is bigger than the sheet</div><div class="line">Print it smaller, or hold a Sheet Page instead.</div></div>
+        <div><div class="when">Transfer failed</div><div class="line">Couldn't print to Cart 12</div><div class="line">Hold the sheet still and closer to the Dock, then try again.</div></div>
+        <div><div class="when">Nobody came</div><div class="line">Print job expired</div><div class="line">Nobody held a sheet within 10 minutes. Print it again when you're ready.</div></div>
+        <div><div class="when">Empty state</div><div class="line">Nothing to print</div><div class="line">Print to "Rouven's RePaper" from any app — it shows up here.</div></div>
+        <div><div class="when">Impact</div><div class="line">2,140 sheets of paper saved</div><div class="line">since June — about 11 kg.</div></div>
+      </div>
+    </section>
+
+    <!-- ───────────────────────── TOKENS ───────────────────────── -->
+    <section id="tokens">
+      <div class="eyebrow">09</div>
+      <h2>Tokens</h2>
+      <p class="lede">The whole system as CSS custom properties. Copy from <code>brand/tokens.css</code> (and <code>tokens.json</code> for native apps) — don't retype hex values.</p>
+<pre><code>:root {
+  --paper: #EFF1EE;  --sheet: #FAFBF9;  --ink: #131614;
+  --graphite: #454B47;  --ash: #8B928E;  --line: #D6DAD6;  --line-strong: #B9BFBA;
+
+  --re-100: #DCF3EA;  --re-300: #7DDBBF;  --re-500: #14A37F;
+  --re-600: #0F8A6B;  --re-700: #0B7259;
+
+  --red-500: #D6402F;  --red-100: #FBE3DF;
+  --amber-500: #E0A21B;  --amber-700: #8F6100;  --amber-100: #FCEFD0;
+  --blue-500: #2A62D6;  --blue-100: #DEE7FA;
+
+  --font-display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Figtree", "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+
+  --r-sheet: 4px;  --r-control: 6px;  --r-card: 12px;
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;
+  --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px;
+
+  --dur-fast: 150ms;  --dur-base: 220ms;  --dur-slow: 400ms;
+  --ease-out: cubic-bezier(.2,.7,.2,1);
+}
+/* dark: --bg #131614, --surface #1C201D, --border #2E3430,
+         --text #EFF1EE, --text-2 #B9BFBA, --re-text #2FCB9F */</code></pre>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+  var c = document.getElementById('dither'); if (!c) return;
+  var ctx = c.getContext('2d'), W = c.width, H = c.height;
+  var bayer = [[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
+  var dark = false;
+  try { dark = document.documentElement.getAttribute('data-theme') === 'dark' || (document.documentElement.getAttribute('data-theme') !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches); } catch (e) {}
+  var ink = dark ? [239,241,238] : [19,22,20], paper = dark ? [19,22,20] : [239,241,238], green = [20,163,127];
+  var img = ctx.createImageData(W, H), d = img.data, px = 4;
+  for (var y = 0; y < H; y++) for (var x = 0; x < W; x++) {
+    var t = x / W;                                  // 0 → 1 across the band
+    var thr = (bayer[(y/px|0)%4][(x/px|0)%4] + 0.5) / 16;
+    var col;
+    if (t < 0.62) { col = (t / 0.62) < thr ? ink : paper; }       // ink → paper
+    else { col = ((t - 0.62) / 0.38) < thr ? paper : green; }     // paper → green
+    var i = (y * W + x) * 4; d[i] = col[0]; d[i+1] = col[1]; d[i+2] = col[2]; d[i+3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,123 @@
+/* RePaper design tokens — v0.1 (August 2026)
+   Source of truth for every RePaper UI (Go app web UI, Dock web UI, cloud console, website).
+   Light palette on :root; dark overrides follow the same names. Never retype hex values. */
+:root {
+  /* Core neutrals */
+  --paper: #EFF1EE;        /* page ground — e-paper panel grey */
+  --sheet: #FAFBF9;        /* cards, inputs, raised surfaces */
+  --ink: #131614;          /* text, primary fills, dark ground */
+  --graphite: #454B47;     /* secondary text */
+  --ash: #8B928E;          /* tertiary text, placeholders */
+  --line: #D6DAD6;         /* borders, hairlines */
+  --line-strong: #B9BFBA;  /* input borders, bezels */
+
+  /* Accent — Re Green */
+  --re-100: #DCF3EA;       /* tints, selected rows, pill backgrounds */
+  --re-300: #7DDBBF;       /* illustration, charts */
+  --re-500: #14A37F;       /* brand colour: fills, icons, LED, wordmark */
+  --re-600: #0F8A6B;       /* hover / pressed fills */
+  --re-700: #0B7259;       /* links & text on light grounds (AA) */
+
+  /* Functional */
+  --red-500: #D6402F;      /* error, destructive, "urgent"; BWR sheet red in UI */
+  --red-100: #FBE3DF;
+  --amber-500: #E0A21B;    /* warning fills, LED "needs a decision" */
+  --amber-700: #8F6100;    /* warning text on light */
+  --amber-100: #FCEFD0;
+  --blue-500: #2A62D6;     /* info, setup mode, in-progress */
+  --blue-100: #DEE7FA;
+
+  /* On-sheet (physical e-paper colours, used only when drawing sheet content) */
+  --epaper-black: #000000;
+  --epaper-white: #FFFFFF;
+  --epaper-red: #C8102E;
+  --epaper-yellow: #F2C400;
+  --epaper-panel: #E9EBE6; /* panel grey used in sheet previews */
+  --epaper-bezel: #2A2E2B;
+
+  /* Semantic aliases (what components should actually use) */
+  --bg: var(--paper);
+  --surface: var(--sheet);
+  --border: var(--line);
+  --text: var(--ink);
+  --text-2: var(--graphite);
+  --text-3: var(--ash);
+  --accent: var(--re-500);
+  --accent-hover: var(--re-600);
+  --accent-text: var(--re-700);
+  --on-accent: var(--ink);   /* text on accent fills — Ink, not white */
+  --code-bg: #E4E7E3;
+
+  /* Type */
+  --font-display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Figtree", "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+
+  --text-display-xl: 700 64px/64px var(--font-display);
+  --text-display-l:  700 40px/44px var(--font-display);
+  --text-display-m:  600 28px/32px var(--font-display);
+  --text-title:      600 20px/28px var(--font-body);
+  --text-body-l:     400 18px/28px var(--font-body);
+  --text-body:       400 16px/24px var(--font-body);
+  --text-body-s:     400 14px/20px var(--font-body);
+  --text-label:      600 12px/16px var(--font-body);   /* uppercase, letter-spacing .08em */
+  --text-mono:       400 13px/20px var(--font-mono);
+  --tracking-display: -0.02em;
+  --tracking-label: 0.08em;
+
+  /* Radius */
+  --r-sheet: 4px;
+  --r-control: 6px;
+  --r-card: 12px;
+  --r-pill: 999px;
+
+  /* Spacing (4px grid) */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;
+  --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px;
+
+  /* Elevation — only floating elements */
+  --shadow-float: 0 8px 24px rgba(0, 0, 0, .18);
+
+  /* Motion */
+  --dur-fast: 150ms;
+  --dur-base: 220ms;
+  --dur-slow: 400ms;
+  --ease-out: cubic-bezier(.2, .7, .2, 1);
+  --eink-refresh: eink-refresh 1.6s steps(1) 1;
+
+  /* Layout */
+  --content-max: 1180px;
+  --reading-max: 64ch;
+  --nav-col: 220px;
+}
+
+/* Dark theme: applies when the OS is dark and no explicit light choice is stamped,
+   or when data-theme="dark" is set on <html>. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131614; --surface: #1C201D; --border: #2E3430; --line-strong: #414843;
+    --text: #EFF1EE; --text-2: #B9BFBA; --text-3: #7E857F;
+    --accent-text: #2FCB9F; --on-accent: #131614; --code-bg: #0E100F;
+    --re-100: #163A30; --red-100: #3E1D18; --amber-100: #3B2E10; --blue-100: #1A2A4D;
+    --amber-700: #F2B84B;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131614; --surface: #1C201D; --border: #2E3430; --line-strong: #414843;
+  --text: #EFF1EE; --text-2: #B9BFBA; --text-3: #7E857F;
+  --accent-text: #2FCB9F; --on-accent: #131614; --code-bg: #0E100F;
+  --re-100: #163A30; --red-100: #3E1D18; --amber-100: #3B2E10; --blue-100: #1A2A4D;
+  --amber-700: #F2B84B;
+}
+
+/* The signature motion: an e-ink refresh flash. Stepped, never eased. */
+@keyframes eink-refresh {
+  0%   { filter: invert(1); }
+  25%  { filter: invert(0); }
+  50%  { filter: invert(1); }
+  75%  { filter: invert(0); }
+  100% { filter: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --eink-refresh: none; --dur-fast: 0ms; --dur-base: 0ms; --dur-slow: 0ms; }
+}
