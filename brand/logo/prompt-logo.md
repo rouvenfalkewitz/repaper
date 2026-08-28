@@ -8,25 +8,21 @@ Remember: **we only need the mark and the proportions.** The letters get re-set 
 
 ## ChatGPT — paste this whole block (one message, nothing else)
 
+We generate **only the mark**. The wordmark is typeset from the real Archivo font later, so no letters are needed in any image.
+
 ```
-Create a logo for a brand called REPAPER. Generate the image as a square, as large as you can (2048×2048 if possible).
+Create a logo mark (icon only, no letters, no words, no text of any kind) for a brand called RePaper.
 
-About the brand: RePaper makes reusable e-paper you print on like a normal printer. The style is a modern hardware start-up: flat, minimal, confident, dark-first.
+About the brand: RePaper makes reusable e-paper you print on like a normal printer. The style is a modern hardware start-up: flat, minimal, confident.
 
-What to draw — a horizontal logo lockup, centered on a solid near-black background (#0C100F), with generous empty margin on all sides:
+What to draw: a sheet of paper drawn as a rounded rectangle whose top-right corner is folded down; the edge of the fold continues into a small, blocky arrow that points back into the page — meaning "the page comes back / reusable". Thick, even, geometric strokes. Simple enough to read at 16 pixels and to work as a solid silhouette or a stencil (no floating islands, no thin bridges).
 
-1. The logo mark, on the left: a sheet of paper drawn as a rounded rectangle whose top-right corner is folded down; the edge of the fold continues into a small, blocky arrow that points back into the page — meaning "the page comes back / reusable". Thick, even, geometric strokes with the same weight as the letters next to it. Simple enough to read at 16 pixels and to work as a solid silhouette or a stencil (no floating islands, no thin bridges).
+Rendering: solid black on a pure white background, the mark centered and filling about 60% of a square canvas, generous empty margin. Make the image square and as large as you can (2048×2048 if possible).
 
-2. The wordmark, on the right: the word "REPAPER" in all capitals, extra-bold, extra-wide grotesque sans-serif (like Archivo Expanded or Monument Extended), tight letter-spacing. The letters "RE" are mint-teal green (#1EE3A5); the letters "PAPER" are off-white (#EFF1EE). The mark is the same mint-teal green. The mark's height equals the capital-letter height, and both sit on the same baseline.
-
-Colours, exactly three: near-black #0C100F (background), mint-teal green #1EE3A5, off-white #EFF1EE.
-
-Strictly flat vector style: no glow, no gradients, no shadows, no 3D, no gloss, no texture, no outlines-only, no sketch style. No background shapes, no mockups, no photos, no tagline, no other text, no leaves, no recycling triangles, no printers, no clouds.
-
-Spell the word exactly: R-E-P-A-P-E-R.
+Strictly flat vector style: no glow, no gradients, no shadows, no 3D, no gloss, no texture, no outlines-only, no sketch style. No background shapes, no mockups, no photos, no letters, no words, no tagline, no leaves, no recycling triangles, no printers, no clouds.
 ```
 
-Then, in the same chat, ask for variations one at a time (the mark is what we're exploring — the letters get re-set from the real font later):
+Then explore in the same chat, one change per message:
 
 ```
 Same brief, but make the fold and the arrow one continuous shape.
@@ -40,12 +36,17 @@ Same brief, but cut the arrow out of the folded corner as negative space.
 ```
 Same brief, but build the mark from square pixels on a coarse grid, like a 1-bit e-ink icon.
 ```
+```
+Same brief, but a bold, extra-wide geometric capital letter R whose right leg curves back around and re-enters the letter, forming a continuous loop like a return arrow; the inner hole of the R is a small rectangle like a page.
+```
 
-When one direction is right, ask for the mark alone — this is the file we trace:
+Optional, once a mark is chosen — to see it in brand colour (not needed for tracing):
 
 ```
-Now only the logo mark from the last image, no text at all: solid black on a pure white background, centered, filling about 60% of a square canvas, thick even strokes, strictly flat, no glow, no gradient, no shadow. As large as possible.
+Show the same mark in mint-teal green (#1EE3A5) on a solid near-black background (#0C100F), nothing else changed.
 ```
+
+Black-on-white is the file we trace. Save the ones you like to brand/logo/candidates/.
 
 ---
 
