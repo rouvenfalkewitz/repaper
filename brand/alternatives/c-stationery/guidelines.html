@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>RePaper Stationery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,400;9..144,600;9..144,700,50,1&family=Albert+Sans:wght@400;500;600;700&family=Courier+Prime:wght@400;700&display=swap">
+<style>
+  :root {
+    --cotton: #FBF8F3;     /* ground */
+    --white: #FFFFFF;      /* sheets */
+    --umber: #231F1A;      /* ink */
+    --umber-600: #5A524A;  /* secondary */
+    --umber-400: #9B928A;  /* tertiary */
+    --umber-200: #E6E0D7;  /* borders */
+    --umber-300: #CFC7BC;
+    --blue-500: #2447C9;   /* fountain-pen ink — the accent */
+    --blue-600: #1C3AA8;
+    --blue-100: #E3E8FA;
+    --blue-dark-text: #8FA7FF;
+    --stamp-500: #C8372D;  /* stamp red — errors, urgent */
+    --stamp-100: #F9E1DE;
+    --moss-500: #4E7C4A;   /* ok */
+    --moss-100: #E1EDDF;
+    --moss-700: #36593A;
+    --honey-500: #D99A1E;  /* warning */
+    --honey-100: #FBEFD1;
+    --honey-800: #7A5300;
+    --bg: var(--cotton); --surface: var(--white); --border: var(--umber-200);
+    --text: var(--umber); --text-2: var(--umber-600); --text-3: var(--umber-400);
+    --accent: var(--blue-500); --accent-text: var(--blue-500); --on-accent: #FFFFFF; --code-bg: #F1ECE4;
+    --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+    --font-body: "Albert Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+    --font-mono: "Courier Prime", "Courier New", Courier, monospace;
+    --r-sheet: 3px; --r-control: 8px; --r-card: 16px;
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px;
+    --shadow-paper: 0 1px 2px rgba(35,31,26,.06), 0 6px 18px rgba(35,31,26,.08);
+    --dur: 200ms; --ease: cubic-bezier(.3,.8,.3,1);
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #1C1916; --surface: #272320; --border: #3A342E; --umber-300: #4A433B;
+    --text: #F3EEE6; --text-2: #C4BBB0; --text-3: #857B70; --accent-text: var(--blue-dark-text); --code-bg: #141210;
+    --blue-100: #1E2748; --stamp-100: #3F1E1B; --moss-100: #1E2E1D; --moss-700: #8FBF8A; --honey-100: #3B2E12; --honey-800: #F0BE57;
+    --shadow-paper: 0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.35);
+  } }
+  :root[data-theme="dark"] {
+    --bg: #1C1916; --surface: #272320; --border: #3A342E; --umber-300: #4A433B;
+    --text: #F3EEE6; --text-2: #C4BBB0; --text-3: #857B70; --accent-text: var(--blue-dark-text); --code-bg: #141210;
+    --blue-100: #1E2748; --stamp-100: #3F1E1B; --moss-100: #1E2E1D; --moss-700: #8FBF8A; --honey-100: #3B2E12; --honey-800: #F0BE57;
+    --shadow-paper: 0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.35);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 17px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+  a { color: var(--accent-text); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--blue-500); outline-offset: 3px; }
+  h1, h2, h3 { font-family: var(--font-display); margin: 0; line-height: 1.05; text-wrap: balance; font-variation-settings: "SOFT" 50, "WONK" 1; }
+  h2 { font-size: 2.5rem; font-weight: 600; letter-spacing: -.01em; margin-bottom: var(--s-3); }
+  h3 { font-size: 1.5rem; font-weight: 600; margin: var(--s-6) 0 var(--s-3); }
+  h4 { font-family: var(--font-body); font-size: .8125rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--text-3); margin: var(--s-5) 0 var(--s-2); }
+  p { margin: 0 0 var(--s-3); max-width: 62ch; }
+  .lede { font-family: var(--font-display); font-size: 1.375rem; font-weight: 400; line-height: 1.4; color: var(--text-2); max-width: 46ch; font-variation-settings: "SOFT" 50, "WONK" 0; }
+  code { font-family: var(--font-mono); font-size: .9em; background: var(--code-bg); padding: .05em .35em; border-radius: 4px; }
+  table { border-collapse: collapse; width: 100%; font-size: .9375rem; }
+  th, td { text-align: left; padding: var(--s-2) var(--s-3); border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-family: var(--font-display); font-style: italic; font-weight: 400; font-size: 1rem; color: var(--text-2); }
+  td { font-variant-numeric: tabular-nums; }
+  .table-wrap { overflow-x: auto; }
+  .muted { color: var(--text-2); } .small { font-size: .875rem; } .mono { font-family: var(--font-mono); font-size: .875rem; }
+
+  .frame { display: grid; grid-template-columns: 220px minmax(0,1fr); gap: var(--s-8); max-width: 1180px; margin: 0 auto; padding: 0 var(--s-5) var(--s-9); }
+  nav.toc { position: sticky; top: 0; align-self: start; padding-top: var(--s-6); max-height: 100vh; overflow-y: auto; }
+  nav.toc .mark { font-family: var(--font-display); font-weight: 700; font-size: 1.375rem; margin-bottom: var(--s-5); display: block; text-decoration: none; color: var(--text); font-variation-settings: "SOFT" 50, "WONK" 1; }
+  nav.toc .mark span { color: var(--blue-500); }
+  nav.toc ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+  nav.toc a { display: block; padding: 6px 10px; border-radius: var(--r-control); text-decoration: none; color: var(--text-2); font-size: .9375rem; }
+  nav.toc a:hover { background: var(--surface); color: var(--text); }
+  nav.toc .meta { margin-top: var(--s-6); font-family: var(--font-mono); font-size: .75rem; color: var(--text-3); line-height: 1.5; }
+  main { min-width: 0; }
+  section { padding: var(--s-8) 0; border-bottom: 1px solid var(--border); scroll-margin-top: var(--s-5); }
+  .eyebrow { font-family: var(--font-display); font-style: italic; font-size: 1rem; color: var(--accent-text); margin-bottom: var(--s-2); }
+  @media (max-width: 900px) { .frame { grid-template-columns: 1fr; gap: 0; } nav.toc { position: static; max-height: none; } nav.toc ol { flex-direction: row; flex-wrap: wrap; gap: 4px; } nav.toc .meta { display: none; } }
+
+  /* Hero: a stack of sheets */
+  .hero { padding: var(--s-8) 0 var(--s-7); border-bottom: 1px solid var(--border); display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: var(--s-6); align-items: center; }
+  .hero .wordmark { font-family: var(--font-display); font-weight: 700; font-size: clamp(3.5rem, 9vw, 7rem); letter-spacing: -.03em; line-height: .95; margin: 0 0 var(--s-4); font-variation-settings: "SOFT" 50, "WONK" 1; }
+  .hero .wordmark span { color: var(--blue-500); }
+  .hero .tag { font-family: var(--font-display); font-size: clamp(1.25rem, 2.4vw, 1.75rem); font-weight: 400; color: var(--text-2); max-width: 24ch; font-variation-settings: "SOFT" 50, "WONK" 0; }
+  .stack { position: relative; height: 240px; }
+  .stack .p { position: absolute; inset: 0; background: var(--white); border-radius: var(--r-sheet); box-shadow: var(--shadow-paper); border: 1px solid var(--umber-200); }
+  .stack .p1 { transform: rotate(-6deg) translate(-14px, 10px); } .stack .p2 { transform: rotate(3deg) translate(10px, 4px); }
+  .stack .p3 { transform: rotate(-1deg); padding: 22px 24px; color: #231F1A; font-family: var(--font-mono); font-size: 13px; line-height: 1.5; overflow: hidden; }
+  .stack .p3::after { content: ""; position: absolute; top: 0; right: 0; width: 0; height: 0; border-style: solid; border-width: 0 34px 34px 0; border-color: transparent var(--cotton) transparent transparent; }
+  .stack .p3::before { content: ""; position: absolute; top: 0; right: 0; width: 34px; height: 34px; background: linear-gradient(225deg, transparent 50%, #E9E3D9 50%); border-bottom-left-radius: 3px; box-shadow: -2px 2px 3px rgba(0,0,0,.08); }
+  .stack .p3 b { display: block; font-family: var(--font-display); font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+  .stack .p3 .blue { color: #2447C9; }
+  @media (max-width: 760px) { .hero { grid-template-columns: 1fr; } .stack { height: 200px; max-width: 280px; } }
+
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: var(--s-3); }
+  .sw { border: 1px solid var(--border); border-radius: var(--r-card); overflow: hidden; background: var(--surface); }
+  .sw .chip { height: 84px; }
+  .sw .info { padding: var(--s-2) var(--s-3) var(--s-3); }
+  .sw .name { font-family: var(--font-display); font-weight: 600; font-size: 1.0625rem; } .sw .hex { font-family: var(--font-mono); font-size: .8125rem; color: var(--text-2); } .sw .use { font-size: .75rem; color: var(--text-3); margin-top: 2px; line-height: 1.4; }
+  .pairs { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: var(--s-3); }
+  .pair { border-radius: var(--r-card); padding: var(--s-4); border: 1px solid var(--border); font-family: var(--font-display); font-weight: 600; font-size: 1.0625rem; }
+  .pair .ratio { font-family: var(--font-mono); font-size: .8125rem; opacity: .85; margin-top: var(--s-2); display: block; font-weight: 400; }
+  .rule { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: var(--s-4); }
+  .rule .do, .rule .dont { border-radius: var(--r-card); padding: var(--s-4) var(--s-5); background: var(--surface); border: 1px solid var(--border); font-size: .9375rem; }
+  .rule .do::before { content: "Yes, please"; color: var(--moss-700); } .rule .dont::before { content: "Rather not"; color: var(--stamp-500); }
+  .rule .do::before, .rule .dont::before { display: block; font-family: var(--font-display); font-style: italic; font-size: 1.125rem; margin-bottom: var(--s-2); }
+  .rule ul { margin: 0; padding-left: 1.1em; } .rule li { margin-bottom: 4px; }
+
+  .specimen { border: 1px solid var(--border); border-radius: var(--r-card); background: var(--surface); padding: var(--s-5) var(--s-6); margin-bottom: var(--s-3); box-shadow: var(--shadow-paper); }
+  .specimen .label-t { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); margin-bottom: var(--s-3); font-weight: 600; }
+  .specimen .big { font-family: var(--font-display); font-size: 3.25rem; font-weight: 600; line-height: 1.02; letter-spacing: -.02em; font-variation-settings: "SOFT" 50, "WONK" 1; }
+  .specimen .ital { font-family: var(--font-display); font-style: italic; font-weight: 400; font-size: 2rem; font-variation-settings: "SOFT" 80, "WONK" 1; }
+  .specimen .body { font-size: 1.0625rem; max-width: 60ch; }
+  .specimen .monoline { font-family: var(--font-mono); font-size: 1rem; }
+
+  .spacing { display: flex; align-items: flex-end; gap: var(--s-3); flex-wrap: wrap; }
+  .spacing div { background: var(--blue-500); border-radius: 2px; }
+  .spacing span { display: block; font-family: var(--font-mono); font-size: .75rem; color: var(--text-2); margin-top: 4px; text-align: center; }
+  .radii { display: flex; gap: var(--s-4); flex-wrap: wrap; }
+  .radii div { width: 96px; height: 64px; border: 1.5px solid var(--text); display: grid; place-items: center; font-family: var(--font-mono); font-size: .8125rem; background: var(--surface); }
+
+  .row { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
+  .demo { border: 1px solid var(--border); border-radius: var(--r-card); background: var(--surface); padding: var(--s-5); margin-bottom: var(--s-3); }
+  .btn { font-family: var(--font-body); font-weight: 600; font-size: .9375rem; padding: 11px 20px; border-radius: 999px; border: 1.5px solid transparent; cursor: pointer; line-height: 1.2; transition: background var(--dur) var(--ease), transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease); }
+  .btn:active { transform: scale(.98); }
+  .btn-primary { background: var(--blue-500); color: #fff; }
+  .btn-primary:hover { background: var(--blue-600); }
+  .btn-secondary { background: transparent; color: var(--text); border-color: var(--umber-300); }
+  .btn-secondary:hover { background: var(--bg); }
+  .btn-ghost { background: transparent; color: var(--accent-text); }
+  .btn-ghost:hover { background: var(--blue-100); }
+  .btn-danger { background: transparent; color: var(--stamp-500); border-color: var(--stamp-500); }
+  .btn[disabled] { opacity: .45; cursor: not-allowed; }
+  .field { display: grid; gap: 6px; max-width: 320px; }
+  .field label { font-size: .9375rem; font-weight: 600; }
+  .field input { font: inherit; font-size: 1rem; padding: 10px 14px; border-radius: var(--r-control); border: 1.5px solid var(--umber-300); background: var(--surface); color: var(--text); }
+  .field .hint { font-size: .8125rem; color: var(--text-3); }
+  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: .8125rem; font-weight: 600; padding: 4px 12px; border-radius: 999px; line-height: 1.4; }
+  .pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .pill-ready { background: var(--moss-100); color: var(--moss-700); }
+  .pill-waiting { background: var(--blue-100); color: var(--accent-text); } .pill-waiting::before { animation: blink 1s steps(1) infinite; }
+  .pill-sending { background: var(--blue-100); color: var(--accent-text); } .pill-sending::before { animation: blink .3s steps(1) infinite; }
+  .pill-done { background: var(--text); color: var(--bg); }
+  .pill-warn { background: var(--honey-100); color: var(--honey-800); }
+  .pill-error { background: var(--stamp-100); color: var(--stamp-500); }
+  @keyframes blink { 50% { opacity: 0; } }
+  .job { display: grid; grid-template-columns: 96px 1fr auto; gap: var(--s-4); align-items: center; border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--s-4) var(--s-5); background: var(--surface); max-width: 640px; box-shadow: var(--shadow-paper); }
+  .job .preview { width: 96px; height: 72px; background: #fff; border: 1px solid var(--umber-300); border-radius: var(--r-sheet); display: grid; grid-template-rows: repeat(6,1fr); padding: 8px; gap: 3px; }
+  .job .preview i { display: block; background: #231F1A; height: 3px; border-radius: 1px; }
+  .job .preview i:nth-child(1) { width: 70%; height: 5px; } .job .preview i:nth-child(3) { width: 85%; } .job .preview i:nth-child(4) { width: 60%; } .job .preview i:nth-child(6) { width: 40%; background: #C8372D; }
+  .job .title { font-family: var(--font-display); font-weight: 600; font-size: 1.25rem; } .job .sub { font-size: .875rem; color: var(--text-2); }
+  .job .actions { display: grid; gap: 6px; }
+  @media (max-width: 560px) { .job { grid-template-columns: 1fr; } }
+  .toast { display: flex; align-items: center; gap: var(--s-3); background: var(--surface); color: var(--text); border-radius: var(--r-card); padding: var(--s-3) var(--s-4); max-width: 440px; box-shadow: var(--shadow-paper); border: 1px solid var(--border); }
+  .toast .led { width: 12px; height: 12px; border-radius: 50%; background: var(--blue-500); animation: blink 1s steps(1) infinite; flex: none; }
+  .toast b { display: block; font-family: var(--font-display); font-weight: 600; font-size: 1.0625rem; } .toast span { font-size: .875rem; color: var(--text-2); }
+
+  .sheets { display: flex; gap: var(--s-5); flex-wrap: wrap; align-items: flex-end; }
+  .sheet { background: var(--white); padding: 10px; border-radius: 8px; box-shadow: var(--shadow-paper); border: 1px solid var(--umber-200); }
+  .sheet .panel { background: #ECEBE6; border-radius: 3px; position: relative; overflow: hidden; color: #231F1A; font-family: var(--font-body); }
+  .sheet .panel.refresh { animation: eink 1.6s steps(1) 1; }
+  @keyframes eink { 0% { filter: invert(1);} 25% { filter: invert(0);} 50% { filter: invert(1);} 75% { filter: invert(0);} 100% { filter: none;} }
+  .sheet .cap { font-family: var(--font-mono); font-size: .75rem; color: var(--text-3); text-align: center; margin-top: 8px; }
+  .label-29 .panel { width: 148px; height: 64px; } .card-42 .panel { width: 200px; height: 150px; } .page-75 .panel { width: 266px; height: 160px; }
+  .panel .t { position: absolute; left: 12px; right: 12px; }
+  .panel .h { font-family: var(--font-display); font-weight: 600; font-size: 15px; line-height: 1.1; }
+  .panel .b { font-size: 10px; line-height: 1.35; font-weight: 500; }
+  .panel .red { background: #C8372D; color: #fff; font-weight: 700; font-size: 9px; padding: 2px 7px; display: inline-block; border-radius: 999px; }
+  .panel .code { font-family: var(--font-mono); font-size: 9px; }
+  .panel ul { margin: 0; padding-left: 12px; font-size: 9.5px; line-height: 1.4; }
+
+  .led { display: inline-block; width: 18px; height: 18px; border-radius: 50%; vertical-align: middle; box-shadow: 0 0 0 3px var(--surface), 0 0 0 4px var(--border); }
+  .led-breathe { animation: breathe 3s ease-in-out infinite; } .led-blink { animation: blink 1s steps(1) infinite; } .led-fast { animation: blink .3s steps(1) infinite; } .led-pulse { animation: breathe 1.4s ease-in-out infinite; }
+  @keyframes breathe { 0%,100% { opacity: .35;} 50% { opacity: 1;} }
+
+  .vocab td:first-child { color: var(--stamp-500); text-decoration: line-through; } .vocab td:nth-child(2) { color: var(--accent-text); font-weight: 600; }
+  .copy { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); gap: var(--s-3); }
+  .copy div { border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--s-4) var(--s-5); background: var(--surface); }
+  .copy .when { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); font-weight: 600; margin-bottom: 6px; }
+  .copy .line { font-family: var(--font-display); font-weight: 600; font-size: 1.125rem; } .copy .line + .line { font-family: var(--font-body); font-weight: 400; font-size: .9375rem; color: var(--text-2); margin-top: 2px; }
+
+  .wm { font-family: var(--font-display); font-weight: 700; letter-spacing: -.03em; line-height: 1; font-variation-settings: "SOFT" 50, "WONK" 1; }
+  .wm span { color: var(--blue-500); } .wm-mono span { color: inherit; }
+  .wm-row { display: flex; gap: var(--s-6); flex-wrap: wrap; align-items: center; }
+  .wm-row > div { display: grid; gap: var(--s-2); justify-items: start; } .wm-row .cap { font-family: var(--font-mono); font-size: .75rem; color: var(--text-3); }
+  .on-ink { background: var(--umber); color: var(--cotton); padding: var(--s-4) var(--s-5); border-radius: var(--r-card); } .on-blue { background: var(--blue-500); color: #fff; padding: var(--s-4) var(--s-5); border-radius: var(--r-card); }
+  .logo-slot { display: grid; place-items: center; height: 160px; border: 1.5px dashed var(--umber-300); border-radius: var(--r-card); color: var(--text-3); font-size: .875rem; text-align: center; padding: var(--s-4); background: var(--surface); }
+</style>
+</head>
+<body>
+
+<div class="frame">
+  <nav class="toc" aria-label="Sections">
+    <a class="mark" href="#top"><span>Re</span>Paper</a>
+    <ol>
+      <li><a href="#identity">Identity &amp; logo</a></li><li><a href="#color">Color</a></li><li><a href="#type">Typography</a></li><li><a href="#layout">Layout</a></li><li><a href="#components">Components</a></li><li><a href="#sheets">Sheets &amp; LED</a></li><li><a href="#voice">Voice</a></li>
+    </ol>
+    <div class="meta">Direction C · Stationery<br>Brand guide v0.1 · Aug 2026</div>
+  </nav>
+
+  <main id="top">
+    <header class="hero">
+      <div>
+        <div class="eyebrow">Direction C · Stationery</div>
+        <h1 class="wordmark"><span>Re</span>Paper</h1>
+        <p class="tag">Reusable paper. Printed the way you already print.</p>
+      </div>
+      <div class="stack" aria-hidden="true">
+        <div class="p p1"></div><div class="p p2"></div>
+        <div class="p p3"><b>Shopping — Saturday</b>Oat milk<br>Coffee beans (the good ones)<br>Basil, tomatoes, mozzarella<br>Batteries AA ×4<br><span class="blue">↻ printed 3 times this week</span></div>
+      </div>
+    </header>
+
+    <section id="identity">
+      <div class="eyebrow">Identity</div>
+      <h2>Identity &amp; logo</h2>
+      <p class="lede">RePaper as a thing you'd keep on your desk. The brand borrows from good stationery: a soft serif, fountain-pen ink, real paper edges, and a little wit.</p>
+      <h3>Name</h3>
+      <p><strong>RePaper</strong> — one word, capital R and P. The wordmark is Fraunces Bold with the "wonky" axis on, so the letters have a hand-cut feel; "Re" in Ink Blue, "Paper" in Umber. <code>repaper</code> in code.</p>
+      <h3>Wordmark</h3>
+      <div class="demo"><div class="wm-row">
+        <div><div class="wm" style="font-size:2.75rem"><span>Re</span>Paper</div><div class="cap">primary · light</div></div>
+        <div><div class="on-ink"><div class="wm" style="font-size:2.75rem"><span style="color:#8FA7FF">Re</span>Paper</div></div><div class="cap">on umber</div></div>
+        <div><div class="on-blue"><div class="wm wm-mono" style="font-size:2.75rem"><span>Re</span>Paper</div></div><div class="cap">on ink blue · mono</div></div>
+        <div><div class="wm wm-mono" style="font-size:2.75rem"><span>Re</span>Paper</div><div class="cap">mono · 1-bit</div></div>
+      </div></div>
+      <h3>Logo mark</h3>
+      <p>Direction for the mark: <strong>a folded corner</strong> — just the dog-ear of a page, drawn as one soft shape, with the fold's inner edge forming a small "r". Quiet, warm, instantly "paper". Also works as a physical detail: the top-right corner of every Sheet case and of the Dock is the same fold.</p>
+      <div class="logo-slot">Logo mark — pending<br><span class="mono">Square slot. Soft corners; must still read in 1-bit.</span></div>
+      <div class="rule" style="margin-top:var(--s-4)">
+        <div class="do"><ul><li>Mark sits left of the wordmark, x-height aligned</li><li>Clear space = the width of the "e"</li><li>Mono in Umber, Cotton or Ink Blue</li><li>Let it be small; it doesn't need to shout</li></ul></div>
+        <div class="dont"><ul><li>No gradients, no paper texture behind the logo</li><li>No italic wordmark</li><li>Don't add a tagline to the lockup</li><li>Don't use Stamp Red in the logo, ever</li></ul></div>
+      </div>
+    </section>
+
+    <section id="color">
+      <div class="eyebrow">Color</div>
+      <h2>Color</h2>
+      <p class="lede">Cotton paper, umber ink, and one accent: the blue of fountain-pen ink. Functional colours are stamp red, moss and honey — colours from a desk, not from a dashboard.</p>
+      <h4>Paper &amp; ink</h4>
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#FBF8F3"></div><div class="info"><div class="name">Cotton</div><div class="hex">#FBF8F3</div><div class="use">Ground. Warm, not yellow.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#FFFFFF;border-bottom:1px solid #E6E0D7"></div><div class="info"><div class="name">White</div><div class="hex">#FFFFFF</div><div class="use">Sheets, cards, inputs.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#231F1A"></div><div class="info"><div class="name">Umber</div><div class="hex">#231F1A</div><div class="use">Text, dark ground. A warm black.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#5A524A"></div><div class="info"><div class="name">Umber 600</div><div class="hex">#5A524A</div><div class="use">Secondary text.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#9B928A"></div><div class="info"><div class="name">Umber 400</div><div class="hex">#9B928A</div><div class="use">Captions, placeholders.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#E6E0D7"></div><div class="info"><div class="name">Umber 200</div><div class="hex">#E6E0D7</div><div class="use">Borders, rules.</div></div></div>
+      </div>
+      <h4>Ink Blue — the accent</h4>
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#E3E8FA"></div><div class="info"><div class="name">Ink Blue 100</div><div class="hex">#E3E8FA</div><div class="use">Tints, selected, pill backgrounds.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#2447C9"></div><div class="info"><div class="name">Ink Blue 500</div><div class="hex">#2447C9</div><div class="use">Buttons, links, LED, wordmark "Re".</div></div></div>
+        <div class="sw"><div class="chip" style="background:#1C3AA8"></div><div class="info"><div class="name">Ink Blue 600</div><div class="hex">#1C3AA8</div><div class="use">Hover / pressed.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#8FA7FF"></div><div class="info"><div class="name">Ink Blue · on dark</div><div class="hex">#8FA7FF</div><div class="use">Links and "Re" on Umber.</div></div></div>
+      </div>
+      <h4>From the desk — functional</h4>
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#C8372D"></div><div class="info"><div class="name">Stamp Red</div><div class="hex">#C8372D</div><div class="use">Errors, "urgent". Also the BWR sheet red.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#4E7C4A"></div><div class="info"><div class="name">Moss</div><div class="hex">#4E7C4A</div><div class="use">Ready, printed. Text: #36593A.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#D99A1E"></div><div class="info"><div class="name">Honey</div><div class="hex">#D99A1E</div><div class="use">Needs a decision. Text: #7A5300.</div></div></div>
+      </div>
+      <h3>Approved pairs</h3>
+      <div class="pairs">
+        <div class="pair" style="background:#FBF8F3;color:#231F1A;border-color:#E6E0D7">Umber on Cotton<span class="ratio">15.6 : 1</span></div>
+        <div class="pair" style="background:#FBF8F3;color:#2447C9;border-color:#E6E0D7">Ink Blue on Cotton<span class="ratio">7.0 : 1 · links</span></div>
+        <div class="pair" style="background:#2447C9;color:#FFFFFF">White on Ink Blue<span class="ratio">7.4 : 1 · primary button</span></div>
+        <div class="pair" style="background:#231F1A;color:#FBF8F3">Cotton on Umber<span class="ratio">15.6 : 1</span></div>
+        <div class="pair" style="background:#231F1A;color:#8FA7FF">Blue-on-dark on Umber<span class="ratio">7.9 : 1 · dark links</span></div>
+        <div class="pair" style="background:#FFFFFF;color:#C8372D;border-color:#E6E0D7">Stamp Red on White<span class="ratio">5.2 : 1</span></div>
+      </div>
+      <p class="small muted" style="margin-top:var(--s-3)">Blue is the only colour that means "RePaper". Red, moss and honey mean their state and nothing else. Never tint the ground; the paper stays cotton.</p>
+      <h3>Dark mode</h3>
+      <p>A warm dark: ground <code>#1C1916</code>, surfaces <code>#272320</code>, text Cotton, accent <code>#8FA7FF</code>. Buttons stay Ink Blue 500 with white text. Paper shadows become a little deeper rather than disappearing — cards still stack.</p>
+    </section>
+
+    <section id="type">
+      <div class="eyebrow">Typography</div>
+      <h2>Typography</h2>
+      <p class="lede">Fraunces gives the brand its handwriting: soft, slightly wonky, warm. Albert Sans does the quiet work of UI and body. Courier Prime — a real typewriter face — for anything that's an ID, a size, a timestamp, or content on a sheet.</p>
+      <div class="specimen"><div class="label-t">Display · Fraunces 600–700 · soft 50, wonk on · headlines, wordmark</div><div class="big">Hold a sheet to print.</div></div>
+      <div class="specimen"><div class="label-t">Display italic · Fraunces 400 italic · eyebrows, table heads, asides</div><div class="ital">Printed three times this week, and it's Tuesday.</div></div>
+      <div class="specimen"><div class="label-t">Body &amp; UI · Albert Sans 400/500/600</div><div class="body">Your systems keep printing exactly as they do today. Instead of a printer, they print to RePaper — and the page appears on a reusable e-paper sheet. Reuse it thousands of times. No paper, no toner, no integration project.</div></div>
+      <div class="specimen"><div class="label-t">Mono · Courier Prime 400/700 · IDs, sizes, on-sheet lists</div><div class="monoline">sheet RP-4C-01F3 · 400×300 · BWR · 84.8×63.6 mm · printed 10:41</div></div>
+      <h3>Scale</h3>
+      <div class="table-wrap"><table>
+        <tr><th>Token</th><th>Size / line</th><th>Face</th><th>Use</th></tr>
+        <tr><td class="mono">display-xl</td><td>72 / 68</td><td>Fraunces 700, −3%</td><td>Wordmark, hero</td></tr>
+        <tr><td class="mono">display-l</td><td>40 / 44</td><td>Fraunces 600, −1%</td><td>Page titles</td></tr>
+        <tr><td class="mono">display-m</td><td>24 / 30</td><td>Fraunces 600</td><td>Section &amp; card titles</td></tr>
+        <tr><td class="mono">aside</td><td>18 / 26</td><td>Fraunces 400 italic</td><td>Eyebrows, asides, table heads</td></tr>
+        <tr><td class="mono">body</td><td>17 / 27</td><td>Albert Sans 400</td><td>Default</td></tr>
+        <tr><td class="mono">body-s</td><td>15 / 22</td><td>Albert Sans 400/600</td><td>Secondary, tables</td></tr>
+        <tr><td class="mono">label</td><td>13 / 18</td><td>Albert Sans 600, caps, +4%</td><td>Small headings</td></tr>
+        <tr><td class="mono">mono</td><td>15 / 22</td><td>Courier Prime 400</td><td>IDs, sizes, on-sheet text</td></tr>
+      </table></div>
+      <h3>On the sheet</h3>
+      <p>Sheets look like typed or hand-set paper: Fraunces 600 for the headline, Courier Prime for lists and detail (typewriter faces dither beautifully at 1-bit). Minimum 12 px for Courier on a 4.2" panel. Generous margins — a sheet should never look crammed.</p>
+    </section>
+
+    <section id="layout">
+      <div class="eyebrow">Layout</div>
+      <h2>Layout</h2>
+      <p class="lede">Paper on a desk: white sheets with soft corners and a light shadow, resting on cotton. Things stack and overlap a little; nothing is boxed in by hard lines.</p>
+      <h4>Spacing (4 px grid)</h4>
+      <div class="spacing"><div style="width:4px;height:4px"><span>4</span></div><div style="width:8px;height:8px"><span>8</span></div><div style="width:12px;height:12px"><span>12</span></div><div style="width:16px;height:16px"><span>16</span></div><div style="width:24px;height:24px"><span>24</span></div><div style="width:32px;height:32px"><span>32</span></div><div style="width:48px;height:48px"><span>48</span></div><div style="width:64px;height:64px"><span>64</span></div></div>
+      <h4>Radius</h4>
+      <div class="radii"><div style="border-radius:3px">3 · sheets</div><div style="border-radius:8px">8 · inputs</div><div style="border-radius:16px">16 · cards</div><div style="border-radius:999px">pill · buttons</div></div>
+      <h4>Surfaces</h4>
+      <p>Cards are white on cotton with a 1 px Umber 200 border and the paper shadow (<code>0 1px 2px / 0 6px 18px</code>, warm-tinted). Buttons are pills. Sections are separated by a single hairline rule and generous space. Reading width 62 characters.</p>
+    </section>
+
+    <section id="components">
+      <div class="eyebrow">Components</div>
+      <h2>Components</h2>
+      <h4>Buttons</h4>
+      <div class="demo"><div class="row"><button class="btn btn-primary">Print to this sheet</button><button class="btn btn-secondary">Choose another sheet</button><button class="btn btn-ghost">Skip</button><button class="btn btn-danger">Cancel job</button><button class="btn btn-primary" disabled>Printing…</button></div></div>
+      <p class="small muted">Pills. Primary = Ink Blue with white text. One per view.</p>
+      <h4>Inputs</h4>
+      <div class="demo"><div class="field"><label for="pn">Printer name</label><input id="pn" value="Rouven's RePaper"><div class="hint">This is what you'll see in the print dialog.</div></div></div>
+      <h4>Job states</h4>
+      <div class="demo"><div class="row"><span class="pill pill-ready">Ready</span><span class="pill pill-waiting">Waiting for a sheet</span><span class="pill pill-sending">Printing</span><span class="pill pill-done">Printed</span><span class="pill pill-warn">Sheet too small</span><span class="pill pill-error">Didn't print</span></div></div>
+      <h4>Job card</h4>
+      <div class="demo"><div class="job"><div class="preview" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div><div><div class="title">Shopping — Saturday</div><div class="sub">1 page · from Rouven's MacBook · just now</div><div style="margin-top:8px"><span class="pill pill-waiting">Waiting for a sheet</span></div></div><div class="actions"><button class="btn btn-primary">Hold a sheet</button><button class="btn btn-ghost">Discard</button></div></div></div>
+      <h4>Notification</h4>
+      <div class="demo"><div class="toast" role="status"><div class="led"></div><div><b>A page is waiting</b><span>Shopping — Saturday · Hold a sheet to your phone to print it.</span></div></div></div>
+    </section>
+
+    <section id="sheets">
+      <div class="eyebrow">Sheets &amp; LED</div>
+      <h2>Sheets &amp; LED</h2>
+      <p class="lede">Sheets are shown in a white paper case with soft corners — an object you'd stick on the fridge. The Dock's LED is a small, warm signal, never a status bar.</p>
+      <div class="sheets">
+        <div class="sheet label-29"><div class="panel refresh"><div class="t" style="top:8px"><div class="h">Kitchen</div></div><div class="t" style="top:30px"><div class="code">Oat milk · Coffee · Basil</div></div><div class="t" style="top:44px"><span class="red">today</span></div></div><div class="cap">Sheet Label · 2.9"</div></div>
+        <div class="sheet card-42"><div class="panel refresh"><div class="t" style="top:10px"><div class="h">Meeting room 3.02</div></div><div class="t" style="top:38px"><div class="b">09:00 – 10:30<br>Sprint planning · Team Dock</div></div><div class="t" style="top:80px"><div class="b">11:00 – 12:00<br>SoluM call</div></div><div class="t" style="top:124px"><div class="code">booked via Outlook · 08:58</div></div></div><div class="cap">Sheet Card · 4.2"</div></div>
+        <div class="sheet page-75"><div class="panel refresh"><div class="t" style="top:10px"><div class="h">Shopping — Saturday</div></div><div class="t" style="top:36px"><ul><li>Oat milk</li><li>Coffee beans (the good ones)</li><li>Basil, tomatoes, mozzarella</li><li>Batteries AA ×4</li><li>Birthday card for Anna</li></ul></div><div class="t" style="top:132px"><div class="code">printed 3× this week · from Rouven's MacBook</div></div></div><div class="cap">Sheet Page · 7.5"</div></div>
+      </div>
+      <h3>LED language</h3>
+      <div class="table-wrap"><table>
+        <tr><th></th><th>State</th><th>Pattern</th><th>Colour</th><th>What to do</th></tr>
+        <tr><td><span class="led led-pulse" style="background:#2447C9"></span></td><td>Starting</td><td>Slow pulse</td><td class="mono">Ink Blue</td><td>Wait a moment.</td></tr>
+        <tr><td><span class="led led-blink" style="background:#2447C9"></span></td><td>Setup</td><td>Blink</td><td class="mono">Ink Blue</td><td>Open the setup page on your phone.</td></tr>
+        <tr><td><span class="led led-breathe" style="background:#FBF8F3;box-shadow:0 0 0 1px #CFC7BC"></span></td><td>Ready</td><td>Breathe, very dim</td><td class="mono">Warm white</td><td>Nothing — it's just there.</td></tr>
+        <tr><td><span class="led led-blink" style="background:#2447C9"></span></td><td><strong>A page is waiting</strong></td><td>Blink 1 Hz</td><td class="mono">Ink Blue</td><td>Hold a sheet to the Dock.</td></tr>
+        <tr><td><span class="led led-fast" style="background:#2447C9"></span></td><td>Printing</td><td>Fast blink</td><td class="mono">Ink Blue</td><td>Hold still.</td></tr>
+        <tr><td><span class="led" style="background:#4E7C4A"></span></td><td><strong>Printed</strong></td><td>Solid 3 s</td><td class="mono">Moss</td><td>Done.</td></tr>
+        <tr><td><span class="led" style="background:#D99A1E"></span></td><td>Needs a decision</td><td>Solid</td><td class="mono">Honey</td><td>Press to fit anyway, hold to cancel.</td></tr>
+        <tr><td><span class="led led-blink" style="background:#C8372D"></span></td><td>Didn't print</td><td>Blink</td><td class="mono">Stamp Red</td><td>Hold the sheet again.</td></tr>
+        <tr><td><span class="led" style="background:#C8372D"></span></td><td>No network</td><td>Solid</td><td class="mono">Stamp Red</td><td>Check Wi-Fi in the setup page.</td></tr>
+      </table></div>
+      <p class="small muted" style="margin-top:var(--s-3)">Blue = RePaper talking to you, moss = done, honey = your call, red = something's wrong, warm white = idle. WS2812: Ink Blue (36,71,201) · Moss (78,124,74) · Honey (217,154,30) · Stamp Red (200,55,45) · Warm white (255,244,225) at 15 %.</p>
+    </section>
+
+    <section id="voice">
+      <div class="eyebrow">Voice</div>
+      <h2>Voice</h2>
+      <p class="lede">Like a good note left on the kitchen table: friendly, specific, a little dry. We're allowed to be charming here — just never cute.</p>
+      <div class="rule">
+        <div class="do"><ul><li>Talk to one person: "your sheet", "your phone".</li><li>Small, true details: "printed 3× this week".</li><li>Full sentences with full stops. Contractions are fine.</li><li>Humour in the empty states, never in the errors.</li></ul></div>
+        <div class="dont"><ul><li>No exclamation marks, no emoji in the product.</li><li>No tech vocabulary: gateway, sync, provision, firmware, tag.</li><li>No "eco", "green", "smart".</li><li>No apologising — say what to do instead.</li></ul></div>
+      </div>
+      <h4>Vocabulary</h4>
+      <div class="table-wrap"><table class="vocab"><tr><th>Rather not</th><th>Say</th></tr><tr><td>tag, ESL, display</td><td>sheet</td></tr><tr><td>push, sync, update</td><td>print</td></tr><tr><td>the device</td><td>the Dock / your printer</td></tr><tr><td>tap, scan, pair</td><td>hold a sheet to…</td></tr><tr><td>job</td><td>page (in consumer copy)</td></tr></table></div>
+      <h4>Microcopy</h4>
+      <div class="copy">
+        <div><div class="when">Page arrives</div><div class="line">A page is waiting</div><div class="line">Shopping — Saturday. Hold a sheet to print it.</div></div>
+        <div><div class="when">Printing</div><div class="line">Printing…</div><div class="line">Hold still, this takes a second.</div></div>
+        <div><div class="when">Done</div><div class="line">Printed.</div><div class="line">The kitchen sheet now shows your list.</div></div>
+        <div><div class="when">Too small</div><div class="line">That page won't fit this sheet</div><div class="line">Print it smaller, or hold a bigger sheet.</div></div>
+        <div><div class="when">Didn't print</div><div class="line">That didn't take</div><div class="line">Hold the sheet a little closer and try again.</div></div>
+        <div><div class="when">Empty state</div><div class="line">Nothing waiting</div><div class="line">Print anything to "Rouven's RePaper" — it lands here.</div></div>
+        <div><div class="when">Impact</div><div class="line">312 sheets of paper saved</div><div class="line">since June. About a tree's worth of Saturdays.</div></div>
+      </div>
+    </section>
+  </main>
+</div>
+</body>
+</html>

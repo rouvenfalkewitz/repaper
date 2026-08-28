@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>RePaper Industrial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,500;62..125,700;62..125,800&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+  :root {
+    --steel-50: #EEF0F3;    /* ground */
+    --steel-0: #FFFFFF;     /* surfaces */
+    --steel-900: #161C26;   /* ink */
+    --steel-600: #4B5563;   /* secondary text */
+    --steel-400: #8A93A2;   /* tertiary */
+    --steel-200: #CDD3DC;   /* borders */
+    --steel-300: #AEB6C2;
+    --orange-500: #E8590C;  /* accent fill */
+    --orange-600: #C94C0A;
+    --orange-700: #B54308;  /* accent text on light */
+    --orange-100: #FDE4D6;
+    --yellow-500: #F2C400;  /* caution */
+    --yellow-100: #FFF3B8;
+    --yellow-800: #7A5D00;
+    --red-500: #C8102E;
+    --red-100: #FADCE0;
+    --green-500: #1F9D55;   /* OK — functional only */
+    --green-100: #D8F3E3;
+    --green-700: #16733E;
+    --bg: var(--steel-50); --surface: var(--steel-0); --border: var(--steel-200); --border-strong: var(--steel-900);
+    --text: var(--steel-900); --text-2: var(--steel-600); --text-3: var(--steel-400);
+    --accent: var(--orange-500); --accent-text: var(--orange-700); --on-accent: var(--steel-900); --code-bg: #E2E6EC;
+    --font-display: "Archivo", "Arial Narrow", Arial, sans-serif;
+    --font-body: "Source Sans 3", "Segoe UI", Helvetica, Arial, sans-serif;
+    --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+    --r-0: 0; --r-1: 2px; --r-2: 4px;
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px;
+    --dur: 120ms;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #0F141C; --surface: #171E29; --border: #2A3342; --border-strong: #EEF0F3; --steel-300: #3D4756;
+    --text: #EEF0F3; --text-2: #B4BCC9; --text-3: #737D8C; --accent-text: #FF8A4C; --code-bg: #0A0E14;
+    --orange-100: #3D2114; --yellow-100: #3A3000; --yellow-800: #F2C400; --red-100: #3D1118; --green-100: #113321; --green-700: #4FCB85;
+  } }
+  :root[data-theme="dark"] {
+    --bg: #0F141C; --surface: #171E29; --border: #2A3342; --border-strong: #EEF0F3; --steel-300: #3D4756;
+    --text: #EEF0F3; --text-2: #B4BCC9; --text-3: #737D8C; --accent-text: #FF8A4C; --code-bg: #0A0E14;
+    --orange-100: #3D2114; --yellow-100: #3A3000; --yellow-800: #F2C400; --red-100: #3D1118; --green-100: #113321; --green-700: #4FCB85;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 17px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+  a { color: var(--accent-text); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+  a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--orange-500); outline-offset: 2px; }
+  h1, h2, h3 { font-family: var(--font-display); margin: 0; line-height: 1; text-wrap: balance; text-transform: uppercase; }
+  h2 { font-size: 2.25rem; font-weight: 800; font-stretch: 112%; letter-spacing: -.01em; margin-bottom: var(--s-3); }
+  h3 { font-size: 1.125rem; font-weight: 700; font-stretch: 100%; letter-spacing: .04em; margin: var(--s-6) 0 var(--s-3); padding-top: var(--s-3); border-top: 2px solid var(--border-strong); }
+  h4 { font-family: var(--font-mono); font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--text-2); margin: var(--s-5) 0 var(--s-2); }
+  p { margin: 0 0 var(--s-3); max-width: 64ch; }
+  .lede { font-size: 1.25rem; color: var(--text-2); max-width: 56ch; }
+  code { font-family: var(--font-mono); font-size: .875em; background: var(--code-bg); padding: .1em .35em; }
+  table { border-collapse: collapse; width: 100%; font-size: .9375rem; }
+  th, td { text-align: left; padding: var(--s-2) var(--s-3); border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-family: var(--font-mono); font-size: .6875rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-2); border-bottom: 2px solid var(--border-strong); }
+  td { font-variant-numeric: tabular-nums; }
+  .table-wrap { overflow-x: auto; }
+  .muted { color: var(--text-2); } .small { font-size: .875rem; } .mono { font-family: var(--font-mono); font-size: .8125rem; }
+
+  .frame { display: grid; grid-template-columns: 220px minmax(0,1fr); gap: var(--s-8); max-width: 1180px; margin: 0 auto; padding: 0 var(--s-5) var(--s-9); }
+  nav.toc { position: sticky; top: 0; align-self: start; padding-top: var(--s-6); max-height: 100vh; overflow-y: auto; }
+  nav.toc .mark { font-family: var(--font-display); font-weight: 800; font-stretch: 112%; text-transform: uppercase; font-size: 1.125rem; margin-bottom: var(--s-5); display: block; text-decoration: none; color: var(--text); letter-spacing: -.01em; }
+  nav.toc .mark span { color: var(--orange-500); }
+  nav.toc ol { list-style: none; margin: 0; padding: 0; counter-reset: s; }
+  nav.toc li { counter-increment: s; }
+  nav.toc a { display: flex; gap: 10px; padding: 6px 0; border-top: 1px solid var(--border); text-decoration: none; color: var(--text-2); font-size: .9375rem; }
+  nav.toc a::before { content: counter(s, decimal-leading-zero); font-family: var(--font-mono); font-size: .75rem; color: var(--text-3); padding-top: 2px; }
+  nav.toc a:hover { color: var(--text); }
+  nav.toc .meta { margin-top: var(--s-6); font-family: var(--font-mono); font-size: .6875rem; color: var(--text-3); line-height: 1.6; }
+  main { min-width: 0; }
+  section { padding: var(--s-8) 0; border-bottom: 1px solid var(--border); scroll-margin-top: var(--s-5); }
+  .eyebrow { font-family: var(--font-mono); font-size: .75rem; letter-spacing: .1em; color: var(--accent-text); font-weight: 700; margin-bottom: var(--s-2); }
+  @media (max-width: 900px) { .frame { grid-template-columns: 1fr; gap: 0; } nav.toc { position: static; max-height: none; } nav.toc ol { display: flex; flex-wrap: wrap; gap: 0 var(--s-4); } nav.toc a { border-top: 0; } nav.toc .meta { display: none; } }
+
+  /* Hero: a label */
+  .hero { padding: var(--s-8) 0 var(--s-7); border-bottom: 1px solid var(--border); }
+  .label { background: var(--surface); border: 2px solid var(--border-strong); position: relative; padding: var(--s-5) var(--s-6) var(--s-5); }
+  .label::after { content: ""; position: absolute; left: 0; right: 0; bottom: -2px; border-bottom: 2px dashed var(--border-strong); }
+  .label .head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-4); font-family: var(--font-mono); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); border-bottom: 2px solid var(--border-strong); padding-bottom: var(--s-2); margin-bottom: var(--s-4); }
+  .hero .wordmark { font-family: var(--font-display); font-weight: 800; font-stretch: 125%; text-transform: uppercase; font-size: clamp(3rem, 9vw, 6.5rem); letter-spacing: -.02em; line-height: .9; margin: 0 0 var(--s-3); }
+  .hero .wordmark span { color: var(--orange-500); }
+  .hero .tag { font-family: var(--font-display); font-weight: 500; font-stretch: 100%; font-size: clamp(1.125rem, 2.2vw, 1.5rem); color: var(--text-2); max-width: 34ch; text-transform: none; }
+  .barcode { display: block; width: 100%; height: 56px; margin-top: var(--s-5); image-rendering: pixelated; }
+  .label .foot { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: .6875rem; letter-spacing: .06em; color: var(--text-3); margin-top: 6px; }
+
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: var(--s-3); }
+  .sw { border: 1px solid var(--border); background: var(--surface); }
+  .sw .chip { height: 84px; border-bottom: 1px solid var(--border); }
+  .sw .info { padding: var(--s-2) var(--s-3) var(--s-3); }
+  .sw .name { font-weight: 700; font-size: .9375rem; } .sw .hex { font-family: var(--font-mono); font-size: .75rem; color: var(--text-2); } .sw .use { font-size: .75rem; color: var(--text-3); margin-top: 2px; line-height: 1.4; }
+  .pairs { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: var(--s-3); }
+  .pair { padding: var(--s-4); border: 1px solid var(--border); font-weight: 600; }
+  .pair .ratio { font-family: var(--font-mono); font-size: .75rem; opacity: .85; margin-top: var(--s-2); display: block; font-weight: 400; }
+  .rule { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: var(--s-4); }
+  .rule .do, .rule .dont { padding: var(--s-4); background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--green-500); font-size: .9375rem; }
+  .rule .dont { border-left-color: var(--red-500); }
+  .rule .do::before { content: "DO"; color: var(--green-700); } .rule .dont::before { content: "DON'T"; color: var(--red-500); }
+  .rule .do::before, .rule .dont::before { display: block; font-family: var(--font-mono); font-size: .6875rem; letter-spacing: .1em; font-weight: 700; margin-bottom: var(--s-2); }
+  .rule ul { margin: 0; padding-left: 1.1em; } .rule li { margin-bottom: 4px; }
+
+  .specimen { border: 1px solid var(--border); background: var(--surface); padding: var(--s-5); margin-bottom: var(--s-3); }
+  .specimen .label-t { font-family: var(--font-mono); font-size: .6875rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); margin-bottom: var(--s-3); }
+  .specimen .big { font-family: var(--font-display); font-size: 3rem; font-weight: 800; font-stretch: 112%; text-transform: uppercase; line-height: .95; letter-spacing: -.01em; }
+  .specimen .narrow { font-family: var(--font-display); font-size: 2rem; font-weight: 700; font-stretch: 75%; text-transform: uppercase; line-height: 1; }
+  .specimen .body { font-size: 1.0625rem; max-width: 60ch; }
+  .specimen .monoline { font-family: var(--font-mono); font-size: .9375rem; }
+
+  .spacing { display: flex; align-items: flex-end; gap: var(--s-3); flex-wrap: wrap; }
+  .spacing div { background: var(--orange-500); }
+  .spacing span { display: block; font-family: var(--font-mono); font-size: .6875rem; color: var(--text-2); margin-top: 4px; text-align: center; }
+  .radii { display: flex; gap: var(--s-4); flex-wrap: wrap; }
+  .radii div { width: 96px; height: 64px; border: 2px solid var(--border-strong); display: grid; place-items: center; font-family: var(--font-mono); font-size: .75rem; background: var(--surface); }
+
+  .row { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
+  .demo { border: 1px solid var(--border); background: var(--surface); padding: var(--s-5); margin-bottom: var(--s-3); }
+  .btn { font-family: var(--font-display); font-weight: 700; font-stretch: 100%; text-transform: uppercase; letter-spacing: .04em; font-size: .875rem; padding: 12px 18px; border: 2px solid transparent; cursor: pointer; line-height: 1; transition: background var(--dur), transform var(--dur); }
+  .btn:active { transform: translate(1px,1px); }
+  .btn-primary { background: var(--orange-500); color: var(--on-accent); border-color: var(--orange-500); }
+  .btn-primary:hover { background: var(--orange-600); border-color: var(--orange-600); }
+  .btn-secondary { background: transparent; color: var(--text); border-color: var(--border-strong); }
+  .btn-secondary:hover { background: var(--bg); }
+  .btn-ghost { background: transparent; color: var(--accent-text); }
+  .btn-danger { background: transparent; color: var(--red-500); border-color: var(--red-500); }
+  .btn[disabled] { opacity: .45; cursor: not-allowed; }
+  .field { display: grid; gap: 6px; max-width: 320px; }
+  .field label { font-family: var(--font-mono); font-size: .6875rem; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; color: var(--text-2); }
+  .field input { font: inherit; font-size: 1rem; padding: 10px 12px; border: 2px solid var(--border-strong); background: var(--surface); color: var(--text); border-radius: 0; }
+  .field .hint { font-size: .8125rem; color: var(--text-3); }
+  .pill { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 4px 10px; border: 1px solid currentColor; line-height: 1.4; }
+  .pill::before { content: ""; width: 8px; height: 8px; background: currentColor; }
+  .pill-ready { color: var(--green-700); background: var(--green-100); }
+  .pill-waiting { color: var(--accent-text); background: var(--orange-100); } .pill-waiting::before { animation: blink 1s steps(1) infinite; }
+  .pill-sending { color: var(--accent-text); background: var(--orange-100); } .pill-sending::before { animation: blink .3s steps(1) infinite; }
+  .pill-done { color: var(--bg); background: var(--text); border-color: var(--text); }
+  .pill-warn { color: var(--yellow-800); background: var(--yellow-100); }
+  .pill-error { color: var(--red-500); background: var(--red-100); }
+  @keyframes blink { 50% { opacity: 0; } }
+  .job { display: grid; grid-template-columns: 96px 1fr auto; gap: var(--s-4); align-items: center; border: 2px solid var(--border-strong); padding: var(--s-4); background: var(--surface); max-width: 640px; position: relative; }
+  .job::before { content: "JOB 4711"; position: absolute; top: -10px; left: 12px; background: var(--surface); padding: 0 6px; font-family: var(--font-mono); font-size: .6875rem; letter-spacing: .1em; color: var(--text-2); }
+  .job .preview { width: 96px; height: 72px; background: #fff; border: 1px solid var(--steel-300); display: grid; grid-template-rows: repeat(6,1fr); padding: 8px; gap: 3px; }
+  .job .preview i { display: block; background: #161C26; height: 3px; }
+  .job .preview i:nth-child(1) { width: 70%; height: 5px; } .job .preview i:nth-child(3) { width: 85%; } .job .preview i:nth-child(4) { width: 60%; } .job .preview i:nth-child(6) { width: 40%; background: #C8102E; }
+  .job .title { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; font-size: 1.125rem; } .job .sub { font-family: var(--font-mono); font-size: .8125rem; color: var(--text-2); }
+  .job .actions { display: grid; gap: 6px; }
+  @media (max-width: 560px) { .job { grid-template-columns: 1fr; } }
+  .toast { display: flex; align-items: center; gap: var(--s-3); background: var(--steel-900); color: var(--steel-50); padding: var(--s-3) var(--s-4); max-width: 460px; border-left: 6px solid var(--orange-500); }
+  .toast .led { width: 12px; height: 12px; background: var(--orange-500); animation: blink 1s steps(1) infinite; flex: none; }
+  .toast b { display: block; font-family: var(--font-display); text-transform: uppercase; font-weight: 700; letter-spacing: .03em; } .toast span { font-size: .875rem; opacity: .8; }
+
+  .sheets { display: flex; gap: var(--s-5); flex-wrap: wrap; align-items: flex-end; }
+  .sheet { background: #262B34; padding: 10px; border: 1px solid #3B4351; }
+  .sheet .panel { background: #E9EBE6; position: relative; overflow: hidden; color: #000; font-family: var(--font-body); }
+  .sheet .panel.refresh { animation: eink 1.6s steps(1) 1; }
+  @keyframes eink { 0% { filter: invert(1);} 25% { filter: invert(0);} 50% { filter: invert(1);} 75% { filter: invert(0);} 100% { filter: none;} }
+  .sheet .cap { font-family: var(--font-mono); font-size: .6875rem; color: var(--text-3); text-align: center; margin-top: 6px; }
+  .label-29 .panel { width: 148px; height: 64px; } .card-42 .panel { width: 200px; height: 150px; } .page-75 .panel { width: 266px; height: 160px; }
+  .panel .t { position: absolute; left: 10px; right: 10px; }
+  .panel .h { font-family: var(--font-display); font-weight: 800; font-stretch: 100%; text-transform: uppercase; font-size: 15px; line-height: 1; }
+  .panel .b { font-size: 10px; line-height: 1.3; font-weight: 600; }
+  .panel .red { background: #C8102E; color: #fff; font-family: var(--font-display); font-weight: 800; font-size: 9px; padding: 2px 6px; display: inline-block; text-transform: uppercase; }
+  .panel .code { font-family: var(--font-mono); font-size: 9px; }
+  .panel .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; font-size: 9px; font-family: var(--font-mono); }
+  .panel .bars { position: absolute; left: 10px; bottom: 8px; height: 18px; width: 120px; background: repeating-linear-gradient(90deg, #000 0 2px, transparent 2px 3px, #000 3px 4px, transparent 4px 7px, #000 7px 10px, transparent 10px 11px); }
+
+  .led { display: inline-block; width: 18px; height: 18px; vertical-align: middle; box-shadow: 0 0 0 3px var(--surface), 0 0 0 4px var(--border); }
+  .led-breathe { animation: breathe 3s ease-in-out infinite; } .led-blink { animation: blink 1s steps(1) infinite; } .led-fast { animation: blink .3s steps(1) infinite; } .led-pulse { animation: breathe 1.4s ease-in-out infinite; }
+  @keyframes breathe { 0%,100% { opacity: .35;} 50% { opacity: 1;} }
+
+  .vocab td:first-child { color: var(--red-500); text-decoration: line-through; } .vocab td:nth-child(2) { color: var(--accent-text); font-weight: 700; }
+  .copy { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px,1fr)); gap: var(--s-3); }
+  .copy div { border: 1px solid var(--border); border-top: 3px solid var(--border-strong); padding: var(--s-4); background: var(--surface); }
+  .copy .when { font-family: var(--font-mono); font-size: .6875rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); margin-bottom: 6px; }
+  .copy .line { font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: .02em; } .copy .line + .line { font-family: var(--font-body); font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-2); font-size: .9375rem; margin-top: 2px; }
+
+  .wm { font-family: var(--font-display); font-weight: 800; font-stretch: 125%; text-transform: uppercase; letter-spacing: -.02em; line-height: 1; }
+  .wm span { color: var(--orange-500); } .wm-mono span { color: inherit; }
+  .wm-row { display: flex; gap: var(--s-6); flex-wrap: wrap; align-items: center; }
+  .wm-row > div { display: grid; gap: var(--s-2); justify-items: start; } .wm-row .cap { font-family: var(--font-mono); font-size: .6875rem; color: var(--text-3); }
+  .on-ink { background: var(--steel-900); color: var(--steel-50); padding: var(--s-4) var(--s-5); } .on-orange { background: var(--orange-500); color: var(--steel-900); padding: var(--s-4) var(--s-5); }
+  .logo-slot { display: grid; place-items: center; height: 160px; border: 2px dashed var(--steel-300); color: var(--text-3); font-size: .875rem; text-align: center; padding: var(--s-4); background: var(--surface); }
+</style>
+</head>
+<body>
+
+<div class="frame">
+  <nav class="toc" aria-label="Sections">
+    <a class="mark" href="#top"><span>Re</span>Paper</a>
+    <ol>
+      <li><a href="#identity">Identity &amp; logo</a></li><li><a href="#color">Color</a></li><li><a href="#type">Typography</a></li><li><a href="#layout">Layout</a></li><li><a href="#components">Components</a></li><li><a href="#sheets">Sheets &amp; LED</a></li><li><a href="#voice">Voice</a></li>
+    </ol>
+    <div class="meta">DIRECTION B · INDUSTRIAL<br>Brand guide v0.1 · 2026-08</div>
+  </nav>
+
+  <main id="top">
+    <header class="hero">
+      <div class="label">
+        <div class="head"><span>Direction B · Industrial</span><span>Brand guide · v0.1</span></div>
+        <h1 class="wordmark"><span>Re</span>Paper</h1>
+        <p class="tag">Reusable paper. Printed the way you already print.</p>
+        <canvas class="barcode" id="barcode" width="1200" height="56" aria-hidden="true"></canvas>
+        <div class="foot"><span>RP-DOCK-0001 · 4.2 IN · BWR</span><span>PRINTED 2026-08-28 20:41</span></div>
+      </div>
+      <p class="small muted" style="margin-top:14px">The label is the motif. Everything RePaper does ends up looking like a label off a thermal printer: a hard frame, a tear line, a barcode strip, a mono footer. The barcode above is generated, not decorative — every UI can carry real IDs this way.</p>
+    </header>
+
+    <section id="identity">
+      <div class="eyebrow">01 / IDENTITY</div>
+      <h2>Identity &amp; logo</h2>
+      <p class="lede">RePaper for the shop floor. Built like the equipment it replaces: unfussy, high-visibility, readable from three metres in bad light with gloves on.</p>
+      <h3>Name</h3>
+      <p><strong>RePaper</strong> — one word. In this direction the wordmark is set in caps, extra-wide Archivo, like a stencil on a crate. "RE" in Safety Orange, "PAPER" in Steel. <code>repaper</code> in code.</p>
+      <h3>Wordmark</h3>
+      <div class="demo"><div class="wm-row">
+        <div><div class="wm" style="font-size:2.5rem"><span>Re</span>Paper</div><div class="cap">PRIMARY · LIGHT</div></div>
+        <div><div class="on-ink"><div class="wm" style="font-size:2.5rem"><span>Re</span>Paper</div></div><div class="cap">ON STEEL</div></div>
+        <div><div class="on-orange"><div class="wm wm-mono" style="font-size:2.5rem"><span>Re</span>Paper</div></div><div class="cap">ON ORANGE · MONO</div></div>
+        <div><div class="wm wm-mono" style="font-size:2.5rem"><span>Re</span>Paper</div><div class="cap">MONO · 1-BIT</div></div>
+      </div></div>
+      <h3>Logo mark</h3>
+      <p>Direction for the mark: a <strong>label with a tear line and a return arrow</strong> — a rectangle with one perforated edge, the arrow looping back through it. Blocky, stencil-cut, no curves finer than the stroke. Must work as a stencil, a die-cut sticker and an LED silhouette.</p>
+      <div class="logo-slot">LOGO MARK — PENDING<br><span class="mono">Square slot. Stencil-safe: no islands, no thin bridges.</span></div>
+      <div class="rule" style="margin-top:var(--s-4)">
+        <div class="do"><ul><li>Caps wordmark, wide width (125%), tracking −2%</li><li>Mark and wordmark share a baseline; mark height = cap height</li><li>Clear space = height of one letter</li><li>Mono in Steel or Chalk only</li></ul></div>
+        <div class="dont"><ul><li>No rounded, lower-case or narrow versions of the wordmark</li><li>No gradients, no glow, no metallic</li><li>Never orange text on steel for body copy</li><li>Don't use the orange for anything but "act now"</li></ul></div>
+      </div>
+    </section>
+
+    <section id="color">
+      <div class="eyebrow">02 / COLOR</div>
+      <h2>Color</h2>
+      <p class="lede">Steel greys, one safety colour, and the functional colours of industrial signage. Nothing pastel, nothing "brand-y" — it should sit comfortably next to a forklift.</p>
+      <h4>Steel</h4>
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#EEF0F3"></div><div class="info"><div class="name">Chalk</div><div class="hex">#EEF0F3</div><div class="use">Ground.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#FFFFFF;border-bottom:1px solid #CDD3DC"></div><div class="info"><div class="name">White</div><div class="hex">#FFFFFF</div><div class="use">Labels, cards, inputs.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#161C26"></div><div class="info"><div class="name">Steel</div><div class="hex">#161C26</div><div class="use">Text, frames, fills, dark ground.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#4B5563"></div><div class="info"><div class="name">Steel 600</div><div class="hex">#4B5563</div><div class="use">Secondary text.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#8A93A2"></div><div class="info"><div class="name">Steel 400</div><div class="hex">#8A93A2</div><div class="use">Tertiary, captions.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#CDD3DC"></div><div class="info"><div class="name">Steel 200</div><div class="hex">#CDD3DC</div><div class="use">Hairlines.</div></div></div>
+      </div>
+      <h4>Safety Orange — the accent</h4>
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#FDE4D6"></div><div class="info"><div class="name">Orange 100</div><div class="hex">#FDE4D6</div><div class="use">Tints, "waiting" backgrounds.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#E8590C"></div><div class="info"><div class="name">Orange 500</div><div class="hex">#E8590C</div><div class="use">Fills, LED "job waiting", wordmark "RE".</div></div></div>
+        <div class="sw"><div class="chip" style="background:#C94C0A"></div><div class="info"><div class="name">Orange 600</div><div class="hex">#C94C0A</div><div class="use">Hover / pressed.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#B54308"></div><div class="info"><div class="name">Orange 700</div><div class="hex">#B54308</div><div class="use">Links and text on light (AA).</div></div></div>
+      </div>
+      <h4>Signage — functional only</h4>
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#1F9D55"></div><div class="info"><div class="name">OK Green</div><div class="hex">#1F9D55</div><div class="use">Ready, printed. LED "success".</div></div></div>
+        <div class="sw"><div class="chip" style="background:#F2C400"></div><div class="info"><div class="name">Caution Yellow</div><div class="hex">#F2C400</div><div class="use">Needs a decision. Also the BWRY sheet yellow.</div></div></div>
+        <div class="sw"><div class="chip" style="background:#C8102E"></div><div class="info"><div class="name">Stop Red</div><div class="hex">#C8102E</div><div class="use">Failed, no network. Also the BWR sheet red.</div></div></div>
+      </div>
+      <h3>Approved pairs</h3>
+      <div class="pairs">
+        <div class="pair" style="background:#EEF0F3;color:#161C26;border-color:#CDD3DC">Steel on Chalk<span class="ratio">15.9 : 1</span></div>
+        <div class="pair" style="background:#EEF0F3;color:#B54308;border-color:#CDD3DC">Orange 700 on Chalk<span class="ratio">4.9 : 1 · links</span></div>
+        <div class="pair" style="background:#E8590C;color:#161C26">Steel on Orange 500<span class="ratio">4.7 : 1 · primary button</span></div>
+        <div class="pair" style="background:#161C26;color:#EEF0F3">Chalk on Steel<span class="ratio">15.9 : 1</span></div>
+        <div class="pair" style="background:#161C26;color:#FF8A4C">Orange text on Steel<span class="ratio">7.6 : 1 · dark links</span></div>
+        <div class="pair" style="background:#F2C400;color:#161C26">Steel on Caution<span class="ratio">11.5 : 1</span></div>
+      </div>
+      <p class="small muted" style="margin-top:var(--s-3)">The rule is the one from safety signage: black text on the colour, never the colour as text on black — except for links. Orange means "act now" (a job is waiting); green means OK; yellow means decide; red means stop. Nothing else may use these.</p>
+      <h3>Dark mode</h3>
+      <p>Ground Steel-dark <code>#0F141C</code>, surfaces <code>#171E29</code>, frames become Chalk. The Dock's own UI is dark by default, like a machine HMI.</p>
+    </section>
+
+    <section id="type">
+      <div class="eyebrow">03 / TYPE</div>
+      <h2>Typography</h2>
+      <p class="lede">Archivo for anything that shouts, in two widths: extra-wide for the wordmark and headlines, condensed for labels where space is tight. Source Sans 3 for reading. JetBrains Mono for every ID, code and timestamp — there are a lot of them here.</p>
+      <div class="specimen"><div class="label-t">DISPLAY · ARCHIVO 800 · WIDTH 112–125 · HEADLINES, WORDMARK</div><div class="big">Hold a sheet<br>to print.</div></div>
+      <div class="specimen"><div class="label-t">DISPLAY CONDENSED · ARCHIVO 700 · WIDTH 75 · ON-SHEET HEADERS, TIGHT LABELS</div><div class="narrow">Cart 12 — Zone B — Bay 04 — Route 3 — Priority</div></div>
+      <div class="specimen"><div class="label-t">BODY · SOURCE SANS 3 · 400/600</div><div class="body">Your systems keep printing exactly as they do today. Instead of a printer, they print to RePaper — and the page appears on a reusable e-paper sheet. Reuse it thousands of times. No paper, no toner, no integration project.</div></div>
+      <div class="specimen"><div class="label-t">MONO · JETBRAINS MONO 400/700 · IDS, TIMESTAMPS, CODE</div><div class="monoline">RP-4C-01F3 · 400×300 · BWR · 84.8×63.6 mm · 10.0.4.21 · 2026-08-28T20:41Z</div></div>
+      <h3>Scale</h3>
+      <div class="table-wrap"><table>
+        <tr><th>Token</th><th>Size / line</th><th>Face</th><th>Use</th></tr>
+        <tr><td class="mono">display-xl</td><td>64 / 58</td><td>Archivo 800, wide, caps</td><td>Wordmark, hero</td></tr>
+        <tr><td class="mono">display-l</td><td>36 / 36</td><td>Archivo 800, wide, caps</td><td>Page titles</td></tr>
+        <tr><td class="mono">display-m</td><td>20 / 22</td><td>Archivo 700, caps, +4%</td><td>Section titles, buttons</td></tr>
+        <tr><td class="mono">condensed</td><td>any</td><td>Archivo 700, width 75, caps</td><td>Sheet headers, tight labels</td></tr>
+        <tr><td class="mono">body</td><td>17 / 26</td><td>Source Sans 400</td><td>Default</td></tr>
+        <tr><td class="mono">body-s</td><td>15 / 22</td><td>Source Sans 400/600</td><td>Tables, secondary</td></tr>
+        <tr><td class="mono">label</td><td>11 / 16</td><td>JetBrains Mono 700, caps, +10%</td><td>Eyebrows, form labels, column heads</td></tr>
+        <tr><td class="mono">mono</td><td>13 / 20</td><td>JetBrains Mono 400</td><td>IDs, code</td></tr>
+      </table></div>
+      <h3>On the sheet</h3>
+      <p>Archivo Condensed 700 for headers (it fits long location codes), Source Sans 600 for body, JetBrains Mono for codes. Minimum 12 px body / 9 px mono. Every sheet gets a barcode or code strip at the bottom by default — a sheet that can be scanned is a sheet that fits the warehouse.</p>
+    </section>
+
+    <section id="layout">
+      <div class="eyebrow">04 / LAYOUT</div>
+      <h2>Layout</h2>
+      <p class="lede">Square corners, 2 px frames, dashed tear lines between sections. Surfaces are white labels on a chalk ground. No shadows — a label lies flat.</p>
+      <h4>Spacing (4 px grid)</h4>
+      <div class="spacing"><div style="width:4px;height:4px"><span>4</span></div><div style="width:8px;height:8px"><span>8</span></div><div style="width:12px;height:12px"><span>12</span></div><div style="width:16px;height:16px"><span>16</span></div><div style="width:24px;height:24px"><span>24</span></div><div style="width:32px;height:32px"><span>32</span></div><div style="width:48px;height:48px"><span>48</span></div><div style="width:64px;height:64px"><span>64</span></div></div>
+      <h4>Radius</h4>
+      <div class="radii"><div style="border-radius:0">0 · default</div><div style="border-radius:2px">2 · controls</div><div style="border-radius:4px">4 · sheets</div></div>
+      <p class="small muted" style="margin-top:var(--s-3)">Nothing is rounder than 4 px. Borders are 2 px Steel for anything you can act on, 1 px Steel 200 for anything you only read.</p>
+      <h4>Structure</h4>
+      <p>Sections are separated by a dashed tear line (<code>2px dashed</code>), not whitespace alone. Numbered eyebrows (<code>02 / COLOR</code>) because everything in a warehouse is numbered. Left-aligned, never centred. Reading width 64 characters, content max 1180 px.</p>
+    </section>
+
+    <section id="components">
+      <div class="eyebrow">05 / COMPONENTS</div>
+      <h2>Components</h2>
+      <h4>Buttons</h4>
+      <div class="demo"><div class="row"><button class="btn btn-primary">Print to this sheet</button><button class="btn btn-secondary">Choose another sheet</button><button class="btn btn-ghost">Skip</button><button class="btn btn-danger">Cancel job</button><button class="btn btn-primary" disabled>Printing…</button></div></div>
+      <p class="small muted">Caps, Archivo 700. Primary = Orange fill + Steel text (the only orange fill on a screen). Big hit areas — 44 px minimum — because gloves.</p>
+      <h4>Inputs</h4>
+      <div class="demo"><div class="field"><label for="pn">Printer name</label><input id="pn" value="WAREHOUSE A – REPAPER"><div class="hint">Shown in every print dialog on the network.</div></div></div>
+      <h4>Job states</h4>
+      <div class="demo"><div class="row"><span class="pill pill-ready">Ready</span><span class="pill pill-waiting">Waiting for sheet</span><span class="pill pill-sending">Printing</span><span class="pill pill-done">Printed</span><span class="pill pill-warn">Sheet too small</span><span class="pill pill-error">Failed</span></div></div>
+      <h4>Job card</h4>
+      <div class="demo"><div class="job"><div class="preview" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div><div><div class="title">Pick list 4711</div><div class="sub">1 PAGE · WMS-PRINT-02 · 00:12 AGO</div><div style="margin-top:8px"><span class="pill pill-waiting">Waiting for sheet</span></div></div><div class="actions"><button class="btn btn-primary">Hold a sheet</button><button class="btn btn-ghost">Discard</button></div></div></div>
+      <h4>Notification</h4>
+      <div class="demo"><div class="toast" role="status"><div class="led"></div><div><b>Print job waiting</b><span>Pick list 4711 · Hold a sheet to the Dock.</span></div></div></div>
+    </section>
+
+    <section id="sheets">
+      <div class="eyebrow">06 / SHEETS &amp; LED</div>
+      <h2>Sheets &amp; LED</h2>
+      <p class="lede">Sheets are shown like the labels they replace: dark bezel, square panel, condensed header, code strip. The Dock's LED speaks signage colours.</p>
+      <div class="sheets">
+        <div class="sheet label-29"><div class="panel refresh"><div class="t" style="top:6px"><div class="h">Cart 12</div></div><div class="t" style="top:24px"><div class="code">ZONE B · BAY 04</div></div><div class="t" style="top:40px"><span class="red">Urgent</span></div><div class="bars" style="width:60px;left:auto;right:10px;bottom:6px;height:14px"></div></div><div class="cap">SHEET LABEL · 2.9" · 296×128</div></div>
+        <div class="sheet card-42"><div class="panel refresh"><div class="t" style="top:8px"><div class="h">Station 07</div></div><div class="t" style="top:30px"><div class="b">WORK ORDER 88213<br>Bracket assembly M8 · Qty 120<br>Due 14:00 · Line 2</div></div><div class="t" style="top:92px"><span class="red">Priority</span></div><div class="bars"></div></div><div class="cap">SHEET CARD · 4.2" · 400×300</div></div>
+        <div class="sheet page-75"><div class="panel refresh"><div class="t" style="top:8px"><div class="h">Pick list 4711</div></div><div class="t" style="top:30px"><div class="grid"><span>3× BRACKET M8</span><span>B-04-12</span><span>12× BOLT M8×40</span><span>B-04-15</span><span>1× MOTOR 750W</span><span>C-01-02</span><span>2× BELT 1200</span><span>C-02-08</span></div></div><div class="t" style="top:112px"><div class="code">ORDER 88213 · ROUTE 3 · 10:41</div></div><div class="bars" style="width:180px"></div></div><div class="cap">SHEET PAGE · 7.5" · 800×480</div></div>
+      </div>
+      <h3>LED language</h3>
+      <div class="table-wrap"><table>
+        <tr><th></th><th>State</th><th>Pattern</th><th>Colour</th><th>Do</th></tr>
+        <tr><td><span class="led led-pulse" style="background:#8A93A2"></span></td><td>Starting</td><td>Slow pulse</td><td class="mono">STEEL 400</td><td>Wait.</td></tr>
+        <tr><td><span class="led led-blink" style="background:#8A93A2"></span></td><td>Setup mode</td><td>Blink 1 Hz</td><td class="mono">STEEL 400</td><td>Open the setup page.</td></tr>
+        <tr><td><span class="led led-breathe" style="background:#1F9D55"></span></td><td>Ready</td><td>Breathe, dim</td><td class="mono">OK GREEN</td><td>Nothing.</td></tr>
+        <tr><td><span class="led led-blink" style="background:#E8590C"></span></td><td><strong>Job waiting</strong></td><td>Blink 1 Hz</td><td class="mono">ORANGE</td><td>Hold a sheet to the Dock.</td></tr>
+        <tr><td><span class="led led-fast" style="background:#E8590C"></span></td><td>Printing</td><td>Fast blink</td><td class="mono">ORANGE</td><td>Keep the sheet in place.</td></tr>
+        <tr><td><span class="led" style="background:#1F9D55"></span></td><td><strong>Printed</strong></td><td>Solid 3 s</td><td class="mono">OK GREEN</td><td>Take the sheet.</td></tr>
+        <tr><td><span class="led" style="background:#F2C400"></span></td><td>Needs a decision</td><td>Solid</td><td class="mono">CAUTION</td><td>Press to fit anyway, hold to cancel.</td></tr>
+        <tr><td><span class="led led-blink" style="background:#C8102E"></span></td><td>Failed</td><td>Blink 1 Hz</td><td class="mono">STOP RED</td><td>Hold the sheet again.</td></tr>
+        <tr><td><span class="led" style="background:#C8102E"></span></td><td>No network</td><td>Solid</td><td class="mono">STOP RED</td><td>Check cable / Wi-Fi.</td></tr>
+      </table></div>
+      <p class="small muted" style="margin-top:var(--s-3)">Orange = act, green = OK, yellow = decide, red = stop, grey = talking to you about setup. Identical to the pills above. WS2812: Orange (232,89,12) · OK Green (31,157,85) · Caution (242,196,0) · Stop Red (200,16,46).</p>
+    </section>
+
+    <section id="voice">
+      <div class="eyebrow">07 / VOICE</div>
+      <h2>Voice</h2>
+      <p class="lede">Terse, operational, zero adjectives. Written like the best equipment manuals: what it is, what to do, what happened.</p>
+      <div class="rule">
+        <div class="do"><ul><li>Imperatives: "Hold a sheet." "Take the sheet."</li><li>State + instruction, always in that order.</li><li>Numbers over words: "2,140 sheets saved", "Route 3", "00:12 ago".</li><li>Caps for headings and states; sentence case for everything else.</li></ul></div>
+        <div class="dont"><ul><li>No warmth padding ("Great, all done!").</li><li>No IoT vocabulary: gateway, sync, provision, firmware, tag.</li><li>No "smart", no "eco".</li><li>No sentence longer than one line on a 4.2" sheet.</li></ul></div>
+      </div>
+      <h4>Vocabulary</h4>
+      <div class="table-wrap"><table class="vocab"><tr><th>Don't</th><th>Do</th></tr><tr><td>tag, ESL, display</td><td>sheet</td></tr><tr><td>push, sync, update</td><td>print</td></tr><tr><td>the device, the gateway</td><td>the Dock</td></tr><tr><td>tap, scan, pair</td><td>hold a sheet to…</td></tr><tr><td>spooled, rendering</td><td>waiting / printing / printed</td></tr></table></div>
+      <h4>Microcopy</h4>
+      <div class="copy">
+        <div><div class="when">Job arrives</div><div class="line">Job waiting</div><div class="line">Pick list 4711. Hold a sheet to the Dock.</div></div>
+        <div><div class="when">Printing</div><div class="line">Printing</div><div class="line">Keep the sheet in place.</div></div>
+        <div><div class="when">Done</div><div class="line">Printed</div><div class="line">Cart 12 · Pick list 4711 · 10:41.</div></div>
+        <div><div class="when">Too small</div><div class="line">Page larger than sheet</div><div class="line">Press: print smaller. Hold: cancel.</div></div>
+        <div><div class="when">Failed</div><div class="line">Not printed</div><div class="line">Hold the sheet still, closer to the Dock. Retry.</div></div>
+        <div><div class="when">Expired</div><div class="line">Job expired</div><div class="line">No sheet within 10 min. Print again.</div></div>
+      </div>
+    </section>
+  </main>
+</div>
+<script>
+(function(){var c=document.getElementById('barcode');if(!c)return;var x=c.getContext('2d'),W=c.width,H=c.height;
+var dark=false;try{var t=document.documentElement.getAttribute('data-theme');dark=t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);}catch(e){}
+x.fillStyle=dark?'#171E29':'#FFFFFF';x.fillRect(0,0,W,H);x.fillStyle=dark?'#EEF0F3':'#161C26';
+var s=20260828,r=function(){s=(s*1103515245+12345)&0x7fffffff;return s/0x7fffffff;};
+var px=0;while(px<W){var w=[2,2,2,4,4,6,8][Math.floor(r()*7)],g=[2,2,4,4,6][Math.floor(r()*5)];x.fillRect(px,0,w,H);px+=w+g;}
+x.fillRect(0,0,4,H);x.fillRect(W-4,0,4,H);})();
+</script>
+</body>
+</html>
