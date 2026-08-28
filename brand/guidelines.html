@@ -107,7 +107,6 @@
   .stage .wordmark span { color: #1EE3A5; }
   .stage .tag { font-family: var(--font-display); font-weight: 500; font-size: clamp(1.125rem, 2.2vw, 1.5rem); color: #A7B0AA; max-width: 30ch; }
   .stage .dither { display: block; width: 100%; height: 64px; margin-top: var(--s-6); border-radius: var(--r-sheet); image-rendering: pixelated; }
-  .stage .glow-dot { position: absolute; right: -120px; top: -120px; width: 360px; height: 360px; border-radius: 50%; background: radial-gradient(circle, rgba(30,227,165,.22), rgba(30,227,165,0) 60%); pointer-events: none; }
   .hero { padding: var(--s-6) 0 var(--s-7); border-bottom: 1px solid var(--border); }
 
   .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px,1fr)); gap: var(--s-3); }
@@ -244,7 +243,6 @@
   <main id="top">
     <header class="hero">
       <div class="stage">
-        <div class="glow-dot" aria-hidden="true"></div>
         <div class="eyebrow">Brand guide · v1.0</div>
         <h1 class="wordmark"><span>Re</span>Paper</h1>
         <p class="tag">Reusable paper. Printed the way you already print.</p>
@@ -326,7 +324,7 @@
       </div>
       <div class="rule" style="margin-top:var(--s-5)">
         <div class="do"><ul><li>Primary button = Re Green fill + Carbon/Ink text, on both grounds</li><li>Glow (box-shadow) only on screens showing carbon, only on the primary button and on LED renders — never on type or the logo</li><li>In print: Re Green is a flat spot colour on black — the "printed glow" is a 1-bit dither fade</li><li>One accent per screen; Carbon, Mist and Paper do the rest</li><li>Charts: Re 200/400/700 + Mist</li></ul></div>
-        <div class="dont"><ul><li>No gradients as fills — a radial glow behind the on-screen hero is the single exception</li><li>No glow in print, ever: no halos, no soft edges, no gradients on fabric or paper</li><li>No Re Glow text on light grounds (fails contrast badly)</li><li>No second accent, no orange, no purple</li><li>Don't use Re Green to mean "success" and as decoration on the same screen</li></ul></div>
+        <div class="dont"><ul><li>No gradients, anywhere — if something needs a transition, dither it</li><li>No glow in print, ever: no halos, no soft edges, no gradients on fabric or paper</li><li>No Re Glow text on light grounds (fails contrast badly)</li><li>No second accent, no orange, no purple</li><li>Don't use Re Green to mean "success" and as decoration on the same screen</li></ul></div>
       </div>
       <h3>On-sheet palette</h3>
       <p>Content rendered to e-paper uses the panel's physical colours: black <code>#000000</code>, white <code>#FFFFFF</code>, red <code>#C8102E</code> (BWR), yellow <code>#F2C400</code> (BWRY). 1-bit per plane; everything else is dithered.</p>
