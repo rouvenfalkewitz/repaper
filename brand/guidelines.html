@@ -200,17 +200,19 @@
   .merch .cap { padding: var(--s-3) var(--s-4); font-size: .8125rem; color: var(--text-2); }
   .merch .cap b { display: block; color: var(--text); font-family: var(--font-display); font-weight: 600; }
   .m-wm { font-family: var(--font-display); font-weight: 800; font-stretch: 125%; text-transform: uppercase; letter-spacing: -.03em; color: #EFF1EE; line-height: .9; }
-  .m-wm span { color: #1EE3A5; text-shadow: 0 0 20px rgba(30,227,165,.5); }
+  .m-wm span { color: #1EE3A5; }
   .m-wall { width: 100%; height: 100%; display: grid; grid-template-rows: 1fr auto; padding: 18px; }
   .m-wall canvas { width: 100%; height: 100%; image-rendering: pixelated; border-radius: 3px; }
   .m-tee { width: 150px; height: 168px; background: #121716; border-radius: 12px 12px 18px 18px; position: relative; border: 1px solid #273029; }
   .m-tee::before, .m-tee::after { content: ""; position: absolute; top: 0; width: 44px; height: 34px; background: #121716; border: 1px solid #273029; border-radius: 6px; }
   .m-tee::before { left: -30px; transform: rotate(-20deg); } .m-tee::after { right: -30px; transform: rotate(20deg); }
   .m-tee .m-wm { position: absolute; left: 18px; bottom: 22px; font-size: 1.05rem; }
-  .m-tee .stripe { position: absolute; top: 26px; left: 18px; right: 18px; height: 3px; background: #1EE3A5; box-shadow: 0 0 10px rgba(30,227,165,.7); border-radius: 2px; }
-  .m-badge { width: 130px; height: 130px; border-radius: 50%; background: #1EE3A5; color: #0C100F; display: grid; place-items: center; text-align: center; font-family: var(--font-display); font-weight: 800; font-stretch: 125%; text-transform: uppercase; font-size: 1.05rem; line-height: 1; letter-spacing: -.02em; box-shadow: 0 0 40px rgba(30,227,165,.45); }
+  .m-tee .stripe { position: absolute; top: 26px; left: 18px; right: 18px; height: 3px; background: #1EE3A5; border-radius: 2px; }
+  .m-badge { width: 130px; height: 130px; border-radius: 50%; background: #1EE3A5; color: #0C100F; display: grid; place-items: center; text-align: center; font-family: var(--font-display); font-weight: 800; font-stretch: 125%; text-transform: uppercase; font-size: 1.05rem; line-height: 1; letter-spacing: -.02em; }
   .m-badge small { display: block; font-family: var(--font-mono); font-weight: 500; font-size: .5625rem; letter-spacing: .1em; margin-top: 6px; }
   .m-dock { width: 140px; height: 140px; border-radius: 28px; background: linear-gradient(160deg, #1C2320, #0F1413); border: 1px solid #364139; position: relative; }
+  .m-halo { width: 100%; height: 100%; display: grid; grid-template-rows: 1fr auto; padding: 18px; gap: 8px; }
+  .m-halo canvas { width: 100%; height: 100%; image-rendering: pixelated; border-radius: 3px; }
   .m-dock .ring { position: absolute; inset: 22px; border-radius: 50%; border: 3px solid #1EE3A5; box-shadow: 0 0 22px rgba(30,227,165,.7), inset 0 0 22px rgba(30,227,165,.4); animation: breathe 3s ease-in-out infinite; }
 
   .vocab td:first-child { color: var(--red); text-decoration: line-through; } .vocab td:nth-child(2) { color: var(--accent-text); font-weight: 600; }
@@ -259,7 +261,7 @@
       <h3>Name</h3>
       <p><strong>RePaper</strong> — one word, capital R and P in prose. The wordmark is set in caps. <code>repaper</code> in code, domains and handles. Never "Re-Paper", "rePaper", "RE PAPER".</p>
       <h3>Wordmark</h3>
-      <p>Archivo Extra-Bold, width 125 %, caps, tracking −3 %. "RE" in Re Green, "PAPER" in Paper (on dark) or Ink (on light). On carbon, "RE" carries a soft glow (<code>text-shadow 0 0 24px</code> at 45 %) — on light grounds it never glows.</p>
+      <p>Archivo Extra-Bold, width 125 %, caps, tracking −3 %. "RE" in Re Green, "PAPER" in Paper (on dark) or Ink (on light). On screens showing carbon, "RE" carries a soft glow (<code>text-shadow 0 0 24px</code> at 45 %). <strong>Glow is light, never ink:</strong> it exists on screens and as real light (the Dock's ring, LED strips, edge-lit signs) — never on anything printed or stitched, and never on light grounds.</p>
       <div class="demo"><div class="wm-row">
         <div><div class="on-carbon"><div class="wm" style="font-size:2.5rem"><span>Re</span>Paper</div></div><div class="cap">PRIMARY · ON CARBON, GLOW</div></div>
         <div><div class="on-paper"><div class="wm" style="font-size:2.5rem"><span>Re</span>Paper</div></div><div class="cap">ON PAPER · NO GLOW</div></div>
@@ -324,8 +326,8 @@
         <div class="pair" style="background:#FFFFFF;color:#1EE3A5;border-color:#D6DAD6">Re Glow on White<span class="ratio">1.7 : 1 · never for text</span></div>
       </div>
       <div class="rule" style="margin-top:var(--s-5)">
-        <div class="do"><ul><li>Primary button = Re Green fill + Carbon/Ink text, on both grounds</li><li>Glow (box-shadow, text-shadow) only on carbon, only on the one primary element and on LED renders</li><li>One accent per screen; Carbon, Mist and Paper do the rest</li><li>Charts: Re 200/400/700 + Mist</li></ul></div>
-        <div class="dont"><ul><li>No gradients as fills — a radial glow behind the hero is the single exception</li><li>No Re Glow text on light grounds (fails contrast badly)</li><li>No second accent, no orange, no purple</li><li>Don't use Re Green to mean "success" and as decoration on the same screen</li></ul></div>
+        <div class="do"><ul><li>Primary button = Re Green fill + Carbon/Ink text, on both grounds</li><li>Glow (box-shadow, text-shadow) only on screens showing carbon, only on the one primary element and on LED renders</li><li>In print: Re Green is a flat spot colour on black — the "printed glow" is a 1-bit dither fade</li><li>One accent per screen; Carbon, Mist and Paper do the rest</li><li>Charts: Re 200/400/700 + Mist</li></ul></div>
+        <div class="dont"><ul><li>No gradients as fills — a radial glow behind the on-screen hero is the single exception</li><li>No glow in print, ever: no halos, no soft edges, no gradients on fabric or paper</li><li>No Re Glow text on light grounds (fails contrast badly)</li><li>No second accent, no orange, no purple</li><li>Don't use Re Green to mean "success" and as decoration on the same screen</li></ul></div>
       </div>
       <h3>On-sheet palette</h3>
       <p>Content rendered to e-paper uses the panel's physical colours: black <code>#000000</code>, white <code>#FFFFFF</code>, red <code>#C8102E</code> (BWR), yellow <code>#F2C400</code> (BWRY). 1-bit per plane; everything else is dithered.</p>
@@ -417,16 +419,17 @@
     <section id="merch">
       <div class="eyebrow">07 · Merch &amp; booth</div>
       <h2>Merch &amp; booth</h2>
-      <p class="lede">Off-screen the brand is at full volume, always: Carbon everything, Re Green as light. If it can glow, it glows; if it can't, it's printed in the flattest, most saturated green available.</p>
+      <p class="lede">Off-screen the brand is at full volume, always: Carbon everything, Re Green as light. <strong>Glow is light, never ink.</strong> If something is a light source, it glows. If it's printed or stitched, it's flat, solid Re Green on black — and where it wants to feel luminous, it uses a dither fade instead.</p>
       <div class="merch">
-        <div><div class="art"><div class="m-wall"><canvas id="wall" width="400" height="120" aria-hidden="true"></canvas><div class="m-wm" style="font-size:1.6rem;margin-top:12px"><span>Re</span>Paper</div></div></div><div class="cap"><b>Booth wall</b>Matte black wall, dither strip as the only graphic, wordmark bottom-left. The LED strip along the counter edge breathes in Re Green.</div></div>
-        <div><div class="art"><div class="m-tee"><div class="stripe"></div><div class="m-wm"><span>Re</span>Paper</div></div></div><div class="cap"><b>Tee / hoodie</b>Black garment, small wordmark bottom-left of the chest or big across the back, one green stripe. Never a big logo on the chest.</div></div>
+        <div><div class="art"><div class="m-wall"><canvas id="wall" width="400" height="120" aria-hidden="true"></canvas><div class="m-wm" style="font-size:1.6rem;margin-top:12px"><span>Re</span>Paper</div></div></div><div class="cap"><b>Booth wall</b>Matte black wall, flat green wordmark, a dither strip as the only graphic. The LED strip along the counter edge breathes in Re Green — the only glow in the room.</div></div>
+        <div><div class="art"><div class="m-tee"><div class="stripe"></div><div class="m-wm"><span>Re</span>Paper</div></div></div><div class="cap"><b>Tee / hoodie</b>Black garment, flat Re Green print or thread: small wordmark bottom-left of the chest or big across the back, one green stripe. Never a big logo on the chest. Never a halo.</div></div>
         <div><div class="art"><div class="m-badge"><span>Re<br>Paper<small>PRINT · REUSE · REPEAT</small></span></div></div><div class="cap"><b>Sticker / badge</b>Solid green disc, carbon wordmark. The one place the green is a background.</div></div>
-        <div><div class="art"><div class="m-dock"><div class="ring"></div></div></div><div class="cap"><b>The Dock</b>Matte carbon, 28 px-radius silhouette, frosted light ring. On a booth, five of them breathing in sync is the whole demo.</div></div>
+        <div><div class="art"><div class="m-halo"><canvas id="halo" width="400" height="110" aria-hidden="true"></canvas><div class="m-wm" style="font-size:1.6rem"><span>Re</span>Paper</div></div></div><div class="cap"><b>The printed "glow"</b>A 1-bit dither fade from Re Green into black — two flat colours, two screens, prints on anything. This is how print says luminous without a gradient.</div></div>
+        <div><div class="art"><div class="m-dock"><div class="ring"></div></div></div><div class="cap"><b>The Dock</b>Matte carbon, 28 px-radius silhouette, frosted light ring. Real light, so it really glows. On a booth, five of them breathing in sync is the whole demo.</div></div>
       </div>
       <div class="rule" style="margin-top:var(--s-5)">
-        <div class="do"><ul><li>Black + Re Green + white type. Nothing else, ever, on merch.</li><li>Print Re Green as a spot colour (match to #1EE3A5 on black stock; Pantone match to be picked from a physical swatch book)</li><li>Use real light where possible: LED strips, edge-lit acrylic logos, the Dock's ring</li><li>Dither strip as texture on walls, lanyards, bags</li></ul></div>
-        <div class="dont"><ul><li>No white merch — the brand doesn't exist on white</li><li>No gradients printed on fabric; the glow is for screens and real light only</li><li>No taglines on merch; the wordmark carries it</li><li>No "eco" imagery — leaves, earths, recycling arrows</li></ul></div>
+        <div class="do"><ul><li>Black + Re Green + white type. Nothing else, ever, on merch.</li><li>Print Re Green as a flat spot colour on black. Screen inks can't reach #1EE3A5 exactly — pick one Pantone from a physical swatch book (neon-mint range, around 3385 C / 7479 C, or a fluorescent) and that becomes "Re Green, printed" everywhere</li><li>Fluorescent ink or thread on black gets closest to the on-screen colour</li><li>Real light where possible: LED strips, edge-lit acrylic logos, the Dock's ring</li><li>Dither fade as the printed "glow"; dither strip as texture on walls, lanyards, bags</li></ul></div>
+        <div class="dont"><ul><li>No white merch — the brand doesn't exist on white</li><li>No printed glow, halo, drop-shadow or gradient — not on fabric, paper, vinyl or walls</li><li>No metallic or foil greens; flat only</li><li>No taglines on merch; the wordmark carries it</li><li>No "eco" imagery — leaves, earths, recycling arrows</li></ul></div>
       </div>
     </section>
 
@@ -520,6 +523,7 @@
   var carbon = [12,16,15], glow = [30,227,165];
   dither('dither', glow, carbon, 4);   /* hero: green fading into carbon */
   dither('wall', glow, carbon, 3);     /* booth wall */
+  dither('halo', glow, carbon, 3);     /* printed "glow" */
 })();
 </script>
 </body>
