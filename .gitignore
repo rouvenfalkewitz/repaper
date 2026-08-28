@@ -1,0 +1,17 @@
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build / deps (for later code projects)
+node_modules/
+target/
+dist/
+build/
+*.log
+.env
+.env.*
