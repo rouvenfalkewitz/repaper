@@ -94,9 +94,54 @@ class OpenDisplayBLETransport(SheetTransport):
             scheme = getattr(caps.color_scheme, "name", str(caps.color_scheme))
             w, h, rot = int(caps.width), int(caps.height), int(getattr(caps, "rotation", 0) or 0)
             ref.keys.update({"native": f"{caps.width}x{caps.height}", "rotation": rot, "scheme": scheme})
+            ref.keys["hw"] = await self._hardware_async(dev)
+            sid = self.registry.find_by_address(self.id, ref.address) if self.registry else None
+            if sid: self.registry.update_keys(sid, **{k: ref.keys[k] for k in ("native", "rotation", "scheme", "hw")})
             if rot in (90, 270): w, h = h, w
             return SheetModel(w, h, _SCHEME_TO_PALETTE.get(scheme, "BW"), rotation=0,
                               model_name=f"OpenDisplay {scheme} {caps.width}x{caps.height} rot{rot}")
+
+    async def _hardware_async(self, dev) -> dict:
+        """What the sheet is, physically — read once from the device config (shown on the Dock's sheet card)."""
+        hw = {}
+        try:
+            fw = await dev.read_firmware_version()
+            parts = [getattr(fw, k, None) for k in ("major", "minor", "patch")]
+            hw["firmware"] = ".".join(str(v) for v in parts if v is not None) if parts[0] is not None else str(fw)
+        except Exception: pass
+        try:
+            from opendisplay import ICType
+            cfg = dev.config
+            ic = getattr(cfg.system, "ic_type", None)
+            try: hw["mcu"] = ICType(ic).name.replace("_", " ") if ic is not None else None
+            except Exception: hw["mcu"] = f"0x{ic:04x}" if ic is not None else None
+            mfr = getattr(cfg.manufacturer, "manufacturer_name", None) or ""
+            board = dev.get_board_type_name() if hasattr(dev, "get_board_type_name") else None
+            rev = getattr(cfg.manufacturer, "board_revision", None)
+            hw["board"] = " / ".join(x for x in (mfr, board) if x) + (f" rev {rev}" if rev else "")
+            d = cfg.displays[0] if cfg.displays else None
+            if d is not None:
+                try:
+                    from opendisplay import PANEL_IC_NAMES
+                    hw["panel"] = PANEL_IC_NAMES.get(d.panel_ic_type) or f"0x{d.panel_ic_type:04x}"
+                except Exception: hw["panel"] = f"0x{getattr(d, 'panel_ic_type', 0):04x}"
+                if getattr(d, "active_width_mm", None) and getattr(d, "active_height_mm", None):
+                    hw["mm"] = f"{d.active_width_mm}×{d.active_height_mm} mm"
+                if getattr(d, "screen_diagonal_inches", None): hw["inch"] = round(float(d.screen_diagonal_inches), 1)
+            mah = getattr(cfg.power, "battery_mah", None)
+            if mah: hw["battery_mah"] = int(mah)
+        except Exception: pass
+        return {k: v for k, v in hw.items() if v not in (None, "")}
+
+    def hardware(self, ref: SheetRef) -> dict:
+        """Read hardware facts now (BLE) and store them in the registry."""
+        async def go():
+            async with self._device(ref) as dev:
+                self._remember_address(ref, dev); return await self._hardware_async(dev)
+        hw = _run(go()); ref.keys["hw"] = hw
+        sid = self.registry.find_by_address(self.id, ref.address) if self.registry else None
+        if sid: self.registry.update_keys(sid, hw=hw)
+        return hw
 
     def _known_caps(self, ref: SheetRef, mono: bool):
         """Explicit DeviceCapabilities from the registry (skips interrogation); None if we never described this sheet."""

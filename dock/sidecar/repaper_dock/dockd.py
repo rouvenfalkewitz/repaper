@@ -45,7 +45,11 @@ class Dock:
                         ref, _ = self.registry.get(sid); tr = self.transports.get(ref.transport_id)
                         if not tr: continue
                         if not self.hw_lock.acquire(timeout=0.1): continue
-                        try: st = tr.status(ref)
+                        try:
+                            st = tr.status(ref)
+                            if st.online and "hw" not in ref.keys and hasattr(tr, "hardware"):     # first sight: learn what it is
+                                try: tr.hardware(ref)
+                                except Exception as e: log.debug("hardware %s: %s", sid, e)
                         finally: self.hw_lock.release()
                         with self._status_lock:
                             self.sheet_status[sid] = {"battery_volts": st.battery_volts, "temperature_c": st.temperature_c,
@@ -81,7 +85,7 @@ class Dock:
         transport = self.transports.get(ref.transport_id)
         if not transport:
             self.message = f"transport {ref.transport_id} not loaded"; self.state = "error"; return
-        self.state = "printing"; job.state = "printing"; job.save(); self.phase = "rendering"; self.message = ""
+        self.state = "printing"; job.state = "printing"; job.save(); self.phase = "rendering"; self.message = ""; self.printing_since = time.time()
         src = Image.open(job.page_path(page_no))
         page = render_for_sheet(src, transport.describe(ref))
         def progress(text):
@@ -89,6 +93,11 @@ class Dock:
         t0 = time.time()
         with self.hw_lock: res = transport.print(ref, page, progress=progress)
         if res.ok:
+            try:                                                        # remember what is on the sheet now
+                d = HOME_PATH() / "sheets" / sheet_id; d.mkdir(parents=True, exist_ok=True)
+                page.image.convert("RGB").save(d / "last.png")
+                (d / "last.json").write_text(json.dumps({"job": job.name, "page": page_no, "at": time.time()}))
+            except Exception as e: log.debug("last image: %s", e)
             job.printed.append({"page": page_no, "sheet": sheet_id, "at": time.time()})
             if job.next_page() is None: job.state = "done"
             job.save(); self.state = "printed"; self.message = f"printed page {page_no} of {job.name} on {ref.name or sheet_id} ({time.time()-t0:.1f}s) {res.message}"
@@ -188,13 +197,21 @@ class Dock:
         sheets = {}
         for k, e in self.registry.all().items():
             tr = self.transports.get(e["transport"]); caps = tr.capabilities() if tr else {}
-            sheets[k] = {"name": e["name"], "transport": e["transport"],
-                         "size": f'{e["model"]["width"]}×{e["model"]["height"]} {e["model"]["palette"]}',
-                         "min_battery_mv": caps.get("min_battery_mv"), **st.get(k, {})}
+            m = e["model"]; last = None
+            lp = HOME_PATH() / "sheets" / k / "last.json"
+            if lp.exists():
+                try: last = json.loads(lp.read_text())
+                except Exception: last = None
+            sheets[k] = {"name": e["name"], "transport": e["transport"], "address": e["address"],
+                         "width": m["width"], "height": m["height"], "palette": m["palette"], "inset": list(m.get("inset", (0, 0, 0, 0))),
+                         "size": f'{m["width"]}×{m["height"]} {m["palette"]}', "hw": e.get("keys", {}).get("hw", {}),
+                         "min_battery_mv": caps.get("min_battery_mv"), "last": last, **st.get(k, {})}
         return {"state": self.state, "phase": self.phase, "message": self.message, "printer": self.cfg["printer_name"],
                 "identifier": self.identifier.id, "version": __version__, "address": f"http://{socket.gethostname()}:{self.cfg['web_port']}/",
                 "job": None if not self.current else {"id": self.current.id, "name": self.current.name, "pages": self.current.pages, "user": self.current.user,
-                                                      "next_page": self.current.next_page(), "state": self.current.state},
+                                                      "next_page": self.current.next_page(), "state": self.current.state,
+                                                      "printed": len(self.current.printed), "created": self.current.created},
+                "now": time.time(), "printing_since": getattr(self, "printing_since", None),
                 "sheets": sheets,
                 "recent": [{"id": j.id, "name": j.name, "state": j.state, "pages": j.pages} for j in list_jobs(("done", "cancelled", "failed"))[-8:]]}
 
@@ -221,6 +238,10 @@ def make_handler(dock: Dock):
             if u.path == "/api/discover":
                 try: return self._json({"found": dock.discover()})
                 except Exception as e: return self._json({"error": str(e)}, 400)
+            if u.path.startswith("/sheet-image/"):
+                sid = u.path.split("/")[2]; fp = HOME_PATH() / "sheets" / sid / "last.png"
+                if fp.exists(): return self._send(fp.read_bytes(), "image/png", cache="no-store")
+                return self._send(b"none", "text/plain", 404)
             if u.path.startswith("/preview/"):
                 try:
                     _, _, job_id, n = u.path.split("/")

@@ -42,27 +42,46 @@ function pillFor(state) {
   return { "ready": ["", "Ready"], "job-waiting": ["wait", "Waiting for sheet"], "printing": ["busy", "Printing"], "printed": ["done", "Printed"],
            "error": ["err", "Failed"], "setup": ["setup", "Setup"] }[state] || ["", state];
 }
+function fmtAgo(ts, now) { if (!ts) return ""; const d = Math.max(0, (now || Date.now()/1000) - ts); if (d < 60) return "just now"; if (d < 3600) return Math.round(d/60) + " min ago"; if (d < 86400) return Math.round(d/3600) + " h ago"; return Math.round(d/86400) + " d ago"; }
+const STEPS = [["looking", "Find sheet"], ["connect", "Connect"], ["send", "Send"], ["refresh", "Refresh"]];
+function stepIndex(phase) { phase = (phase || "").toLowerCase(); if (phase.startsWith("printed")) return 4; if (phase.includes("refresh")) return 3; if (phase.includes("sending") || phase.includes("rendering")) return 2; if (phase.includes("connect")) return 1; return 0; }
+function stepper(phase, since, now) {
+  const i = stepIndex(phase), t = since ? Math.max(0, Math.round((now || Date.now()/1000) - since)) : null;
+  return `<div class="stepper" role="progressbar" aria-valuemin="0" aria-valuemax="4" aria-valuenow="${i}">` + STEPS.map(([k, l], n) =>
+    `<div class="step ${n < i ? "done" : n === i ? "active" : ""}"><i></i><span>${l}</span></div>`).join("") + `</div>
+    <div class="phase-line"><span>${esc(phase || "starting")}</span>${t != null ? `<span class="mono">${t} s</span>` : ""}</div>`;
+}
+function pages(j) {
+  const done = j.printed || 0, cur = j.next_page || j.pages, n = j.pages;
+  return `<div class="pages"><span class="count">Page <b>${cur}</b> of ${n}</span><span class="segs">${Array.from({length: n}, (_, k) => `<i class="${k < done ? "done" : k === cur - 1 ? "cur" : ""}"></i>`).join("")}</span></div>`;
+}
+function frame(w, h, src, palette) {
+  const ar = (w / h).toFixed(3);
+  return `<div class="frame" style="aspect-ratio:${ar}">${src ? `<img src="${src}" alt="">` : `<div class="blank"></div>`}</div>`;
+}
+function dots(palette) { const c = {BW: ["#FFFFFF", "#000000"], BWR: ["#FFFFFF", "#000000", "#C8102E"], BWRY: ["#FFFFFF", "#000000", "#C8102E", "#F2C400"]}[palette] || ["#FFFFFF", "#000000"]; return `<span class="dots" title="${palette}">${c.map(x => `<i style="background:${x}"></i>`).join("")}</span>`; }
 function render(s) {
   el("printer").textContent = s.printer; el("addr").textContent = s.address || "";
   el("foot").textContent = `RePaper Dock · ${s.version || ""} · identifier: ${s.identifier}`;
-  const j = s.job, [cls, label] = pillFor(s.state);
+  const j = s.job, now = s.now;
   let html;
   if (!j) {
-    html = `<span class="pill">Ready</span><div class="title">Nothing to print</div>
-            <div class="meta">Print to “${esc(s.printer)}” from any device — it shows up here.</div>`;
+    html = `<div class="empty"><div class="ringwrap"><svg class="ring-hero" viewBox="0 0 2338.6 2338.6" aria-hidden="true"><path class="ring" fill-rule="evenodd" d="M0 1169.3a1169.3 1169.3 0 1 0 2338.6 0a1169.3 1169.3 0 1 0 -2338.6 0ZM203.6 1169.3a965.7 965.7 0 1 0 1931.3 0a965.7 965.7 0 1 0 -1931.3 0Z"/></svg></div>
+            <div><span class="pill">Ready</span><div class="title">Ready to print</div>
+            <div class="meta">Print to <b>${esc(s.printer)}</b> from any device on this network — the page shows up here.</div>
+            <div class="chips"><span>AirPrint</span><span>IPP Everywhere</span><span>Mopria</span></div></div></div>`;
   } else if (s.state === "printing") {
-    html = `<span class="pill busy">Printing</span><div class="title">${esc(j.name)}</div>
-            <div class="meta">page ${j.next_page || j.pages} of ${j.pages}</div>
-            <div class="phase" id="phase">… ${esc(s.phase || "starting")}</div>
-            <div class="preview"><img src="/preview/${j.id}/${j.next_page || j.pages}" alt=""></div>`;
+    html = `<span class="pill busy">Printing</span><div class="title">${esc(j.name)}</div>${pages(j)}
+            ${stepper(s.phase, s.printing_since, now)}
+            <div class="preview">${frame(4, 3, `/preview/${j.id}/${j.next_page || j.pages}`)}</div>`;
   } else if (s.state === "printed") {
     html = `<span class="pill done">Printed</span><div class="title">${esc(j.name)}</div><div class="meta">${esc(s.message)}</div>`;
   } else {
     const opts = Object.entries(s.sheets).map(([k, v]) => `<option value="${esc(k)}">${esc(v.name || k)} · ${esc(v.size)}</option>`).join("");
     const hint = s.identifier === "manual" ? "No reader on this machine — pick the sheet and press the button; that is the tap." : "Hold a sheet to the Dock.";
-    html = `<span class="pill ${cls}">${label}</span><div class="title">${esc(j.name)}</div>
-            <div class="meta">page ${j.next_page} of ${j.pages}${j.user ? " · from " + esc(j.user) : ""}</div>
-            <div class="preview"><img src="/preview/${j.id}/${j.next_page}" alt=""></div>
+    html = `<span class="pill wait">Waiting for sheet</span><div class="title">${esc(j.name)}</div>${pages(j)}
+            <div class="meta">${j.user ? "from " + esc(j.user) + " · " : ""}${fmtAgo(j.created, now)}</div>
+            <div class="preview">${frame(4, 3, `/preview/${j.id}/${j.next_page}`)}</div>
             <div class="meta" style="margin-bottom:12px">${hint}</div>
             <form class="row" method="post" action="/tap"><select name="sheet">${opts}</select><button class="btn primary" type="submit" ${opts ? "" : "disabled"}>Hold this sheet to the Dock</button>
             <button class="btn ghost" type="submit" formaction="/cancel" name="job" value="${esc(j.id)}">Discard</button></form>
@@ -71,11 +90,17 @@ function render(s) {
   el("job").innerHTML = html;
   el("sheets").innerHTML = Object.entries(s.sheets).map(([k, v]) => {
     const mv = v.battery_volts, pct = mv == null ? null : Math.max(0, Math.min(100, (mv * 1000 - 2400) / 6));
-    const low = mv != null && mv * 1000 < (v.min_battery_mv || 2700);
-    const bat = mv == null ? `<div class="bat"><i><b style="width:0"></b></i>${v.online === false ? "not in range" : "battery —"}</div>`
-                           : `<div class="bat ${low ? "low" : ""}"><i><b style="width:${pct}%"></b></i>${mv.toFixed(2)} V${low ? " · replace cell" : ""}${v.temperature_c != null ? " · " + v.temperature_c.toFixed(0) + " °C" : ""}</div>`;
-    return `<div class="sheet"><b>${esc(v.name || k)}</b><span class="mono">${esc(v.size)} · ${esc(v.transport)}</span>${bat}</div>`;
-  }).join("") || `<div class="sheet"><b>No sheets yet</b><span class="mono">repaper-dockd add-sheet …</span></div>`;
+    const low = mv != null && mv * 1000 < (v.min_battery_mv || 2700), hw = v.hw || {};
+    const bat = mv == null ? `<div class="bat"><i><b style="width:0"></b></i><span>${v.online === false ? "not in range" : "battery —"}</span></div>`
+                           : `<div class="bat ${low ? "low" : ""}"><i><b style="width:${pct}%"></b></i><span>${mv.toFixed(2)} V${low ? " · replace cell" : ""}${v.temperature_c != null ? " · " + v.temperature_c.toFixed(0) + " °C" : ""}</span></div>`;
+    const hwline = [hw.inch ? hw.inch + '"' : null, hw.mm, hw.mcu, hw.board, hw.firmware ? "fw " + hw.firmware : null].filter(Boolean).join(" · ");
+    const last = v.last ? `<span class="mono">showing: ${esc(v.last.job)} · ${fmtAgo(v.last.at, now)}</span>` : `<span class="mono">nothing printed yet</span>`;
+    return `<div class="sheet">${frame(v.width, v.height, v.last ? `/sheet-image/${esc(k)}?t=${v.last.at}` : null, v.palette)}
+      <div class="sheet-head"><b>${esc(v.name || k)}</b>${dots(v.palette)}</div>
+      <span class="mono">${v.width}×${v.height} · ${esc(v.palette)} · ${esc(v.transport)}</span>
+      ${hwline ? `<span class="mono">${esc(hwline)}</span>` : ""}
+      ${bat}${last}</div>`;
+  }).join("") || `<div class="sheet"><b>No sheets yet</b><span class="mono">Add one in Settings</span></div>`;
   el("recent").innerHTML = (s.recent || []).slice().reverse().map(r => {
     const [c, l] = { done: ["done", "Printed"], cancelled: ["", "Discarded"], failed: ["err", "Failed"] }[r.state] || ["", r.state];
     return `<div class="job"><span>${esc(r.name)}</span><span class="pill ${c}">${l}</span></div>`;
@@ -84,9 +109,9 @@ function render(s) {
 async function tick() {
   try {
     const s = await (await fetch("/api/status", {cache: "no-store"})).json();
-    const sig = JSON.stringify([s.state, s.job && s.job.id, s.job && s.job.next_page, s.message, Object.keys(s.sheets).length, s.recent && s.recent.length, Object.values(s.sheets).map(v => v.battery_volts)]);
+    const sig = JSON.stringify([s.state, s.job && s.job.id, s.job && s.job.next_page, s.message, Object.keys(s.sheets).length, s.recent && s.recent.length, Object.values(s.sheets).map(v => [v.battery_volts, v.online, v.last && v.last.at, v.hw && v.hw.firmware])]);
     if (sig !== last) { render(s); last = sig; }
-    else if (s.state === "printing") { const p = el("phase"); if (p) p.textContent = "… " + (s.phase || "starting"); }
+    else if (s.state === "printing") { const st = el("job").querySelector(".stepper"); if (st) { const wrap = document.createElement("div"); wrap.innerHTML = stepper(s.phase, s.printing_since, s.now); st.replaceWith(wrap.firstChild); el("job").querySelector(".phase-line").replaceWith(wrap.lastChild); } }
   } catch (e) {}
 }
 if (window.__STATE__) render(window.__STATE__); else { tick(); setInterval(tick, 1000); }
