@@ -232,7 +232,7 @@ def make_handler(dock: Dock):
         def do_GET(self):
             u = urlparse(self.path)
             if u.path in STATIC:
-                fn, ct = STATIC[u.path]; return self._send((UI_DIR / fn).read_bytes(), ct, cache="no-store" if fn.endswith(".html") else "max-age=3600")
+                fn, ct = STATIC[u.path]; return self._send((UI_DIR / fn).read_bytes(), ct, cache="no-store")   # tiny files; never let a browser hold an old stylesheet
             if u.path == "/api/status": return self._json(dock.snapshot())
             if u.path == "/api/settings": return self._json(dock.settings())
             if u.path == "/api/discover":
