@@ -16,6 +16,8 @@ docs/
   06-epaper-hardware.md   E-paper display options (SoluM, open firmware, NFC-powered) — parked
   07-roadmap.md           Phases, prototypes, open questions to decide together
   08-ecosystem.md         Library / framework check per building block → stack decision
+  09-dock-hardware.md     Prototype BOM, the NFC and radio decisions, physical layout
+  10-cloud-platform.md    Devices, licensing, fleet view, billing, website — principles and build order
 brand/
   guidelines.html         Visual brand guide — open in a browser
   tokens.css / .json      Design tokens for every UI (web + native + firmware LED table)

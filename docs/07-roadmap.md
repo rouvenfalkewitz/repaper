@@ -6,7 +6,7 @@
 - [ ] Agree on working names, decide on the tech stack for the core
 - [ ] Check domain/handle availability, register
 - [ ] Talk to the firmware friend: models, speed, licence, willingness to collaborate
-- [ ] Order prototype hardware (Pi, PN532, RGB LED, ESP32, 3–5 tags of 2 sizes, 1–2 NFC-powered panels)
+- [ ] Order prototype hardware — BOM in `09-dock-hardware.md`
 
 ## Phase 1 — "It shows up as a printer" (tech spike, ~2–3 weeks)
 
