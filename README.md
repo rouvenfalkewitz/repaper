@@ -18,6 +18,7 @@ docs/
   08-ecosystem.md         Library / framework check per building block → stack decision
   09-dock-hardware.md     Prototype BOM, the NFC and radio decisions, physical layout
   10-cloud-platform.md    Devices, licensing, fleet view, billing, website — principles and build order
+  11-shopping-list.md     Prototype parts with sellers and prices; the Android test phone
 brand/
   guidelines.html         Visual brand guide — open in a browser
   tokens.css / .json      Design tokens for every UI (web + native + firmware LED table)
