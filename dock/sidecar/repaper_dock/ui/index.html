@@ -116,6 +116,7 @@ function render(s) {
   };
   const head = rec.slice(0, 3), rest = rec.slice(3);
   el("recent").innerHTML = rec.length ? head.map(row).join("") + (rest.length ? `<details class="more"><summary>Show ${rest.length} more</summary>${rest.map(row).join("")}</details>` : "") : `<div class="meta">Nothing printed yet.</div>`;
+}
 async function tick() {
   try {
     const s = await (await fetch("/api/status", {cache: "no-store"})).json();
