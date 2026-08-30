@@ -46,7 +46,6 @@
       <label for="qr">Sheet</label>
       <input id="qr" placeholder="Paste the QR link, the OD name, or a Bluetooth address" required autocomplete="off">
       <input id="qrname" placeholder="Name (e.g. Cart 12)" autocomplete="off">
-      <input id="qrserial" placeholder="Label ID printed on the sheet (optional)" autocomplete="off" style="font-family:var(--font-mono);letter-spacing:.06em;text-transform:uppercase">
       <div class="hint">Size and colours are read from the sheet — keep it awake and nearby.</div>
       <div class="row end"><button class="btn primary" id="addBtn" type="submit"></button></div>
     </form>
@@ -57,6 +56,10 @@
       <div id="found" class="list"></div>
     </div>
   </div>
+</dialog>
+<dialog class="modal" id="detDlg">
+  <div class="modal-head"><b id="detName"></b><button class="iconbtn" type="button" onclick="el('detDlg').close()" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="modal-body"><div class="facts grid" id="detBody"></div></div>
 </dialog>
 <div class="toast" id="toast" role="status"><span class="ic"></span><span class="tx"></span></div>
 <script>
@@ -77,7 +80,7 @@ const ICON = {
   trash: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14"/></svg>`,
   warn: `<svg viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>`,
   err: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6m0-6 6 6"/></svg>`,
-  info: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>`,
+  info: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>`,
 };
 let S = { sheets: {} }, toastT;
 function toast(t, kind) { const x = el("toast"); x.querySelector(".tx").textContent = t; x.querySelector(".ic").innerHTML = kind === "err" ? ICON.x : ICON.check; x.className = "toast show " + (kind || ""); clearTimeout(toastT); toastT = setTimeout(() => x.classList.remove("show"), 2800); }
@@ -92,15 +95,19 @@ function busy(b, label) {
 function shake(i) { i.classList.remove("shake"); void i.offsetWidth; i.classList.add("shake"); i.focus(); setTimeout(() => i.classList.remove("shake"), 400); }
 const fact = (k, v) => v ? `<div class="fact"><i>${esc(k)}</i><b>${esc(v)}</b></div>` : "";
 function card(k, v) {
-  const hw = v.hw || {}, ins = v.inset || [0, 0, 0, 0];
-  const chip = v.serial ? `<button class="chip serial" data-act="serial" title="Change the label ID">${ICON.qr}<span>${esc(v.serial)}</span></button>`
-                        : `<button class="chip add" data-act="serial">${ICON.qr}<span>Add label ID</span></button>`;
   return `<div class="sheet" data-id="${esc(k)}">
     <div class="name-row"><b>${esc(v.name || k)}</b><button class="iconbtn" data-act="name" title="Rename" aria-label="Rename">${ICON.pencil}</button></div>
-    ${chip}
-    <div class="facts">${fact("Size", v.size)}${fact("Link", v.transport + " · " + v.address)}${fact("Panel", [hw.inch ? hw.inch + '"' : null, hw.mm, hw.panel].filter(Boolean).join(" · "))}${fact("Board", hw.board)}${fact("MCU", hw.mcu)}${fact("Firmware", hw.firmware)}${fact("Cell", hw.battery_mah ? hw.battery_mah + " mAh" : null)}${fact("Hidden edge px", ins.some(x => x) ? ins.join(", ") + " (l, t, r, b)" : null)}</div>
-    <div class="tools"><button class="btn small" data-act="test-page">${ICON.print}Test page</button><button class="btn small" data-act="calibrate">${ICON.grid}Calibration page</button><button class="btn small" data-act="inset">${ICON.ruler}Calibrate</button><button class="btn small danger" data-act="remove" title="Remove" aria-label="Remove">${ICON.trash}</button></div>
+    <span class="chip" title="${esc(v.transport)}">${ICON.qr}<span>${esc(v.address)}</span></span>
+    <span class="mono">${esc(v.size)}</span>
+    <div class="tools"><button class="btn small" data-act="test-page">${ICON.print}Test page</button><button class="btn small" data-act="calibrate">${ICON.grid}Calibration page</button><button class="btn small" data-act="inset">${ICON.ruler}Calibrate</button><button class="btn small" data-act="details" title="Details" aria-label="Details">${ICON.info}</button><button class="btn small danger" data-act="remove" title="Remove" aria-label="Remove">${ICON.trash}</button></div>
     <div class="editor" hidden></div></div>`;
+}
+function openDetails(k) {
+  const v = S.sheets[k], hw = v.hw || {}, ins = v.inset || [0, 0, 0, 0];
+  el("detName").textContent = v.name || k;
+  el("detBody").innerHTML = [["Name", v.name], ["Sheet", v.address], ["Link", v.transport], ["Size", v.size], ["Panel", [hw.inch ? hw.inch + '"' : null, hw.mm, hw.panel].filter(Boolean).join(" · ")], ["Board", hw.board], ["MCU", hw.mcu], ["Firmware", hw.firmware], ["Cell", hw.battery_mah ? hw.battery_mah + " mAh" : null], ["Hidden edge px", ins.some(x => x) ? ins.join(", ") + " (left, top, right, bottom)" : "none"], ["Dock id", k]]
+    .map(([a, b]) => fact(a, b)).join("");
+  el("detDlg").showModal();
 }
 async function load() {
   const s = S = await api("/api/settings");
@@ -125,7 +132,7 @@ async function savePrinter(e) {
 /* add + scan */
 async function addSheet(e) {
   e.preventDefault(); const b = el("addBtn"), done = busy(b, "Reading the sheet…");
-  try { const r = await api("/api/sheets/add", {input: el("qr").value.trim(), name: el("qrname").value.trim(), serial: el("qrserial").value.trim()});
+  try { const r = await api("/api/sheets/add", {input: el("qr").value.trim(), name: el("qrname").value.trim()});
     done("Added"); toast(`Added ${el("qrname").value.trim() || r.id} · ${r.size}`); await wait(400); closeAdd(); await load();
     const c = el("sheets").querySelector(`[data-id="${CSS.escape(r.id)}"]`); if (c) { c.classList.add("enter", "hi"); c.scrollIntoView({behavior: "smooth", block: "center"}); }
   } catch (x) { done("Could not add", true); shake(el("qr")); toast(x.message, "err"); }
@@ -141,10 +148,10 @@ function useFound(b) { el("qr").value = b.dataset.v; el("qrname").focus(); }
 function openAdd() { const d = el("addDlg"); el("addForm").reset(); el("found").innerHTML = ""; el("scanState").innerHTML = ""; d.showModal(); el("qr").focus(); }
 function closeAdd() { el("addDlg").close(); }
 el("addDlg").addEventListener("click", e => { if (e.target === el("addDlg")) closeAdd(); });
+el("detDlg").addEventListener("click", e => { if (e.target === el("detDlg")) el("detDlg").close(); });
 /* per-sheet inline editors */
 const editors = {
   name: v => `<form class="ed" data-ed="name"><label>Name</label><input name="value" value="${esc(v.name || "")}" maxlength="40" required><div class="row"><button class="btn primary small" type="submit">${ICON.check}Save</button><button class="btn outline small" type="button" data-act="cancel">Cancel</button></div></form>`,
-  serial: v => `<form class="ed" data-ed="serial"><label>Label ID</label><input name="value" class="mono" value="${esc(v.serial || "")}" placeholder="as printed on the sheet" autocomplete="off"><p>Leave empty to remove it.</p><div class="row"><button class="btn primary small" type="submit">${ICON.check}Save</button><button class="btn outline small" type="button" data-act="cancel">Cancel</button></div></form>`,
   inset: v => { const [l, t, r, b] = v.inset || [0, 0, 0, 0]; return `<form class="ed" data-ed="inset"><label>Hidden pixels per edge</label><p>Print the calibration page first, then count the rows and columns that are missing at each edge.</p><div class="four">${[["l", "left", l], ["t", "top", t], ["r", "right", r], ["b", "bottom", b]].map(([n, lb, val]) => `<label>${lb}<input name="${n}" type="number" min="0" max="64" value="${val}"></label>`).join("")}</div><div class="row"><button class="btn primary small" type="submit">${ICON.check}Save</button><button class="btn outline small" type="button" data-act="cancel">Cancel</button></div></form>`; },
   remove: v => `<form class="ed" data-ed="remove"><label>Remove ${esc(v.name || "this sheet")} from this Dock?</label><p>It stays untouched on the panel; you can add it again any time.</p><div class="row"><button class="btn small danger" type="submit">${ICON.trash}Remove</button><button class="btn outline small" type="button" data-act="cancel">Keep</button></div></form>`,
 };
@@ -153,6 +160,7 @@ function closeEditor(c) { const ed = c.querySelector(".editor"); ed.hidden = tru
 el("sheets").addEventListener("click", async e => {
   const b = e.target.closest("[data-act]"); if (!b) return; const c = b.closest(".sheet"), id = c.dataset.id, v = S.sheets[id] || {}, act = b.dataset.act;
   if (act === "cancel") return closeEditor(c);
+  if (act === "details") return openDetails(id);
   if (editors[act]) return openEditor(c, editors[act](v));
   if (act === "test-page" || act === "calibrate") {
     const others = [...c.querySelectorAll(".tools .btn")].filter(x => x !== b); others.forEach(x => x.disabled = true);
@@ -168,7 +176,7 @@ el("sheets").addEventListener("submit", async e => {
   try {
     if (kind === "remove") { await api(`/api/sheets/${id}/remove`, {}); c.classList.add("leave"); await wait(240); toast(`${S.sheets[id]?.name || id} removed.`); await load(); return; }
     const body = kind === "inset" ? {inset: ["l", "t", "r", "b"].map(n => Number(f.elements[n].value) || 0).join(",")} : {[kind]: f.elements.value.value.trim()};
-    await api(`/api/sheets/${id}`, body); done("Saved"); toast({name: "Renamed.", serial: body.serial ? "Label ID saved." : "Label ID removed.", inset: "Calibration saved."}[kind]); await wait(500); await load();
+    await api(`/api/sheets/${id}`, body); done("Saved"); toast({name: "Renamed.", inset: "Calibration saved."}[kind]); await wait(500); await load();
   } catch (x) { done("Not saved", true); const i = f.querySelector("input"); if (i) shake(i); toast(x.message, "err"); }
 });
 el("addBtn").innerHTML = ICON.plus + "<span>Add sheet</span>"; el("scanBtn").innerHTML = ICON.scan + "<span>Scan for sheets</span>";

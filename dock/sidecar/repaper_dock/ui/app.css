@@ -190,3 +190,5 @@
   .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 0 } .modal-head b { font-family: var(--font-display); font-weight: 600; font-size: 1.125rem; letter-spacing: -.01em }
   .modal-body { padding: 16px 20px 20px; display: grid; gap: 16px } .modal .field { max-width: none }
   .or { display: flex; align-items: center; gap: 12px; font-family: var(--font-display); font-stretch: 112%; font-size: .6875rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3) } .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--border) }
+  .sheet { min-width: 0 } .fact { min-width: 0 } .fact b { overflow-wrap: anywhere }
+  .facts.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px 20px }

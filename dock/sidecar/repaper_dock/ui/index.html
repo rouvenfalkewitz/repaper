@@ -98,15 +98,15 @@ function render(s) {
       picker = `<div class="tiles" role="radiogroup" aria-label="Sheet">` + ids.map((k, i) => { const v = s.sheets[k], x = info(k, v);
         return `<label class="tile ${v.online === false ? "off" : ""}"><input type="radio" name="sheet" value="${esc(k)}" ${i === 0 ? "checked" : ""}>
           <span class="mini" style="aspect-ratio:${(v.width / v.height).toFixed(3)}">${v.last ? `<img src="/sheet-image/${esc(k)}?t=${v.last.at}" alt="">` : ""}</span>
-          <b>${esc(v.name || k)}</b>${v.serial ? `<span class="mono serial">${esc(v.serial)}</span>` : ""}<span class="mono">${v.width}×${v.height} · ${esc(v.palette)}</span>
+          <b>${esc(v.name || k)}</b><span class="mono serial">${esc(v.address)}</span><span class="mono">${v.width}×${v.height} · ${esc(v.palette)}</span>
           <span class="mono ${x.low ? "low" : ""}">${x.bat}</span></label>`; }).join("") + `</div>`;
     } else {
       const first = s.sheets[ids[0]];
-      picker = `<details class="dd"><summary><span class="dd-cur"><b>${esc(first.name || ids[0])}</b><span class="mono">${first.serial ? esc(first.serial) + " · " : ""}${first.width}×${first.height} · ${esc(first.palette)}</span></span>
+      picker = `<details class="dd"><summary><span class="dd-cur"><b>${esc(first.name || ids[0])}</b><span class="mono">${esc(first.address)} · ${first.width}×${first.height} · ${esc(first.palette)}</span></span>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
         <div class="dd-list" role="radiogroup" aria-label="Sheet">` + ids.map((k, i) => { const v = s.sheets[k], x = info(k, v);
         return `<label class="dd-row ${v.online === false ? "off" : ""}"><input type="radio" name="sheet" value="${esc(k)}" ${i === 0 ? "checked" : ""}>
-          <span class="dd-name"><b>${esc(v.name || k)}</b><span class="mono">${v.serial ? esc(v.serial) + " · " : ""}${v.width}×${v.height} · ${esc(v.palette)}</span></span>
+          <span class="dd-name"><b>${esc(v.name || k)}</b><span class="mono">${esc(v.address)} · ${v.width}×${v.height} · ${esc(v.palette)}</span></span>
           <span class="mono ${x.low ? "low" : ""}">${x.bat}</span></label>`; }).join("") + `</div></details>`;
     }
     const err = s.error ? `<div class="notice err"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6m0-6 6 6"/></svg><div><b>Not printed</b><span>${esc(s.error)}</span></div></div>` : "";
@@ -133,7 +133,7 @@ function render(s) {
                            : `<div class="bat ${low ? "low" : ""}"><i><b style="width:${pct}%"></b></i><span>${mv.toFixed(2)} V${low ? " · replace cell" : ""}${v.temperature_c != null ? " · " + v.temperature_c.toFixed(0) + " °C" : ""}</span></div>`;
     return `<div class="sheet">${fig(v, v.last ? `/sheet-image/${esc(k)}?t=${v.last.at}` : null)}
       <div class="sheet-head"><b>${esc(v.name || k)}</b>${dots(v.palette)}</div>
-      ${v.serial ? `<span class="chip serial">${ICON.qr}<span>${esc(v.serial)}</span></span>` : ""}
+      <span class="chip" title="${esc(v.transport)}">${ICON.qr}<span>${esc(v.address)}</span></span>
       ${bat}</div>`;
   }).join("") || `<div class="sheet"><b>No sheets yet</b><span class="mono">Add one in Settings</span></div>`;
   const rec = (s.recent || []).slice().reverse();
