@@ -73,3 +73,11 @@
   .kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font-size: .9375rem } .kv span:first-child { color: var(--text-3); font-family: var(--font-mono); font-size: .8125rem; padding-top: 2px }
   .found { display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); padding: 10px 0; border-bottom: 1px solid var(--border) } .found:last-child { border-bottom: 0 }
   .sheet .tools { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px } .btn.small { padding: 6px 10px; font-size: .8125rem }
+
+  /* notices */
+  .notice { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r-control); background: var(--amber-tint); color: var(--amber); border: 1px solid transparent; margin: 4px 0 14px }
+  .notice svg { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; margin-top: 1px }
+  .notice b { display: block; font-weight: 600; color: inherit } .notice span { display: block; color: var(--text-2); font-size: .9375rem }
+  .notice.info { background: var(--accent-tint); color: var(--accent-text) } .notice.err { background: var(--red-tint); color: var(--red) }
+  .card-head { display: flex; justify-content: space-between; align-items: center; gap: 12px }
+  .tap select { flex: 1 1 220px } .tap .btn.primary { min-width: 120px }

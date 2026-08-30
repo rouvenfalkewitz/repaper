@@ -69,6 +69,8 @@ class Dock:
             if time.time() - job.created > self.cfg["job_timeout_seconds"]:
                 job.state = "cancelled"; job.error = "nobody held a sheet in time"; job.save()
                 log.info("job %s expired", job.id); continue
+            if self.state == "error": self.message = getattr(self, "last_error", "")   # keep a failure visible until the next tap
+            elif self.state != "job-waiting": self.message = ""                        # a previous success never lingers under a new job
             self.state = "job-waiting"; page_no = job.next_page(); self.phase = ""
             key = f"{job.id}:{page_no}"
             if key not in self._announced:
@@ -85,7 +87,7 @@ class Dock:
         transport = self.transports.get(ref.transport_id)
         if not transport:
             self.message = f"transport {ref.transport_id} not loaded"; self.state = "error"; return
-        self.state = "printing"; job.state = "printing"; job.save(); self.phase = "rendering"; self.message = ""; self.printing_since = time.time()
+        self.state = "printing"; job.state = "printing"; job.save(); self.phase = "rendering"; self.message = ""; self.last_error = ""; self.printing_since = time.time()
         src = Image.open(job.page_path(page_no))
         page = render_for_sheet(src, transport.describe(ref))
         def progress(text):
@@ -103,7 +105,7 @@ class Dock:
             job.save(); self.state = "printed"; self.message = f"printed page {page_no} of {job.name} on {ref.name or sheet_id} ({time.time()-t0:.1f}s) {res.message}"
             log.info(self.message); time.sleep(3 if job.state == "done" else 1)
         else:
-            job.state = "pending"; job.save(); self.state = "error"; self.message = res.message; log.error("print failed: %s", res.message); time.sleep(2)
+            job.state = "pending"; job.save(); self.state = "error"; self.message = res.message; self.last_error = res.message; log.error("print failed: %s", res.message); time.sleep(2)
 
     # ── settings & sheet management (used by /settings) ──────────────────────
     def settings(self) -> dict:
@@ -206,7 +208,8 @@ class Dock:
                          "width": m["width"], "height": m["height"], "palette": m["palette"], "inset": list(m.get("inset", (0, 0, 0, 0))),
                          "size": f'{m["width"]}×{m["height"]} {m["palette"]}', "hw": e.get("keys", {}).get("hw", {}),
                          "min_battery_mv": caps.get("min_battery_mv"), "last": last, **st.get(k, {})}
-        return {"state": self.state, "phase": self.phase, "message": self.message, "printer": self.cfg["printer_name"],
+        return {"state": self.state, "phase": self.phase, "message": self.message, "error": (self.message if self.state == "error" else getattr(self, "last_error", "")) or "",
+                "printer": self.cfg["printer_name"],
                 "identifier": self.identifier.id, "version": __version__, "address": f"http://{socket.gethostname()}:{self.cfg['web_port']}/",
                 "job": None if not self.current else {"id": self.current.id, "name": self.current.name, "pages": self.current.pages, "user": self.current.user,
                                                       "next_page": self.current.next_page(), "state": self.current.state,
