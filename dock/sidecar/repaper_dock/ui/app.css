@@ -11,7 +11,7 @@
   .pill { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-display); font-stretch: 112%; font-size: .6875rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; line-height: 1.5; background: var(--accent-tint); color: var(--accent-text) }
   .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor }
   .pill.wait::before { animation: blink 1s steps(1) infinite } .pill.busy::before { animation: blink .3s steps(1) infinite }
-  .pill.done { background: var(--text); color: var(--bg) } .pill.warn { background: var(--amber-tint); color: var(--amber) } .pill.err { background: var(--red-tint); color: var(--red) } .pill.setup { background: var(--blue-tint); color: var(--blue) }
+  .pill.done { background: var(--accent-tint); color: var(--accent-text) } .pill.done::before { content: "✓"; width: auto; height: auto; background: none; border-radius: 0; font-size: .8125rem; line-height: 1 } .pill.warn { background: var(--amber-tint); color: var(--amber) } .pill.err { background: var(--red-tint); color: var(--red) } .pill.setup { background: var(--blue-tint); color: var(--blue) }
   @keyframes blink { 50% { opacity: 0 } }
   .title { font-family: var(--font-display); font-weight: 700; font-size: 1.5rem; letter-spacing: -.02em; margin: var(--s-3) 0 2px; text-wrap: balance }
   .meta { color: var(--text-2); font-size: .9375rem } .mono { font-family: var(--font-mono); font-size: .8125rem; color: var(--text-3) }
@@ -34,7 +34,10 @@
   .step { display: grid; gap: 6px } .step i { display: block; height: 6px; border-radius: 3px; background: var(--border) } .step span { font-family: var(--font-display); font-stretch: 112%; font-size: .6875rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3) }
   .step.done i { background: var(--accent) } .step.done span { color: var(--text-2) }
   .step.active i { background: var(--accent); box-shadow: var(--glow); animation: blink 1s steps(1) infinite } .step.active span { color: var(--accent-text) }
-  .phase-line { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; color: var(--text-2); font-size: .9375rem }
+  .live { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 12px 14px; border-radius: var(--r-control); background: var(--bg); border: 1px solid var(--border) }
+  .live .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: var(--glow); animation: var(--ring-breathe); flex: none }
+  .live b { display: block; font-family: var(--font-display); font-weight: 600; font-size: 1rem; letter-spacing: -.01em } .live span { display: block; color: var(--text-2); font-size: .875rem }
+  .live .time { margin-left: auto; color: var(--text-3); font-size: .8125rem }
   /* sheet cards */
   .sheet-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 4px }
   .dots { display: inline-flex; gap: 3px } .dots i { width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--carbon-5); display: block }
@@ -55,8 +58,12 @@
   .bat i::after { content: ""; position: absolute; right: -4px; top: 3px; width: 2px; height: 4px; background: var(--text-3); border-radius: 1px }
   .bat i b { display: block; height: 100%; background: var(--accent); border-radius: 1px }
   .bat.low i b { background: var(--red) }
-  .list { display: grid; gap: 8px } .job { display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); padding: 10px 0; border-bottom: 1px solid var(--border) } .job:last-child { border-bottom: 0 }
-  .job span:first-child { font-weight: 500 }
+  .list { display: grid; gap: 0 }
+  .job { border-bottom: 1px solid var(--border) } .job:last-child, .more .job:last-child { border-bottom: 0 }
+  .job summary { display: flex; align-items: center; gap: var(--s-3); padding: 10px 0; cursor: pointer; list-style: none } .job summary::-webkit-details-marker { display: none }
+  .job .jname { font-weight: 500; flex: 1 } .job .jwhen { color: var(--text-3); font-size: .75rem }
+  .jdetail { padding: 4px 0 12px 0 }
+  .more > summary { cursor: pointer; list-style: none; padding: 10px 0 0; color: var(--accent-text); font-size: .875rem; font-weight: 600 } .more > summary::-webkit-details-marker { display: none }
   footer { margin-top: var(--s-8); display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--s-3); font-family: var(--font-mono); font-size: .75rem; color: var(--text-3) }
   footer .m { height: 18px; width: auto } footer .m .ring, footer .m .letters { fill: var(--text-3) }
   /* header actions */

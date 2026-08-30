@@ -47,9 +47,11 @@ const STEPS = [["looking", "Find sheet"], ["connect", "Connect"], ["send", "Send
 function stepIndex(phase) { phase = (phase || "").toLowerCase(); if (phase.startsWith("printed")) return 4; if (phase.includes("refresh")) return 3; if (phase.includes("sending") || phase.includes("rendering")) return 2; if (phase.includes("connect")) return 1; return 0; }
 function stepper(phase, since, now) {
   const i = stepIndex(phase), t = since ? Math.max(0, Math.round((now || Date.now()/1000) - since)) : null;
+  const label = { 0: "Looking for the sheet", 1: "Connecting", 2: "Sending the page", 3: "Sheet is refreshing", 4: "Printed" }[i];
+  const detail = i === 3 ? "the panel rewrites itself — about 20 seconds" : i === 2 ? "over Bluetooth" : i === 1 ? "authenticating with the sheet" : i === 0 ? "scanning nearby" : "";
   return `<div class="stepper" role="progressbar" aria-valuemin="0" aria-valuemax="4" aria-valuenow="${i}">` + STEPS.map(([k, l], n) =>
     `<div class="step ${n < i ? "done" : n === i ? "active" : ""}"><i></i><span>${l}</span></div>`).join("") + `</div>
-    <div class="phase-line"><span>${esc(phase || "starting")}</span>${t != null ? `<span class="mono">${t} s</span>` : ""}</div>`;
+    <div class="live"><span class="dot"></span><div><b>${label}</b>${detail ? `<span>${detail}</span>` : ""}</div>${t != null ? `<span class="mono time">${t} s</span>` : ""}</div>`;
 }
 function pages(j) {
   const done = j.printed || 0, cur = j.next_page || j.pages, n = j.pages;
@@ -104,11 +106,16 @@ function render(s) {
       ${hwline ? `<span class="mono">${esc(hwline)}</span>` : ""}
       ${bat}${last}</div>`;
   }).join("") || `<div class="sheet"><b>No sheets yet</b><span class="mono">Add one in Settings</span></div>`;
-  el("recent").innerHTML = (s.recent || []).slice().reverse().map(r => {
+  const rec = (s.recent || []).slice().reverse();
+  const row = r => {
     const [c, l] = { done: ["done", "Printed"], cancelled: ["", "Discarded"], failed: ["err", "Failed"] }[r.state] || ["", r.state];
-    return `<div class="job"><span>${esc(r.name)}</span><span class="pill ${c}">${l}</span></div>`;
-  }).join("") || `<div class="meta">Nothing printed yet.</div>`;
-}
+    const last = r.printed && r.printed.length ? r.printed[r.printed.length - 1] : null;
+    const sheets = r.printed ? [...new Set(r.printed.map(p => p.sheet))].join(", ") : "";
+    return `<details class="job"><summary><span class="jname">${esc(r.name)}</span><span class="jwhen mono">${fmtAgo(last ? last.at : r.created, now)}</span><span class="pill ${c}">${l}</span></summary>
+      <div class="jdetail kv"><span>pages</span><span>${r.printed ? r.printed.length : 0} of ${r.pages} printed</span>${sheets ? `<span>sheet</span><span>${esc(sheets)}</span>` : ""}${r.user ? `<span>from</span><span>${esc(r.user)}</span>` : ""}<span>received</span><span>${fmtAgo(r.created, now)}</span>${r.error ? `<span>note</span><span>${esc(r.error)}</span>` : ""}</div></details>`;
+  };
+  const head = rec.slice(0, 3), rest = rec.slice(3);
+  el("recent").innerHTML = rec.length ? head.map(row).join("") + (rest.length ? `<details class="more"><summary>Show ${rest.length} more</summary>${rest.map(row).join("")}</details>` : "") : `<div class="meta">Nothing printed yet.</div>`;
 async function tick() {
   try {
     const s = await (await fetch("/api/status", {cache: "no-store"})).json();

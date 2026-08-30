@@ -216,7 +216,9 @@ class Dock:
                                                       "printed": len(self.current.printed), "created": self.current.created},
                 "now": time.time(), "printing_since": getattr(self, "printing_since", None),
                 "sheets": sheets,
-                "recent": [{"id": j.id, "name": j.name, "state": j.state, "pages": j.pages} for j in list_jobs(("done", "cancelled", "failed"))[-8:]]}
+                "recent": [{"id": j.id, "name": j.name, "state": j.state, "pages": j.pages, "user": j.user, "created": j.created,
+                            "printed": [{"page": x["page"], "sheet": (self.registry.all().get(x["sheet"], {}) or {}).get("name") or x["sheet"], "at": x["at"]} for x in j.printed],
+                            "error": j.error} for j in list_jobs(("done", "cancelled", "failed"))[-20:]]}
 
 
 
