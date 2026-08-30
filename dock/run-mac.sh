@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run the RePaper printer on this Mac: ippeveprinter (ships with macOS) + the sidecar daemon.
-# Print to "RePaper Dock" from your iPhone/Mac; the job appears at http://localhost:9631/ — tap a sheet there.
+# Print to "RePaper Dock" from your iPhone/Mac; the job appears at http://localhost:9631/ - tap a sheet there.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"; VENV="$HERE/sidecar/.venv"
 NAME="${REPAPER_PRINTER_NAME:-RePaper Dock}"
