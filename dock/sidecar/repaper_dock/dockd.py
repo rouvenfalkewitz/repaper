@@ -139,11 +139,21 @@ def make_handler(dock: Dock):
     return H
 
 
+class _Server(ThreadingHTTPServer):
+    allow_reuse_address = True
+    daemon_threads = True
+    def server_bind(self):
+        # HTTPServer.server_bind() calls socket.getfqdn() on the bind address — a reverse-DNS lookup that
+        # stalls ~30 s on macOS for 0.0.0.0. We don't need the FQDN.
+        import socketserver
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = "repaper-dock", self.server_address[1]
+
+
 def serve(dock: Dock):
-    ThreadingHTTPServer.allow_reuse_address = True
     bind = dock.cfg.get("web_bind", "0.0.0.0")
     try:
-        srv = ThreadingHTTPServer((bind, dock.cfg["web_port"]), make_handler(dock))
+        srv = _Server((bind, dock.cfg["web_port"]), make_handler(dock))
     except OSError as e:
         raise SystemExit(f"web UI port {dock.cfg['web_port']} is in use — another repaper-dockd is running? (pkill -f 'repaper-dockd run')  [{e}]")
     threading.Thread(target=srv.serve_forever, daemon=True).start()
