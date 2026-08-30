@@ -37,3 +37,13 @@ Prices are approximate (August 2026, Germany, incl. VAT). Links are to typical s
 ## E. Later (pilot)
 
 PoE HAT for the Pi 4 (~€25), a second Pi 4 for a second Dock, 3D printing service for the enclosure if no printer at hand, more sheets.
+
+## F. Learned on the bench (30 Aug 2026) — adjust before ordering
+
+- **Coin cells, fresh and branded.** The label browned out mid-refresh at 2.67 V under load and came back half-drawn; a fresh cell (3.13 V) refreshes cleanly in ~20 s. Order a 10-pack of the type printed on the back of your tags (SoluM M3 family is mostly CR2450; Panasonic/Renata/Varta, not no-name). The Dock refuses to print below 2.7 V, so weak cells simply stop the demo.
+- **Ask your mate for nRF52811-based tags for BWR.** Our 2.13" (nRF52811, fw 1.0.0) drives both colour planes correctly; the OpenDisplay findings note that ESP32/nRF52840 builds keep only one plane on BWR. For red on the demo sheets, prefer the nRF52811 models (or get the plane fix confirmed first).
+- **A USB Bluetooth 5 dongle for the Pi (~€10–15).** Even the Mac's radio misses a tag advertisement every few scans; the Pi 4's onboard combo chip is weaker. A TP-Link UB500 / ASUS USB-BT500 (Realtek RTL8761B, in-kernel on Bookworm) or a dongle with an external antenna makes scans and the ~10 s connect reliable. Put it on a short USB extension away from the Pi's USB 3 ports (USB 3 noise kills 2.4 GHz).
+- **NTAG213 stickers do double duty — no camera needed.** The sheet's OpenDisplay link (~58 characters, carries the key) fits in a 144-byte NTAG213. Registering a sheet on the Dock can write that link to the sticker on its back, so a tap on the PN532 identifies the sheet *and* hands over the key. Keep the 50-pack; skip any QR camera idea.
+- **Sheet sizes for the demo.** The 2.13" label (128 addressed / 122 visible rows) is fine for tests but tiny for a "page"; get the 2.9" (296×128) and 4.2" (400×300) tags from your mate and keep the reTerminal E1001 (7.5") as the page-size piece. Every panel needs one calibration pass (hidden edge rows) — the Dock has a Calibrate flow for that now.
+- **Pi OS Bookworm (64-bit) is required**, not Bullseye: the sidecar needs Python ≥ 3.11 and BlueZ ≥ 5.66 for bleak. Nothing to buy, but flash the right image.
+- Unchanged: Pi 4B 4 GB + Zero 2 WH, PN532 V3 (I²C), WS2812 ring 16 + 74AHCT125, Pixel 9a as the Android phone.
