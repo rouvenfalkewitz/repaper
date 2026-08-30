@@ -137,7 +137,7 @@ function render(s) {
       <div class="sheet-top"><span class="odname" title="${esc(v.transport)}">${ICON.qr}<span>${esc(v.address)}</span></span><span class="range ${away ? "off" : ""}" title="${away ? "Not in range · " + seen : "In range"}">${ICON.signal}</span></div>
       ${fig(v, v.last ? `/sheet-image/${esc(k)}?t=${v.last.at}` : null)}
       <div class="sheet-head"><b>${esc(v.name || k)}</b>${dots(v.palette)}</div>
-      ${bat}${away ? `<span class="mono away-note">not in range · ${seen}</span>` : ""}</div>`;
+      <div class="sheet-foot">${bat}${away ? `<span class="mono away-note">${seen}</span>` : ""}</div></div>`;
   }).join("") || `<div class="sheet"><b>No sheets yet</b><span class="mono">Add one in Settings</span></div>`;
   const rec = (s.recent || []).slice().reverse();
   const clock = ts => { const d = new Date(ts * 1000), t = new Date(now * 1000); const hm = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); return d.toDateString() === t.toDateString() ? hm : d.toLocaleDateString([], { day: "numeric", month: "short" }) + " " + hm; };

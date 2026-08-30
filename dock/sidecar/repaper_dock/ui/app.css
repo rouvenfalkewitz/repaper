@@ -210,3 +210,4 @@
   .cal input { width: 60px; text-align: center; font: 500 .9375rem var(--font-mono); padding: 8px 4px; border-radius: var(--r-control); border: 1px solid var(--border-strong); background: var(--bg); color: var(--text) }
   .cal-panel { grid-column: 2; grid-row: 2; width: 100%; display: grid; place-items: center; background: var(--epaper-panel); border: 6px solid var(--epaper-bezel); border-radius: 6px; color: var(--ink) } .cal-panel.wide { aspect-ratio: 2 / 1; max-width: 260px } .cal-panel.tall { aspect-ratio: 3 / 4; max-width: 160px }
   .cal-panel .mono { color: var(--graphite) }
+  .sheet-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px } .sheet-foot .bat { margin-top: 0 } .away-note { white-space: nowrap }
