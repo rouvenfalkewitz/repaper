@@ -40,8 +40,8 @@ def _run(coro):
 
 
 class OpenDisplayBLETransport(SheetTransport):
-    def __init__(self, registry=None, timeout: float = 20.0):
-        self.registry = registry; self.timeout = timeout
+    def __init__(self, registry=None, timeout: float = 30.0, bwr_as_mono: bool = True, refresh_wait: float = 60.0):
+        self.registry = registry; self.timeout = timeout; self.bwr_as_mono = bwr_as_mono; self.refresh_wait = refresh_wait
 
     @property
     def id(self) -> str: return "opendisplay-ble"
@@ -69,11 +69,25 @@ class OpenDisplayBLETransport(SheetTransport):
         return _run(self._describe_async(ref))
 
     async def _describe_async(self, ref: SheetRef) -> SheetModel:
+        """The SDK reports the panel's native size plus the mounting rotation it applies itself; we render in the
+        *viewed* orientation (native size swapped for 90°/270°) and let the SDK rotate — so rotation is 0 for us.
+        The native facts are remembered in ref.keys so later prints need no interrogation round-trip."""
         async with self._device(ref) as dev:
             caps = dev.capabilities
             scheme = getattr(caps.color_scheme, "name", str(caps.color_scheme))
-            return SheetModel(int(caps.width), int(caps.height), _SCHEME_TO_PALETTE.get(scheme, "BW"),
-                              rotation=int(getattr(caps, "rotation", 0) or 0), model_name=f"OpenDisplay {scheme}")
+            w, h, rot = int(caps.width), int(caps.height), int(getattr(caps, "rotation", 0) or 0)
+            ref.keys.update({"native": f"{caps.width}x{caps.height}", "rotation": rot, "scheme": scheme})
+            if rot in (90, 270): w, h = h, w
+            return SheetModel(w, h, _SCHEME_TO_PALETTE.get(scheme, "BW"), rotation=0,
+                              model_name=f"OpenDisplay {scheme} {caps.width}x{caps.height} rot{rot}")
+
+    def _known_caps(self, ref: SheetRef, mono: bool):
+        """Explicit DeviceCapabilities from the registry (skips interrogation); None if we never described this sheet."""
+        if not ref.keys.get("native"): return None
+        from opendisplay import DeviceCapabilities, ColorScheme
+        nw, nh = (int(v) for v in ref.keys["native"].lower().split("x"))
+        scheme = ColorScheme.MONO if mono else getattr(ColorScheme, ref.keys.get("scheme", "MONO"), ColorScheme.MONO)
+        return DeviceCapabilities(width=nw, height=nh, color_scheme=scheme, rotation=int(ref.keys.get("rotation", 0)))
 
     def status(self, ref: SheetRef) -> SheetStatus:
         """Online = seen in a short scan. Battery/temperature from advertisements come in a later revision."""
@@ -86,23 +100,48 @@ class OpenDisplayBLETransport(SheetTransport):
         return SheetStatus(online=seen, last_seen=time.time() if seen else None)
 
     def print(self, ref: SheetRef, page: Page, *, full_refresh: bool = True) -> PrintResult:
-        t0 = time.time()
+        """Some tags (seen: SoluM nRF52811, firmware 1.0.0) acknowledge every chunk and the END, report 'refresh
+        started', then drop the BLE link while the panel refreshes and never send REFRESH_COMPLETE. The image is on
+        the panel at that point, so that outcome counts as printed — with a note, not a failure."""
+        import logging
+        t0 = time.time(); seen = {"refresh_started": False}
+
+        class _Watch(logging.Handler):
+            def emit(self, rec):
+                if rec.getMessage().startswith("Display refresh started"): seen["refresh_started"] = True
+        watch = _Watch(level=logging.DEBUG); lg = logging.getLogger("opendisplay.device"); prev = lg.level
+        lg.addHandler(watch); lg.setLevel(logging.DEBUG)
         try:
             _run(self._print_async(ref, page, full_refresh))
         except Exception as e:
+            if seen["refresh_started"] and type(e).__name__ in ("BLETimeoutError", "BLEConnectionError"):
+                return PrintResult(True, time.time() - t0, "sent over BLE; panel refresh started, completion not confirmed (tag dropped the link while refreshing)")
             return PrintResult(False, time.time() - t0, f"{type(e).__name__}: {e}")
-        return PrintResult(True, time.time() - t0, "sent over BLE")
+        finally:
+            lg.removeHandler(watch); lg.setLevel(prev)
+        return PrintResult(True, time.time() - t0, "sent over BLE, refresh complete")
 
     async def _print_async(self, ref: SheetRef, page: Page, full_refresh: bool):
         from opendisplay import DitherMode, FitMode, RefreshMode, Rotation
         img = page.image.convert("RGB")
-        async with self._device(ref) as dev:
-            w, h = int(dev.width), int(dev.height)
-            if (w, h) != img.size and (h, w) != img.size:
-                raise TransportError(f"sheet is {w}×{h}, page is {img.width}×{img.height} — registry model is wrong")
-            rot = Rotation.ROTATE_0 if (w, h) == img.size else Rotation.ROTATE_90
+        # Firmware 1.x direct-write on BWR/BWY panels accepts only ONE bit plane (see py-opendisplay FINDINGS C1):
+        # sending two planes stalls the upload. Until firmware parity, send such sheets as MONO with red drawn as black.
+        mono = self.bwr_as_mono and ref.keys.get("scheme") in ("BWR", "BWY")
+        if mono and page.model.palette in ("BWR", "BWRY"):
+            lut = page.image.point(lambda i: 0 if i == 0 else 1, "P")            # index 0 = white, everything else = black
+            lut.putpalette([255, 255, 255, 0, 0, 0] + [0] * 762); img = lut.convert("RGB")
+        caps = self._known_caps(ref, mono)
+        from opendisplay import OpenDisplayDevice
+        kw = {"mac_address": ref.address} if _is_mac(ref.address) else {"device_name": ref.address}
+        async with OpenDisplayDevice(encryption_key=self._key(ref), timeout=self.timeout, discovery_timeout=self.timeout,
+                                     capabilities=caps, **kw) as dev:
+            dev.TIMEOUT_REFRESH = self.refresh_wait
+            c = dev.capabilities; w, h = int(c.width), int(c.height)
+            if int(getattr(c, "rotation", 0) or 0) in (90, 270): w, h = h, w            # viewed orientation
+            if (w, h) != img.size:
+                raise TransportError(f"sheet shows {w}×{h}, page is {img.width}×{img.height} — re-register the sheet")
             await dev.upload_image(img, refresh_mode=RefreshMode.FULL if full_refresh else RefreshMode.FAST,
-                                   dither_mode=DitherMode.NONE, fit=FitMode.STRETCH, rotate=rot)
+                                   dither_mode=DitherMode.NONE, fit=FitMode.STRETCH, rotate=Rotation.ROTATE_0)
 
     def capabilities(self):
         return {"supports_status": True, "supports_partial_refresh": True, "needs_pairing": True}
