@@ -21,3 +21,12 @@ def test_bw_only_has_two_indices():
     src = Image.new("L", (200, 100), 128)
     page = render_for_sheet(src, SheetModel(296, 128, "BW"))
     assert set(page.image.getdata()) <= {0, 1}
+
+
+def test_inset_keeps_content_inside_visible_area():
+    src = Image.new("L", (500, 250), 0)                       # solid black page
+    model = SheetModel(250, 128, "BW", inset=(0, 0, 6, 4))
+    page = render_for_sheet(src, model, trim=False)
+    px = page.image.load()
+    assert px[249, 64] == 0 and px[124, 127] == 0            # hidden columns/rows stay white (index 0)
+    assert px[120, 60] == 1                                   # visible area is black (index 1)

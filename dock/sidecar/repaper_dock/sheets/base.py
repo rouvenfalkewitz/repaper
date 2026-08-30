@@ -37,9 +37,15 @@ class SheetModel:
     rotation: int = 0               # degrees the transport applies on top (0/90/180/270); renderer targets width×height as given
     refresh_seconds: Optional[float] = None
     model_name: Optional[str] = None
+    inset: tuple[int, int, int, int] = (0, 0, 0, 0)   # left, top, right, bottom — pixels that exist in the data but not on the glass
 
     @property
     def colors(self) -> Palette: return PALETTES[self.palette]
+
+    @property
+    def visible(self) -> tuple[int, int, int, int]:
+        """(x0, y0, x1, y1) of the area content may use, in viewed pixels."""
+        l, t, r, b = self.inset; return (l, t, self.width - r, self.height - b)
 
 
 @dataclass
@@ -125,8 +131,8 @@ class SheetRegistry:
 
     def get(self, sheet_id: str) -> tuple[SheetRef, SheetModel]:
         e = self._data[sheet_id]
-        return (SheetRef(e["transport"], e["address"], dict(e.get("keys", {})), e.get("name")),
-                SheetModel(**e["model"]))
+        m = dict(e["model"]); m["inset"] = tuple(m.get("inset", (0, 0, 0, 0)))
+        return (SheetRef(e["transport"], e["address"], dict(e.get("keys", {})), e.get("name")), SheetModel(**m))
 
     def add(self, sheet_id: str, ref: SheetRef, model: SheetModel) -> None:
         self._data[sheet_id] = {"name": ref.name, "transport": ref.transport_id, "address": ref.address,

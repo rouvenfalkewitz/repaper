@@ -18,13 +18,14 @@ def render_for_sheet(src: Image.Image, model: SheetModel, *, dither: bool = True
         bbox = ImageOps.invert(img.convert("L")).point(lambda v: 255 if v > 16 else 0).getbbox()
         if bbox: img = img.crop(bbox)
     W, H = model.width, model.height
-    if auto_rotate and ((img.width > img.height) != (W > H)):
+    x0, y0, x1, y1 = model.visible; VW, VH = x1 - x0, y1 - y0            # content goes into the visible area only
+    if auto_rotate and ((img.width > img.height) != (VW > VH)):
         img = img.rotate(90, expand=True)
-    scale = min(W / img.width, H / img.height)
+    scale = min(VW / img.width, VH / img.height)
     size = (max(1, round(img.width * scale)), max(1, round(img.height * scale)))
     img = img.resize(size, Image.LANCZOS)
     canvas = Image.new("RGB", (W, H), (255, 255, 255))
-    canvas.paste(img, ((W - size[0]) // 2, (H - size[1]) // 2))
+    canvas.paste(img, (x0 + (VW - size[0]) // 2, y0 + (VH - size[1]) // 2))
     pal = _palette_image(model.colors)
     out = canvas.quantize(palette=pal, dither=Image.Dither.FLOYDSTEINBERG if dither else Image.Dither.NONE)
     out.putpalette(pal.getpalette())

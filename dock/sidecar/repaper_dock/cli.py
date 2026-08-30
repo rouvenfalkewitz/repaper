@@ -39,6 +39,8 @@ def dockd(argv=None):
     sub.add_parser("sheets", help="list registered sheets"); sub.add_parser("jobs", help="list spool jobs")
     st = sub.add_parser("status", help="battery / temperature / online for a sheet (no connection)"); st.add_argument("sheet")
     t = sub.add_parser("test-page", help="render + print a built-in test page to a sheet (no printer needed)"); t.add_argument("sheet")
+    c = sub.add_parser("calibrate", help="print a full-bleed page with numbered ticks; then set-inset with what is hidden"); c.add_argument("sheet")
+    i = sub.add_parser("set-inset", help="pixels hidden per edge: left,top,right,bottom (viewed orientation)"); i.add_argument("sheet"); i.add_argument("inset")
     args = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
     ensure_home()
@@ -81,6 +83,16 @@ def dockd(argv=None):
         ref, model = reg.get(args.sheet); tr = transports[ref.transport_id]; st = tr.status(ref)
         v = "?" if st.battery_volts is None else f"{st.battery_volts:.2f} V"; t = "?" if st.temperature_c is None else f"{st.temperature_c:.1f} °C"
         print(f"{args.sheet}: online={st.online} battery={v} temp={t} min_to_print={tr.capabilities().get('min_battery_mv','-')} mV"); return 0
+    if args.cmd == "set-inset":
+        l, t, r, b = (int(v) for v in args.inset.split(","))
+        ref, model = reg.get(args.sheet); model.inset = (l, t, r, b); reg.add(args.sheet, ref, model)
+        print(f"{args.sheet}: inset left={l} top={t} right={r} bottom={b} → visible {model.visible}"); return 0
+    if args.cmd == "calibrate":
+        from .render import render_for_sheet
+        from .testpage import calibration_page
+        ref, model = reg.get(args.sheet); tr = transports[ref.transport_id]
+        model.inset = (0, 0, 0, 0); page = render_for_sheet(calibration_page(model), model, dither=False, auto_rotate=False, trim=False)
+        res = tr.print(ref, page); print("ok" if res.ok else "FAILED", res.message); return 0 if res.ok else 1
     if args.cmd == "test-page":
         from .render import render_for_sheet
         from .testpage import test_page
