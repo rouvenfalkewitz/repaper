@@ -104,7 +104,7 @@ function card(k, v) {
       <span class="iconrow"><button class="iconbtn" data-act="name" title="Rename" aria-label="Rename">${ICON.pencil}</button><button class="iconbtn" data-act="details" title="Details" aria-label="Details">${ICON.info}</button><button class="iconbtn danger" data-act="remove" title="Remove" aria-label="Remove">${ICON.trash}</button></span></div>
     <b>${esc(v.name || k)}</b>
     <span class="mono">${esc(v.size)}</span>
-    <div class="tools even"><button class="btn small" data-act="test-page">${ICON.print}Test page</button><button class="btn small" data-act="inset">${ICON.ruler}Calibrate</button></div></div>`;
+    <div class="tools even"><button class="btn small" data-act="test-page">${ICON.print}Test</button><button class="btn small" data-act="inset">${ICON.ruler}Calibrate</button></div></div>`;
 }
 function openDetails(k) {
   const v = S.sheets[k], hw = v.hw || {}, ins = v.inset || [0, 0, 0, 0];
