@@ -105,9 +105,12 @@ class OpenDisplayBLETransport(SheetTransport):
         """What the sheet is, physically — read once from the device config (shown on the Dock's sheet card)."""
         hw = {}
         try:
-            fw = await dev.read_firmware_version()
-            parts = [getattr(fw, k, None) for k in ("major", "minor", "patch")]
+            fw = await dev.read_firmware_version()          # a dict: major, minor, patch, sha
+            get = (lambda k: fw.get(k)) if isinstance(fw, dict) else (lambda k: getattr(fw, k, None))
+            parts = [get(k) for k in ("major", "minor", "patch")]
             hw["firmware"] = ".".join(str(v) for v in parts if v is not None) if parts[0] is not None else str(fw)
+            sha = str(get("sha") or "").strip('"')
+            if sha and set(sha) != {sha[0]} and not sha.startswith("1234567890"): hw["firmware"] += f" ({sha[:7]})"   # placeholder SHAs are not worth showing
         except Exception: pass
         try:
             from opendisplay import ICType
@@ -121,10 +124,8 @@ class OpenDisplayBLETransport(SheetTransport):
             hw["board"] = " / ".join(x for x in (mfr, board) if x) + (f" rev {rev}" if rev else "")
             d = cfg.displays[0] if cfg.displays else None
             if d is not None:
-                try:
-                    from opendisplay import PANEL_IC_NAMES
-                    hw["panel"] = PANEL_IC_NAMES.get(d.panel_ic_type) or f"0x{d.panel_ic_type:04x}"
-                except Exception: hw["panel"] = f"0x{getattr(d, 'panel_ic_type', 0):04x}"
+                pt = getattr(d, "panel_ic_type", None)          # OpenDisplay panel type code; the SDK has no name table for it
+                if pt: hw["panel"] = f"type 0x{pt:04x}"
                 if getattr(d, "active_width_mm", None) and getattr(d, "active_height_mm", None):
                     hw["mm"] = f"{d.active_width_mm}×{d.active_height_mm} mm"
                 if getattr(d, "screen_diagonal_inches", None): hw["inch"] = round(float(d.screen_diagonal_inches), 1)
