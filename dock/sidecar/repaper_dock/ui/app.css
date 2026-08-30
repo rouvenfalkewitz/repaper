@@ -21,10 +21,9 @@
   .frame img, .frame .blank { display: block; width: 100%; height: 100%; object-fit: contain; background: var(--epaper-panel); border-radius: 3px }
   .frame.rendering img { animation: eink-refresh 1.6s steps(1) infinite }
   .fig { display: grid; gap: 4px }
-  .fig-top { display: flex; justify-content: space-between; align-items: center; padding: 0 22px 0 0 }
+  .fig-top { display: flex; justify-content: center; align-items: center; padding: 0 22px 0 0 }
   .fig .dim { font-size: .6875rem; color: var(--text-3); letter-spacing: .04em }
   .fig-top .dim { flex: 1; text-align: center }
-  .fig .inch { font: 700 .6875rem/1 var(--font-display); font-stretch: 112%; letter-spacing: .06em; color: var(--accent-text); padding: 3px 6px; border-radius: 6px; background: var(--accent-tint) }
   .fig-row { display: flex; align-items: center; gap: 4px } .fig-row .frame { flex: 1; min-width: 0 }
   .fig .dim-h { writing-mode: vertical-rl; width: 18px; text-align: center }
   /* empty state */
@@ -134,7 +133,7 @@
   .choose { font-family: var(--font-display); font-stretch: 112%; font-size: .6875rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); margin-bottom: -6px }
   .serial { letter-spacing: .06em }
   /* gear badge */
-  .gear { position: relative } .gear.has-badge::after { content: attr(data-count); position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--amber); color: #0C100F; font: 700 .6875rem/18px var(--font-display); text-align: center }
+  .gear { position: relative } .gear.has-badge::after { content: ""; position: absolute; top: -4px; right: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--bg), 0 0 10px rgba(30,227,165,.6) }
   /* dropdown picker (more than 5 sheets) */
   .dd { width: 100%; max-width: 480px; position: relative }
   .dd summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: var(--r-control); border: 1px solid var(--border-strong); background: var(--bg); cursor: pointer }
@@ -144,3 +143,36 @@
   .dd-list { position: absolute; z-index: 5; left: 0; right: 0; margin-top: 6px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-card); box-shadow: var(--shadow-float); max-height: 320px; overflow: auto; padding: 6px }
   .dd-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: var(--r-control); cursor: pointer; position: relative }
   .dd-row input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer } .dd-row:hover { background: var(--surface-2) } .dd-row:has(input:checked) { background: var(--accent-tint) } .dd-row.off { opacity: .55 } .dd-row .low { color: var(--red) }
+
+  /* chips */
+  .chip { display: inline-flex; align-items: center; gap: 6px; width: max-content; font-family: var(--font-mono); font-size: .75rem; letter-spacing: .04em; line-height: 1.3; color: var(--text-2); border: 1px solid var(--border-strong); border-radius: 999px; padding: 4px 10px 4px 8px; background: transparent }
+  .chip svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; color: var(--accent-text) }
+  button.chip { cursor: pointer; transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out) } button.chip:hover { border-color: var(--accent); color: var(--text) }
+  .chip.add { border-style: dashed; color: var(--text-3) }
+  /* motion & feedback */
+  @keyframes rise { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
+  @keyframes collapse { to { opacity: 0; transform: scale(.97) } }
+  @keyframes shake { 0%, 100% { transform: none } 20%, 60% { transform: translateX(-4px) } 40%, 80% { transform: translateX(4px) } }
+  @keyframes spin { to { transform: rotate(360deg) } }
+  @keyframes hi { 0% { box-shadow: 0 0 0 0 rgba(30,227,165,.55) } 100% { box-shadow: 0 0 0 14px rgba(30,227,165,0) } }
+  .enter { animation: rise var(--dur-slow) var(--ease-out) both } .leave { animation: collapse var(--dur-base) var(--ease-out) forwards; pointer-events: none }
+  .shake { animation: shake .35s var(--ease-out) } .hi { animation: hi 1.2s var(--ease-out) 2; border-color: var(--accent) !important }
+  .btn .spin { animation: spin .9s linear infinite }
+  .btn.ok, .btn.ok[disabled] { background: var(--accent-tint); color: var(--accent-text); border-color: transparent; opacity: 1 } .btn.primary.ok, .btn.primary.ok[disabled] { background: var(--accent); color: var(--on-accent) }
+  .btn.fail, .btn.fail[disabled] { background: var(--red-tint); color: var(--red); border-color: transparent; opacity: 1 }
+  .btn.busy[disabled] { opacity: .8 }
+  .editor { display: grid; gap: 10px; margin-top: 10px; padding: 12px; border-radius: var(--r-control); background: var(--bg); border: 1px solid var(--border) } .editor.open { animation: rise var(--dur-base) var(--ease-out) both }
+  .editor .ed { display: grid; gap: 8px } .editor label { font-size: .8125rem; font-weight: 600 } .editor p { margin: 0; font-size: .875rem; color: var(--text-2) }
+  .editor input { font: inherit; font-size: .9375rem; padding: 8px 10px; border-radius: var(--r-control); border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); width: 100%; min-width: 0 } .editor input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint) }
+  .editor input.mono { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .06em }
+  .editor .four { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px } .editor .four label { display: grid; gap: 3px; font-family: var(--font-mono); font-size: .6875rem; font-weight: 400; color: var(--text-3); text-transform: uppercase; letter-spacing: .08em }
+  .iconbtn { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: var(--text-3); cursor: pointer; transition: color var(--dur-fast), background var(--dur-fast) } .iconbtn:hover { color: var(--text); background: var(--surface-2) } .iconbtn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round }
+  .sheet .name-row { display: flex; align-items: center; gap: 4px } .sheet .name-row b { flex: 1 }
+  .sheet .facts { gap: 8px 20px; margin-top: 4px }
+  .toast { display: flex; align-items: center; gap: 10px; transform: translate(-50%, 12px); transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out) } .toast.show { transform: translate(-50%, 0) }
+  .toast .ic { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--re-900); color: var(--re-400); flex: none } .toast .ic svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round } .toast.err .ic { background: var(--red-900); color: var(--red-500) }
+  .allgood { display: flex; align-items: center; gap: 12px; color: var(--text-2) } .allgood .ic { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--accent-tint); color: var(--accent-text); flex: none } .allgood svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round }
+  .found { animation: rise var(--dur-slow) var(--ease-out) both } .found > span > .mono { display: block }
+  .scanning { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: .8125rem; color: var(--text-2) } .scanning .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: var(--glow); animation: var(--ring-breathe) }
+  .field input.shake { border-color: var(--red) }
+  .sheet .tools .btn[disabled]:not(.ok):not(.fail):not(.busy) { opacity: .35 }
