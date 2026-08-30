@@ -9,7 +9,7 @@ Prices are approximate (August 2026, Germany, incl. VAT). Links are to typical s
 | 1 | Raspberry Pi 4 Model B, **2 GB is enough** (4 GB if in stock; Pi 5 2 GB also fine, needs its 27 W PSU) | 1 | 60–75 | [BerryBase](https://www.berrybase.de/en/raspberry-pi-4-computer-model-b-4gb-ram) · [reichelt](https://www.reichelt.com/de/en/shop/product/raspberry_pi_4_b_4x_1_5_ghz_4_gb_ram_wlan_bt-259920) · Welectron · rasppishop.de | Bench unit: Ethernet, BLE 5.0, PoE HAT later. (Pi 5 works too but needs a 5 A PSU + cooler for no benefit) |
 | 2 | Official Raspberry Pi USB-C PSU 5.1 V / 3 A | 1 | 10 | same shop | |
 | 3 | microSD 32 GB, A2 (SanDisk Extreme / Samsung Pro Plus) | 2 | 20 | Amazon / same shop | One per Pi |
-| 4 | Raspberry Pi **Zero 2 WH** (header pre-soldered) | 1 | 22 | BerryBase / reichelt | The demo unit that goes in the enclosure; has BLE |
+| 4 | Raspberry Pi **Zero 2 WH** — *deferred, sold out; not needed for the bench prototype. Alternative: Zero 2 W + Pimoroni Hammer Header* | 0 | 22 | BerryBase / reichelt | The demo unit that goes in the enclosure; has BLE |
 | 5 | Micro-USB PSU 5 V / 2.5 A (for the Zero) | 1 | 8 | same shop | |
 | 6 | **PN532 NFC module V3** (Elechouse-type, I²C/SPI switchable) | 2 | 8–12 each | [AZ-Delivery](https://www.az-delivery.de) · BerryBase · Amazon | One per Pi. Reads the sheet stickers |
 | 7 | **NTAG213 NFC stickers**, 25 mm round, 50 pcs | 1 | 10 | Amazon / NFC-Tag-Shop.de | One on the back of every sheet |
