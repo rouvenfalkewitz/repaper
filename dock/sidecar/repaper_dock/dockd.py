@@ -77,14 +77,14 @@ HTML = """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name=
 h1{font-family:var(--font-display);font-stretch:125%;text-transform:uppercase;letter-spacing:-.02em;font-size:1.25rem;margin:0 0 4px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-card);padding:20px;margin-top:16px}
 .pill{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-display);font-stretch:112%;font-size:.6875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:var(--accent-tint);color:var(--accent-text)}
-.pill::before{content:"";width:7px;height:7px;border-radius:50%%;background:currentColor}.blink::before{animation:b 1s steps(1) infinite}@keyframes b{50%%{opacity:0}}
-img.prev{background:#fff;border:1px solid var(--border-strong);border-radius:4px;max-width:100%%;display:block;margin:12px 0}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}.blink::before{animation:b 1s steps(1) infinite}@keyframes b{50%{opacity:0}}
+img.prev{background:#fff;border:1px solid var(--border-strong);border-radius:4px;max-width:100%;display:block;margin:12px 0}
 button{font:600 .9375rem var(--font-body);padding:10px 16px;border-radius:var(--r-control);border:1px solid transparent;background:var(--accent);color:var(--on-accent);cursor:pointer;box-shadow:var(--glow)}
 select{font:inherit;padding:9px 12px;border-radius:var(--r-control);border:1px solid var(--border-strong);background:var(--bg);color:var(--text)}
 .muted{color:var(--text-2);font-size:.875rem}.mono{font-family:var(--font-mono);font-size:.8125rem;color:var(--text-3)}</style></head><body><div class="wrap">
-<h1>%(printer)s</h1><div class="muted">Dock · %(state)s</div>
-<div class="card" id="job">%(job_html)s</div>
-<div class="card"><div class="muted">Sheets known to this Dock</div><ul class="mono">%(sheets_html)s</ul><div class="muted">%(message)s</div></div>
+<h1>{{printer}}</h1><div class="muted">Dock · {{state}}</div>
+<div class="card" id="job">{{job_html}}</div>
+<div class="card"><div class="muted">Sheets known to this Dock</div><ul class="mono">{{sheets_html}}</ul><div class="muted">{{message}}</div></div>
 </div><script>setTimeout(()=>location.reload(),2500)</script></body></html>"""
 
 
@@ -120,7 +120,10 @@ def make_handler(dock: Dock):
             else:
                 job_html = f'<span class="pill">Ready</span><h2 style="margin:10px 0 0">Nothing to print</h2><div class="muted">Print to “{s["printer"]}” from any device — it shows up here.</div>'
             sheets_html = "".join(f'<li>{k} — {v["name"] or ""} · {v["transport"]} · {v["size"]}</li>' for k, v in s["sheets"].items()) or "<li>none yet — run: repaper-dockd add-sheet …</li>"
-            self._send((HTML % {"printer": s["printer"], "state": s["state"], "job_html": job_html, "sheets_html": sheets_html, "message": s["message"]}).encode())
+            page = HTML
+            for k, v in {"printer": s["printer"], "state": s["state"], "job_html": job_html, "sheets_html": sheets_html, "message": s["message"]}.items():
+                page = page.replace("{{" + k + "}}", str(v))
+            self._send(page.encode())
         def do_POST(self):
             u = urlparse(self.path); n = int(self.headers.get("Content-Length", 0)); form = parse_qs(self.rfile.read(n).decode())
             if u.path == "/tap" and form.get("sheet"): dock.identifier.tap(form["sheet"][0])
