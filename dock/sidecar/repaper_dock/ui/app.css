@@ -198,3 +198,14 @@
   .range svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round }
   .range.off { color: var(--text-3); background: var(--surface-2); position: relative } .range.off::after { content: ""; position: absolute; width: 18px; height: 1.8px; background: currentColor; transform: rotate(-45deg); border-radius: 1px }
   .sheet.away .fig, .sheet.away .bat { opacity: .7 } .away-note { color: var(--text-3) }
+  .iconrow { display: inline-flex; gap: 2px } .iconbtn.danger:hover { color: var(--red); background: var(--red-tint) }
+  .sheet .tools.even { display: grid; grid-template-columns: 1fr 1fr; gap: 8px } .sheet .tools.even .btn { width: 100%; padding: 8px 10px }
+  .row.between { justify-content: space-between } .ed p { margin: 0; font-size: .9375rem; color: var(--text-2) } .ed p b { font-weight: 600; color: var(--text) }
+  .ed { display: grid; gap: 14px } .ed label { font-size: .875rem; font-weight: 600 }
+  .ed input[name=value] { font: inherit; font-size: .9375rem; padding: 10px 12px; border-radius: var(--r-control); border: 1px solid var(--border-strong); background: var(--bg); color: var(--text); width: 100% }
+  .ed input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint) }
+  .cal { display: grid; grid-template-columns: 64px 1fr 64px; grid-template-rows: auto 1fr auto; gap: 8px; align-items: center; justify-items: center; padding: 4px 0 }
+  .cal-top { grid-column: 2 } .cal-left { grid-column: 1; grid-row: 2 } .cal-right { grid-column: 3; grid-row: 2 } .cal-bottom { grid-column: 2; grid-row: 3 }
+  .cal input { width: 60px; text-align: center; font: 500 .9375rem var(--font-mono); padding: 8px 4px; border-radius: var(--r-control); border: 1px solid var(--border-strong); background: var(--bg); color: var(--text) }
+  .cal-panel { grid-column: 2; grid-row: 2; width: 100%; display: grid; place-items: center; background: var(--epaper-panel); border: 6px solid var(--epaper-bezel); border-radius: 6px; color: var(--ink) } .cal-panel.wide { aspect-ratio: 2 / 1; max-width: 260px } .cal-panel.tall { aspect-ratio: 3 / 4; max-width: 160px }
+  .cal-panel .mono { color: var(--graphite) }

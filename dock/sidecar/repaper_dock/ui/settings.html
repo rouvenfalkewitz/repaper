@@ -57,6 +57,10 @@
     </div>
   </div>
 </dialog>
+<dialog class="modal" id="edDlg">
+  <div class="modal-head"><b id="edTitle"></b><button class="iconbtn" type="button" onclick="closeModal()" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="modal-body" id="edBody"></div>
+</dialog>
 <dialog class="modal" id="detDlg">
   <div class="modal-head"><b id="detName"></b><button class="iconbtn" type="button" onclick="el('detDlg').close()" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
   <div class="modal-body"><div class="facts grid" id="detBody"></div></div>
@@ -96,11 +100,11 @@ function shake(i) { i.classList.remove("shake"); void i.offsetWidth; i.classList
 const fact = (k, v) => v ? `<div class="fact"><i>${esc(k)}</i><b>${esc(v)}</b></div>` : "";
 function card(k, v) {
   return `<div class="sheet" data-id="${esc(k)}">
-    <div class="name-row"><b>${esc(v.name || k)}</b><button class="iconbtn" data-act="name" title="Rename" aria-label="Rename">${ICON.pencil}</button></div>
-    <span class="chip" title="${esc(v.transport)}">${ICON.qr}<span>${esc(v.address)}</span></span>
+    <div class="sheet-top"><span class="odname" title="${esc(v.transport)}">${ICON.qr}<span>${esc(v.address)}</span></span>
+      <span class="iconrow"><button class="iconbtn" data-act="name" title="Rename" aria-label="Rename">${ICON.pencil}</button><button class="iconbtn" data-act="details" title="Details" aria-label="Details">${ICON.info}</button><button class="iconbtn danger" data-act="remove" title="Remove" aria-label="Remove">${ICON.trash}</button></span></div>
+    <b>${esc(v.name || k)}</b>
     <span class="mono">${esc(v.size)}</span>
-    <div class="tools"><button class="btn small" data-act="test-page">${ICON.print}Test page</button><button class="btn small" data-act="calibrate">${ICON.grid}Calibration page</button><button class="btn small" data-act="inset">${ICON.ruler}Calibrate</button><button class="btn small" data-act="details" title="Details" aria-label="Details">${ICON.info}</button><button class="btn small danger" data-act="remove" title="Remove" aria-label="Remove">${ICON.trash}</button></div>
-    <div class="editor" hidden></div></div>`;
+    <div class="tools even"><button class="btn small" data-act="test-page">${ICON.print}Test page</button><button class="btn small" data-act="inset">${ICON.ruler}Calibrate</button></div></div>`;
 }
 function openDetails(k) {
   const v = S.sheets[k], hw = v.hw || {}, ins = v.inset || [0, 0, 0, 0];
@@ -149,35 +153,47 @@ function openAdd() { const d = el("addDlg"); el("addForm").reset(); el("found").
 function closeAdd() { el("addDlg").close(); }
 el("addDlg").addEventListener("click", e => { if (e.target === el("addDlg")) closeAdd(); });
 el("detDlg").addEventListener("click", e => { if (e.target === el("detDlg")) el("detDlg").close(); });
-/* per-sheet inline editors */
-const editors = {
-  name: v => `<form class="ed" data-ed="name"><label>Name</label><input name="value" value="${esc(v.name || "")}" maxlength="40" required><div class="row"><button class="btn primary small" type="submit">${ICON.check}Save</button><button class="btn outline small" type="button" data-act="cancel">Cancel</button></div></form>`,
-  inset: v => { const [l, t, r, b] = v.inset || [0, 0, 0, 0]; return `<form class="ed" data-ed="inset"><label>Hidden pixels per edge</label><p>Print the calibration page first, then count the rows and columns that are missing at each edge.</p><div class="four">${[["l", "left", l], ["t", "top", t], ["r", "right", r], ["b", "bottom", b]].map(([n, lb, val]) => `<label>${lb}<input name="${n}" type="number" min="0" max="64" value="${val}"></label>`).join("")}</div><div class="row"><button class="btn primary small" type="submit">${ICON.check}Save</button><button class="btn outline small" type="button" data-act="cancel">Cancel</button></div></form>`; },
-  remove: v => `<form class="ed" data-ed="remove"><label>Remove ${esc(v.name || "this sheet")} from this Dock?</label><p>It stays untouched on the panel; you can add it again any time.</p><div class="row"><button class="btn small danger" type="submit">${ICON.trash}Remove</button><button class="btn outline small" type="button" data-act="cancel">Keep</button></div></form>`,
+/* per-sheet modals: rename, calibrate, remove */
+const modals = {
+  name: (k, v) => ["Rename", `<form class="ed" data-ed="name" data-id="${esc(k)}"><label for="edName">Name</label><input id="edName" name="value" value="${esc(v.name || "")}" maxlength="40" required autocomplete="off"><div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Save</button></div></form>`],
+  inset: (k, v) => { const [l, t, r, b] = v.inset || [0, 0, 0, 0], [w, h] = (v.size.match(/\d+/g) || [0, 0]).map(Number), wide = w >= h;
+    const inp = (n, val) => `<input name="${n}" type="number" min="0" max="64" value="${val}" aria-label="${n}">`;
+    return ["Calibrate", `<form class="ed" data-ed="inset" data-id="${esc(k)}">
+      <p>Panels often hide a few pixel rows or columns under the bezel. Print the calibration page, then enter how many are missing at each edge.</p>
+      <div class="cal"><div class="cal-top">${inp("t", t)}</div><div class="cal-left">${inp("l", l)}</div>
+        <div class="cal-panel ${wide ? "wide" : "tall"}"><span class="mono">${esc(v.size)}</span></div>
+        <div class="cal-right">${inp("r", r)}</div><div class="cal-bottom">${inp("b", b)}</div></div>
+      <div class="row between"><button class="btn outline" type="button" data-act="calibrate" data-id="${esc(k)}">${ICON.grid}Print calibration page</button>
+        <span class="row"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Save</button></span></div></form>`]; },
+  remove: (k, v) => ["Remove sheet", `<form class="ed" data-ed="remove" data-id="${esc(k)}"><p>Remove <b>${esc(v.name || k)}</b> from this Dock? What is on the panel stays; you can add the sheet again any time.</p><div class="row end"><button class="btn outline" type="button" data-act="close">Keep</button><button class="btn danger" type="submit">${ICON.trash}Remove</button></div></form>`],
 };
-function openEditor(c, html) { const ed = c.querySelector(".editor"); ed.innerHTML = html; ed.hidden = false; ed.classList.remove("open"); void ed.offsetWidth; ed.classList.add("open"); const i = ed.querySelector("input"); if (i) { i.focus(); i.select && i.select(); } }
-function closeEditor(c) { const ed = c.querySelector(".editor"); ed.hidden = true; ed.innerHTML = ""; }
+function openModal(kind, k) { const [title, html] = modals[kind](k, S.sheets[k] || {}); el("edTitle").textContent = title; el("edBody").innerHTML = html; el("edDlg").showModal(); const i = el("edBody").querySelector("input"); if (i) { i.focus(); i.select && i.select(); } }
+function closeModal() { el("edDlg").close(); }
+el("edDlg").addEventListener("click", async e => {
+  if (e.target === el("edDlg")) return closeModal();
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  if (b.dataset.act === "close") return closeModal();
+  if (b.dataset.act === "calibrate") { const done = busy(b, "Sending…"); try { const r = await api(`/api/sheets/${b.dataset.id}/calibrate`, {}); done("Printed"); toast(r.message || "Printed."); } catch (x) { done("Failed", true); toast(x.message, "err"); } }
+});
+el("edDlg").addEventListener("submit", async e => {
+  e.preventDefault(); const f = e.target, id = f.dataset.id, kind = f.dataset.ed, sb = f.querySelector("button[type=submit]"), done = busy(sb, kind === "remove" ? "Removing…" : "Saving…");
+  try {
+    if (kind === "remove") { await api(`/api/sheets/${id}/remove`, {}); closeModal(); const c = el("sheets").querySelector(`[data-id="${CSS.escape(id)}"]`); if (c) { c.classList.add("leave"); await wait(240); } toast(`${S.sheets[id]?.name || id} removed.`); await load(); return; }
+    const body = kind === "inset" ? {inset: ["l", "t", "r", "b"].map(n => Number(f.elements[n].value) || 0).join(",")} : {[kind]: f.elements.value.value.trim()};
+    await api(`/api/sheets/${id}`, body); done("Saved"); toast({name: "Renamed.", inset: "Calibration saved."}[kind]); await wait(400); closeModal(); await load();
+  } catch (x) { done("Not saved", true); const i = f.querySelector("input"); if (i) shake(i); toast(x.message, "err"); }
+});
 el("sheets").addEventListener("click", async e => {
-  const b = e.target.closest("[data-act]"); if (!b) return; const c = b.closest(".sheet"), id = c.dataset.id, v = S.sheets[id] || {}, act = b.dataset.act;
-  if (act === "cancel") return closeEditor(c);
+  const b = e.target.closest("[data-act]"); if (!b) return; const c = b.closest(".sheet"), id = c.dataset.id, act = b.dataset.act;
   if (act === "details") return openDetails(id);
-  if (editors[act]) return openEditor(c, editors[act](v));
-  if (act === "test-page" || act === "calibrate") {
+  if (modals[act]) return openModal(act, id);
+  if (act === "test-page") {
     const others = [...c.querySelectorAll(".tools .btn")].filter(x => x !== b); others.forEach(x => x.disabled = true);
-    const done = busy(b, act === "test-page" ? "Sending test page…" : "Sending…");
+    const done = busy(b, "Sending…");
     try { const r = await api(`/api/sheets/${id}/${act}`, {}); done("Printed"); toast(r.message || "Printed."); }
     catch (x) { done("Failed", true); toast(x.message, "err"); }
     others.forEach(x => x.disabled = false);
   }
-});
-el("sheets").addEventListener("submit", async e => {
-  e.preventDefault(); const f = e.target, c = f.closest(".sheet"), id = c.dataset.id, kind = f.dataset.ed, sb = f.querySelector("button[type=submit]");
-  const done = busy(sb, kind === "remove" ? "Removing…" : "Saving…");
-  try {
-    if (kind === "remove") { await api(`/api/sheets/${id}/remove`, {}); c.classList.add("leave"); await wait(240); toast(`${S.sheets[id]?.name || id} removed.`); await load(); return; }
-    const body = kind === "inset" ? {inset: ["l", "t", "r", "b"].map(n => Number(f.elements[n].value) || 0).join(",")} : {[kind]: f.elements.value.value.trim()};
-    await api(`/api/sheets/${id}`, body); done("Saved"); toast({name: "Renamed.", inset: "Calibration saved."}[kind]); await wait(500); await load();
-  } catch (x) { done("Not saved", true); const i = f.querySelector("input"); if (i) shake(i); toast(x.message, "err"); }
 });
 el("addBtn").innerHTML = ICON.plus + "<span>Add sheet</span>"; el("scanBtn").innerHTML = ICON.scan + "<span>Scan for sheets</span>";
 load().catch(x => toast(x.message, "err"));
