@@ -18,7 +18,7 @@ Both products (Go and Dock) are the same pipeline with different bodies:
                                                   │ UI adapter: app screens (Go) or LED + web UI (Dock)
 ```
 
-Goal: **one core library, embeddable in Android, desktop and Linux (Pi)**. Candidate languages: Rust (embeds everywhere, strong PDF/raster crates, no GC on Pi Zero) or Go (fast to write, single static binary, fine on Pi; harder to embed in Android/iOS). Kotlin Multiplatform is a third option if we accept the Pi running a JVM (we shouldn't). **Recommendation: Rust core + thin platform shells** (Android via JNI/UniFFI, desktop via Tauri, Pi as a plain daemon). Decide in the first tech spike.
+Stack decision: see `08-ecosystem.md`. Short version — the Dock is built as a **PAPPL printer application** (C framework that already implements IPP Everywhere / AirPrint / Mopria, DNS-SD, raster decoding, job states and a web UI); our code is the sheet driver, the transport and the NFC/LED sidecar. The Android app gets its own small IPP listener later (Rust core via UniFFI, or Kotlin-native — decided when we start it).
 
 ## 1. Printer emulation
 

@@ -15,6 +15,7 @@ docs/
   05-architecture.md      Shared tech core: printer emulation, rendering, display transports
   06-epaper-hardware.md   E-paper display options (SoluM, open firmware, NFC-powered) — parked
   07-roadmap.md           Phases, prototypes, open questions to decide together
+  08-ecosystem.md         Library / framework check per building block → stack decision
 brand/
   guidelines.html         Visual brand guide — open in a browser
   tokens.css / .json      Design tokens for every UI (web + native + firmware LED table)

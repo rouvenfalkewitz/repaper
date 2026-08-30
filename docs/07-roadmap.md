@@ -10,8 +10,8 @@
 
 ## Phase 1 — "It shows up as a printer" (tech spike, ~2–3 weeks)
 
-- Core: mDNS + IPP server that macOS, iOS, Windows and Android all discover and print to; jobs land as PDF/URF/PWG on disk.
-- Renderer: PDF + URF + PWG → dithered bitmap for a 4.2" BWR panel; PNG preview.
+- Core: a PAPPL printer application that macOS, iOS, Windows and Android all discover and print to; pages land as PWG/URF raster.
+- Renderer: raster → dithered bitmap for a 4.2" BWR panel; JPEG for the OpenEPaperLink AP; PNG preview. (No PDF in v1 — driverless clients rasterise for us.)
 - Success criterion: print a page from an iPhone, see a correct 400×300 preview PNG.
 
 ## Phase 2 — First Dock prototype (~3–4 weeks)
@@ -34,7 +34,7 @@
 ## Open questions for us to decide
 
 1. **Names**: keep *Go* / *Dock* / *Sheet* as working names, or something else?
-2. **Core stack**: Rust core + thin shells (my recommendation) vs. Go binary + separate Android app vs. CUPS-based quick hack for the Dock prototype (fastest demo, but throwaway).
+2. **Core stack**: decided direction in `08-ecosystem.md` — PAPPL printer application for the Dock; Android listener later. Confirm.
 3. **Tap semantics**: is the tap a *selection* (identify sheet, transfer via radio) or the *transfer itself* (NFC-powered sheet)? Both are supported by the architecture, but the first prototype should pick one. Depends on what the friend's firmware offers over NFC.
 4. **Which sheet sizes first?** Suggest 2.9" (label) and 4.2" (card) plus one 7.5" (page) for the demo.
 5. **SoluM**: what do we want from them at this stage — sample tags, API docs, or a co-development conversation? Timing: before or after the demo video?
