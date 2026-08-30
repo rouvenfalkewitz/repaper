@@ -3,7 +3,8 @@
 # Print to "RePaper Dock" from your iPhone/Mac; the job appears at http://localhost:9631/ - tap a sheet there.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"; VENV="$HERE/sidecar/.venv"
-NAME="${REPAPER_PRINTER_NAME:-RePaper Dock}"
+CFG="${REPAPER_HOME:-$HOME/.repaper}/config.json"
+NAME="${REPAPER_PRINTER_NAME:-$( [ -f "$CFG" ] && python3 -c "import json,sys; print(json.load(open(sys.argv[1])).get('printer_name','RePaper Dock'))" "$CFG" 2>/dev/null || echo "RePaper Dock")}"
 # Prefer Homebrew's CUPS 2.4 ippeveprinter: the 2.3.4 one bundled with macOS rejects iOS Create-Job requests
 # ("Unexpected document data following request"). brew install cups
 IPPEVE="/opt/homebrew/opt/cups/bin/ippeveprinter"; [ -x "$IPPEVE" ] || IPPEVE="$(command -v ippeveprinter)"

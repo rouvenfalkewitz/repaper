@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark light"><meta name="theme-color" content="#0C100F">
+<title>RePaper Dock · Settings</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,600;62..125,700;62..125,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/tokens.css"><link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a href="/" style="display:block"><svg class="logo" viewBox="0 0 6629.1 2338.6" role="img" aria-label="RePaper"><path class="ring" fill-rule="evenodd" d="M0 1169.3a1169.3 1169.3 0 1 0 2338.6 0a1169.3 1169.3 0 1 0 -2338.6 0ZM203.6 1169.3a965.7 965.7 0 1 0 1931.3 0a965.7 965.7 0 1 0 -1931.3 0Z"/><path class="letters" d="M355.9 1512.3V824.7H928.2Q1003.3 824.7 1052.6 855.6Q1101.8 886.5 1126.4 936.9Q1151 987.3 1151 1046.8Q1151 1112.2 1120.1 1165.7Q1089.1 1219.2 1026.9 1250.2L1167.5 1512.3H937.8L823.8 1283.6H559.5V1512.3ZM559.5 1133.1H861.7Q898.4 1133.1 920.4 1111.1Q942.3 1089 942.3 1052.5Q942.3 1027.9 932.4 1010.6Q922.5 993.4 904.6 984.5Q886.7 975.7 861.7 975.7H559.5Z M1257.9 1512.3V824.7H1974.7V975.7H1462.1V1091.1H1910.8V1237.2H1462.1V1361.4H1982.7V1512.3Z"/><path class="letters" d="M2489.5 1512.3V824.7H3020.1Q3087.7 824.7 3138.5 854.6Q3189.4 884.4 3217.7 937Q3246 989.7 3246 1058.4Q3246 1127.8 3217.2 1181.2Q3188.4 1234.6 3137.1 1264.1Q3085.7 1293.7 3018.3 1293.7H2693.1V1512.3ZM2693.1 1142.8H2961.6Q3006.8 1142.8 3030.2 1121Q3053.5 1099.3 3053.5 1059.4Q3053.5 1032.2 3042.9 1013.7Q3032.3 995.2 3012 985.4Q2991.6 975.7 2961.6 975.7H2693.1Z M3181.3 1512.3 3519.3 824.7H3745.7L4083.7 1512.3H3863.4L3811.5 1402.1H3442.5L3391.1 1512.3ZM3510.7 1253H3743.3L3680.7 1113.3Q3676.8 1103.9 3669.7 1086.8Q3662.7 1069.6 3655.1 1050.1Q3647.5 1030.6 3641.1 1013.8Q3634.7 997 3631.5 989H3624Q3616.7 1007.3 3607.1 1031.2Q3597.5 1055 3588.6 1077.4Q3579.7 1099.7 3573.3 1113.7Z M4153.5 1512.3V824.7H4684.1Q4751.7 824.7 4802.5 854.6Q4853.4 884.4 4881.7 937Q4910 989.7 4910 1058.4Q4910 1127.8 4881.2 1181.2Q4852.4 1234.6 4801.1 1264.1Q4749.7 1293.7 4682.3 1293.7H4357.1V1512.3ZM4357.1 1142.8H4625.6Q4670.8 1142.8 4694.2 1121Q4717.5 1099.3 4717.5 1059.4Q4717.5 1032.2 4706.9 1013.7Q4696.3 995.2 4676 985.4Q4655.6 975.7 4625.6 975.7H4357.1Z M4984.5 1512.3V824.7H5701.2V975.7H5188.7V1091.1H5637.4V1237.2H5188.7V1361.4H5709.2V1512.3Z M5817.5 1512.3V824.7H6389.7Q6464.9 824.7 6514.1 855.6Q6563.4 886.5 6588 936.9Q6612.6 987.3 6612.6 1046.8Q6612.6 1112.2 6581.7 1165.7Q6550.7 1219.2 6488.5 1250.2L6629.1 1512.3H6399.4L6285.3 1283.6H6021.1V1512.3ZM6021.1 1133.1H6323.3Q6360 1133.1 6381.9 1111.1Q6403.9 1089 6403.9 1052.5Q6403.9 1027.9 6394 1010.6Q6384.1 993.4 6366.1 984.5Q6348.2 975.7 6323.3 975.7H6021.1Z"/></svg></a>
+    <div class="actions"><div class="printer"><b>Settings</b><span id="addr"></span></div><a class="gear" href="/" aria-label="Back to the Dock" title="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/><path style="display:none" d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></a></div>
+  </header>
+
+  <h2>Printer</h2>
+  <div class="card">
+    <form id="printerForm" class="grid2" onsubmit="return savePrinter(event)">
+      <div class="field"><label for="pname">Printer name</label><input id="pname" name="printer_name" maxlength="63" required><div class="hint">What people see in their print dialog. Applied when the printer restarts.</div></div>
+      <div class="field"><label for="timeout">Job timeout</label><input id="timeout" name="job_timeout_seconds" type="number" min="30" max="86400" step="30"><div class="hint">Seconds a job waits for a sheet before it is discarded.</div></div>
+      <div class="row" style="align-self:end"><button class="btn primary" type="submit">Save</button></div>
+    </form>
+  </div>
+
+  <h2>Sheets</h2>
+  <div class="sheets" id="sheets"></div>
+  <div class="card" style="margin-top:var(--s-3)">
+    <div class="grid2">
+      <form class="field" onsubmit="return addSheet(event)">
+        <label for="qr">Add a sheet</label>
+        <input id="qr" placeholder="Paste the sheet's QR link, its OD name, or a Bluetooth address" required>
+        <input id="qrname" placeholder="Name (e.g. Cart 12)">
+        <div class="hint">Size and colours are read from the sheet — keep it awake and nearby.</div>
+        <div class="row"><button class="btn primary" type="submit">Add sheet</button></div>
+      </form>
+      <div class="field">
+        <label>Nearby displays</label>
+        <div class="row"><button class="btn ghost" type="button" onclick="scan()">Scan for displays</button><span class="mono" id="scanState"></span></div>
+        <div id="found" class="list"></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Network</h2>
+  <div class="card">
+    <div class="kv" id="net"></div>
+    <div class="hint" style="margin-top:12px;color:var(--text-3);font-size:.8125rem">Addressing, DHCP/static IP and DNS are configured in the device's system for now; they move here with the device build.</div>
+  </div>
+
+  <h2>About</h2>
+  <div class="card"><div class="kv" id="about"></div></div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const el = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let toastT; function toast(t) { const x = el("toast"); x.textContent = t; x.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => x.classList.remove("show"), 2600); }
+async function api(path, body) { const r = await fetch(path, body ? {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)} : {cache: "no-store"}); const j = await r.json(); if (!r.ok || j.error) throw new Error(j.error || r.statusText); return j; }
+async function load() {
+  const s = await api("/api/settings");
+  el("pname").value = s.printer_name; el("timeout").value = s.job_timeout_seconds; el("addr").textContent = s.address;
+  el("sheets").innerHTML = Object.entries(s.sheets).map(([k, v]) => `<div class="sheet"><b>${esc(v.name || k)}</b><span class="mono">${esc(k)} · ${esc(v.size)} · ${esc(v.transport)} · ${esc(v.address)}</span>
+      <span class="mono">visible area inset: ${v.inset.join(", ")} (left, top, right, bottom)</span>
+      <div class="tools"><button class="btn ghost small" onclick="rename('${esc(k)}','${esc(v.name || "")}')">Rename</button><button class="btn ghost small" onclick="inset('${esc(k)}','${v.inset.join(",")}')">Calibrate</button><button class="btn ghost small" onclick="act('${esc(k)}','test-page')">Test page</button><button class="btn ghost small" onclick="act('${esc(k)}','calibrate')">Calibration page</button><button class="btn small danger" onclick="remove('${esc(k)}')">Remove</button></div></div>`).join("")
+      || `<div class="sheet"><b>No sheets yet</b><span class="mono">add one below</span></div>`;
+  el("net").innerHTML = Object.entries(s.network).map(([k, v]) => `<span>${esc(k)}</span><span>${esc(v)}</span>`).join("");
+  el("about").innerHTML = Object.entries(s.about).map(([k, v]) => `<span>${esc(k)}</span><span>${esc(v)}</span>`).join("");
+}
+async function savePrinter(e) { e.preventDefault(); try { await api("/api/settings", {printer_name: el("pname").value.trim(), job_timeout_seconds: Number(el("timeout").value)}); toast("Saved. The name applies when the printer restarts."); } catch (x) { toast(x.message); } return false; }
+async function addSheet(e) { e.preventDefault(); const b = e.target.querySelector("button"); b.disabled = true; b.textContent = "Reading the sheet…";
+  try { const r = await api("/api/sheets/add", {input: el("qr").value.trim(), name: el("qrname").value.trim()}); toast(`Added ${r.id} · ${r.size}`); el("qr").value = ""; el("qrname").value = ""; load(); }
+  catch (x) { toast(x.message); } b.disabled = false; b.textContent = "Add sheet"; return false; }
+async function scan() { el("scanState").textContent = "scanning…"; el("found").innerHTML = "";
+  try { const r = await api("/api/discover"); el("scanState").textContent = r.found.length ? "" : "nothing nearby";
+    el("found").innerHTML = r.found.map(f => `<div class="found"><span>${esc(f.name || f.address)} <span class="mono">${esc(f.transport)} · ${esc(f.address)}${f.registered ? " · already added as " + esc(f.registered) : ""}</span></span>${f.registered ? "" : `<button class="btn ghost small" onclick="el('qr').value='${esc(f.name || f.address)}';el('qrname').focus()">Use</button>`}</div>`).join("");
+  } catch (x) { el("scanState").textContent = x.message; } }
+async function rename(id, cur) { const n = prompt("Name for " + id, cur); if (n == null) return; try { await api(`/api/sheets/${id}`, {name: n}); toast("Renamed"); load(); } catch (x) { toast(x.message); } }
+async function inset(id, cur) { const v = prompt("Hidden pixels per edge — left, top, right, bottom (print the calibration page first)", cur); if (v == null) return; try { await api(`/api/sheets/${id}`, {inset: v}); toast("Calibration saved"); load(); } catch (x) { toast(x.message); } }
+async function act(id, what) { toast(what === "test-page" ? "Sending the test page…" : "Sending the calibration page…"); try { const r = await api(`/api/sheets/${id}/${what}`, {}); toast(r.message || "Done"); } catch (x) { toast(x.message); } }
+async function remove(id) { if (!confirm(`Remove ${id} from this Dock?`)) return; try { await api(`/api/sheets/${id}/remove`, {}); toast("Removed"); load(); } catch (x) { toast(x.message); } }
+load();
+</script>
+</body>
+</html>

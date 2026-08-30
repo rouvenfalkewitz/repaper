@@ -1,13 +1,16 @@
 """repaper-dockd: watches the spool, waits for a tap, renders for the tapped sheet, prints via its transport.
 Also serves a tiny local web UI (job inbox + manual tap) on http://localhost:<web_port>/."""
 from __future__ import annotations
-import io, json, logging, socket, threading, time
+import io, json, logging, re, socket, threading, time
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 from PIL import Image
 from . import __version__
-from .config import load_config, ensure_home, SHEETS
+from .config import load_config, ensure_home, SHEETS, HOME as HOME_PATH_
+def HOME_PATH(): return HOME_PATH_
+def SheetModel_copy(m):
+    import copy; return copy.copy(m)
 from .sheets import SheetRegistry, load_transports
 from .identify import ManualIdentifier
 from .render import render_for_sheet
@@ -29,6 +32,7 @@ class Dock:
         self._announced: set[str] = set()
         self.sheet_status: dict[str, dict] = {}         # sheet id → {battery_volts, temperature_c, online, at}
         self._status_lock = threading.Lock()
+        self.hw_lock = threading.Lock()                 # one BLE/hardware operation at a time (print, status, add, test page)
         threading.Thread(target=self._status_loop, daemon=True).start()
 
     # ── sheet status (battery/online) refreshed in the background while idle ──
@@ -40,7 +44,9 @@ class Dock:
                     try:
                         ref, _ = self.registry.get(sid); tr = self.transports.get(ref.transport_id)
                         if not tr: continue
-                        st = tr.status(ref)
+                        if not self.hw_lock.acquire(timeout=0.1): continue
+                        try: st = tr.status(ref)
+                        finally: self.hw_lock.release()
                         with self._status_lock:
                             self.sheet_status[sid] = {"battery_volts": st.battery_volts, "temperature_c": st.temperature_c,
                                                       "online": st.online, "at": time.time()}
@@ -80,7 +86,8 @@ class Dock:
         page = render_for_sheet(src, transport.describe(ref))
         def progress(text):
             self.phase = text; log.info("  … %s", text)
-        t0 = time.time(); res = transport.print(ref, page, progress=progress)
+        t0 = time.time()
+        with self.hw_lock: res = transport.print(ref, page, progress=progress)
         if res.ok:
             job.printed.append({"page": page_no, "sheet": sheet_id, "at": time.time()})
             if job.next_page() is None: job.state = "done"
@@ -88,6 +95,92 @@ class Dock:
             log.info(self.message); time.sleep(3 if job.state == "done" else 1)
         else:
             job.state = "pending"; job.save(); self.state = "error"; self.message = res.message; log.error("print failed: %s", res.message); time.sleep(2)
+
+    # ── settings & sheet management (used by /settings) ──────────────────────
+    def settings(self) -> dict:
+        import platform
+        ips = []
+        try:
+            for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET): ips.append(info[4][0])
+        except Exception: pass
+        sheets = {k: {"name": e["name"], "transport": e["transport"], "address": e["address"],
+                      "size": f'{e["model"]["width"]}×{e["model"]["height"]} {e["model"]["palette"]}', "inset": list(e["model"].get("inset", (0, 0, 0, 0)))}
+                  for k, e in self.registry.all().items()}
+        return {"printer_name": self.cfg["printer_name"], "job_timeout_seconds": self.cfg["job_timeout_seconds"],
+                "address": f"http://{socket.gethostname()}:{self.cfg['web_port']}/", "sheets": sheets,
+                "network": {"hostname": socket.gethostname(), "addresses": ", ".join(sorted(set(ips))) or "—", "dock page": f"http://{socket.gethostname()}:{self.cfg['web_port']}/",
+                            "printer": "advertised via DNS-SD (AirPrint, IPP Everywhere)"},
+                "about": {"software": f"RePaper Dock {__version__}", "system": f"{platform.system()} {platform.machine()}",
+                          "transports": ", ".join(self.transports), "identifier": self.identifier.id, "state": str(HOME_PATH())}}
+
+    def save_settings(self, data: dict) -> None:
+        from .config import CONFIG
+        allowed = {"printer_name": str, "job_timeout_seconds": int, "status_refresh_seconds": int}
+        for k, typ in allowed.items():
+            if k in data and data[k] not in (None, ""):
+                v = typ(data[k])
+                if k == "printer_name" and not (1 <= len(v.strip()) <= 63): raise ValueError("printer name must be 1–63 characters")
+                if k != "printer_name" and v < 30: raise ValueError(f"{k} must be at least 30")
+                self.cfg[k] = v.strip() if isinstance(v, str) else v
+        cur = json.loads(CONFIG.read_text()) if CONFIG.exists() else {}
+        cur.update({k: self.cfg[k] for k in allowed if k in self.cfg}); CONFIG.write_text(json.dumps(cur, indent=2) + "\n")
+
+    def add_sheet(self, text: str, name: str = "") -> dict:
+        """text = QR landing URL, OD name, BLE address, or 'WxH' for the mock transport. Reads size/colours from the sheet."""
+        from .sheets import SheetRef, SheetModel
+        from .sheets.opendisplay_ble import parse_landing_url, _is_mac
+        text = text.strip(); keys = {}; transport = "opendisplay-ble"; address = text
+        if text.startswith("http"):
+            info = parse_landing_url(text); address = info["name"]; keys = {"key": info["key"]} if info["key"] else {}
+        elif re.fullmatch(r"\d+x\d+", text.lower()): transport = "mock"
+        elif not (text.upper().startswith("OD") or _is_mac(text)): raise ValueError("paste the sheet's QR link, its OD name (OD…), or a Bluetooth address")
+        if transport not in self.transports: raise ValueError(f"transport {transport} is not enabled")
+        if self.registry.find_by_address(transport, address): raise ValueError("this sheet is already added")
+        ref = SheetRef(transport, address, keys, name or address); tr = self.transports[transport]
+        if transport == "mock":
+            w, h = (int(v) for v in text.lower().split("x")); model = SheetModel(w, h, "BWR")
+        else:
+            if self.state == "printing": raise ValueError("the Dock is printing — try again in a moment")
+            with self.hw_lock: model = tr.describe(ref)
+        base = re.sub(r"[^a-z0-9]+", "-", (name or address).lower()).strip("-") or "sheet"; sid = base; n = 2
+        while sid in self.registry.ids(): sid = f"{base}-{n}"; n += 1
+        self.registry.add(sid, ref, model)
+        return {"id": sid, "size": f"{model.width}×{model.height} {model.palette}"}
+
+    def update_sheet(self, sid: str, data: dict) -> None:
+        ref, model = self.registry.get(sid)
+        if "name" in data: ref.name = str(data["name"]).strip() or ref.name
+        if "inset" in data:
+            vals = [int(v) for v in re.split(r"[,\s]+", str(data["inset"]).strip()) if v != ""]
+            if len(vals) != 4 or min(vals) < 0 or vals[0] + vals[2] >= model.width or vals[1] + vals[3] >= model.height: raise ValueError("inset must be four numbers: left, top, right, bottom")
+            model.inset = tuple(vals)
+        self.registry.add(sid, ref, model)
+
+    def remove_sheet(self, sid: str) -> None:
+        d = self.registry.all(); d.pop(sid); self.registry._data = d; self.registry.save()
+        with self._status_lock: self.sheet_status.pop(sid, None)
+
+    def sheet_action(self, sid: str, what: str) -> str:
+        from .render import render_for_sheet
+        from .testpage import test_page, calibration_page
+        if self.state == "printing": raise ValueError("the Dock is printing — try again in a moment")
+        ref, model = self.registry.get(sid); tr = self.transports[ref.transport_id]
+        if what == "calibrate":
+            m = SheetModel_copy(model); m.inset = (0, 0, 0, 0); page = render_for_sheet(calibration_page(m), m, dither=False, auto_rotate=False, trim=False)
+        else:
+            page = render_for_sheet(test_page(model), model)
+        with self.hw_lock: res = tr.print(ref, page)
+        if not res.ok: raise ValueError(res.message)
+        return f"Printed on {ref.name or sid} ({res.seconds:.0f} s)"
+
+    def discover(self) -> list[dict]:
+        if self.state == "printing": raise ValueError("the Dock is printing — try again in a moment")
+        out = []
+        with self.hw_lock:
+            for tid, tr in self.transports.items():
+                for ref in tr.discover(timeout=8.0):
+                    out.append({"transport": tid, "address": ref.address, "name": ref.name, "registered": self.registry.find_by_address(tid, ref.address)})
+        return out
 
     # ── read-only view for the UI ────────────────────────────────────────────
     def snapshot(self) -> dict:
@@ -108,8 +201,8 @@ class Dock:
 
 
 UI_DIR = Path(__file__).resolve().parent / "ui"
-INDEX = (UI_DIR / "index.html").read_text()
-TOKENS = (UI_DIR / "tokens.css").read_text()
+STATIC = {"/": ("index.html", "text/html; charset=utf-8"), "/settings": ("settings.html", "text/html; charset=utf-8"),
+          "/tokens.css": ("tokens.css", "text/css"), "/app.css": ("app.css", "text/css"), "/favicon.svg": ("favicon.svg", "image/svg+xml")}
 
 
 def make_handler(dock: Dock):
@@ -118,11 +211,16 @@ def make_handler(dock: Dock):
         def _send(self, body: bytes, ctype="text/html; charset=utf-8", code=200, cache="no-store"):
             self.send_response(code); self.send_header("Content-Type", ctype); self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", cache); self.end_headers(); self.wfile.write(body)
+        def _json(self, obj, code=200): self._send(json.dumps(obj).encode(), "application/json", code)
         def do_GET(self):
             u = urlparse(self.path)
-            if u.path == "/": return self._send(INDEX.encode())
-            if u.path == "/tokens.css": return self._send(TOKENS.encode(), "text/css", cache="max-age=3600")
-            if u.path == "/api/status": return self._send(json.dumps(dock.snapshot()).encode(), "application/json")
+            if u.path in STATIC:
+                fn, ct = STATIC[u.path]; return self._send((UI_DIR / fn).read_bytes(), ct, cache="no-store" if fn.endswith(".html") else "max-age=3600")
+            if u.path == "/api/status": return self._json(dock.snapshot())
+            if u.path == "/api/settings": return self._json(dock.settings())
+            if u.path == "/api/discover":
+                try: return self._json({"found": dock.discover()})
+                except Exception as e: return self._json({"error": str(e)}, 400)
             if u.path.startswith("/preview/"):
                 try:
                     _, _, job_id, n = u.path.split("/")
@@ -131,7 +229,23 @@ def make_handler(dock: Dock):
                 except Exception: return self._send(b"not found", "text/plain", 404)
             self._send(b"not found", "text/plain", 404)
         def do_POST(self):
-            u = urlparse(self.path); n = int(self.headers.get("Content-Length", 0)); form = parse_qs(self.rfile.read(n).decode())
+            u = urlparse(self.path); n = int(self.headers.get("Content-Length", 0)); raw = self.rfile.read(n)
+            if (self.headers.get("Content-Type") or "").startswith("application/json"):
+                try:
+                    data = json.loads(raw or b"{}")
+                    if u.path == "/api/settings": dock.save_settings(data); return self._json({"ok": True})
+                    if u.path == "/api/sheets/add": return self._json(dock.add_sheet(data.get("input", ""), data.get("name", "")))
+                    m = re.fullmatch(r"/api/sheets/([A-Za-z0-9_.-]+)(?:/(remove|test-page|calibrate))?", u.path)
+                    if m:
+                        sid, what = m.group(1), m.group(2)
+                        if sid not in dock.registry.ids(): return self._json({"error": "unknown sheet"}, 404)
+                        if what == "remove": dock.remove_sheet(sid); return self._json({"ok": True})
+                        if what: return self._json({"ok": True, "message": dock.sheet_action(sid, what)})
+                        dock.update_sheet(sid, data); return self._json({"ok": True})
+                    return self._json({"error": "unknown endpoint"}, 404)
+                except (ValueError, KeyError) as e: return self._json({"error": str(e)}, 400)
+                except Exception as e: log.exception("api"); return self._json({"error": f"{type(e).__name__}: {e}"}, 500)
+            form = parse_qs(raw.decode())
             if u.path == "/tap" and form.get("sheet"): dock.identifier.tap(form["sheet"][0])
             elif u.path == "/cancel" and form.get("job"):
                 j = load_job(form["job"][0]); j.state = "cancelled"; j.save(); dock.message = ""
