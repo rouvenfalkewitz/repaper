@@ -30,8 +30,13 @@ class Dock:
         self.message = ""
         self.phase = ""                                 # live sub-status while printing ("connecting", "sending", ...)
         self._announced: set[str] = set()
-        self.sheet_status: dict[str, dict] = {}         # sheet id → {battery_volts, temperature_c, online, at}
+        self.sheet_status: dict[str, dict] = {}         # sheet id → {battery_volts, temperature_c, online, seen, at}
         self._status_lock = threading.Lock()
+        for sid in self.registry.ids():                 # last known readings survive a restart; "online" is unknown until the first scan
+            sp = HOME_PATH() / "sheets" / sid / "status.json"
+            if sp.exists():
+                try: self.sheet_status[sid] = {**json.loads(sp.read_text()), "online": None, "at": 0}
+                except Exception: pass
         self.hw_lock = threading.Lock()                 # one BLE/hardware operation at a time (print, status, add, test page)
         threading.Thread(target=self._status_loop, daemon=True).start()
 
@@ -57,6 +62,11 @@ class Dock:
                             self.sheet_status[sid] = {"battery_volts": st.battery_volts if st.online else prev.get("battery_volts"),
                                                       "temperature_c": st.temperature_c if st.online else prev.get("temperature_c"),
                                                       "online": st.online, "seen": now if st.online else prev.get("seen"), "at": now}
+                        if st.online:
+                            try:
+                                d = HOME_PATH() / "sheets" / sid; d.mkdir(parents=True, exist_ok=True)
+                                (d / "status.json").write_text(json.dumps({"battery_volts": st.battery_volts, "temperature_c": st.temperature_c, "seen": now}))
+                            except Exception as e: log.debug("status save %s: %s", sid, e)
                     except Exception as e:
                         log.debug("status %s: %s", sid, e)
             time.sleep(self.cfg.get("status_refresh_seconds", 60))
