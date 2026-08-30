@@ -18,7 +18,9 @@ The Dock needs to know *which* sheet is in front of it. Options:
 
 ### B. How does the Dock talk to the sheets?
 
-**v0: an OpenEPaperLink access point as a separate module.** The standard AP is an ESP32 with a flashed SoluM tag acting as the 2.4 GHz radio, talking to the ESP32 over UART; the AP joins Wi-Fi and exposes `POST /imgupload` (tag MAC + JPEG at the tag's exact size). The Dock talks to it over the LAN (or, in the enclosure, over USB serial / a private Wi-Fi). Later revisions can put the ESP32 + radio on our own PCB next to the Pi. Ask the friend which AP board he recommends — there are several community boards, and he may sell or lend one.
+**v0: directly over Bluetooth LE, using OpenDisplay** (https://opendisplay.org — the friend's open standard/firmware, see `06-epaper-hardware.md`). The Pi's own BLE radio pushes the dithered image straight to the sheet with `py-opendisplay`; no access point, no ESP32 module, no second Wi-Fi network. Range is a room (~10 m), which is exactly the Dock's job; warehouse-wide "named sheet" updates later come from more Docks or from ESP32-based receivers in Wi-Fi LAN mode.
+
+Sheet identification on top of that: BLE advertisements carry name, manufacturer ID, battery and temperature, so the Dock always knows which sheets are in range; the NFC sticker (A1) or the sheet's own QR code says which one is *being held to it*.
 
 ## Bill of materials — prototype v0
 
@@ -29,8 +31,8 @@ The Dock needs to know *which* sheet is in front of it. Options:
 | 3 | Storage | microSD 32 GB, A2 class | 10 | |
 | 4 | NFC reader | PN532 breakout (Elechouse V3 or Adafruit), I²C or SPI | 8–12 | Reads NTAG stickers; antenna sits under the Dock's top surface |
 | 5 | Sheet stickers | NTAG213 (144 B) stickers, 25 mm, ×50 | 8 | Sheet ID as NDEF text/URL |
-| 6 | Sheet radio | OpenEPaperLink AP (ESP32 + flashed tag as radio) | 20–40 | Via the friend; or build from an ESP32 dev board + one tag |
-| 7 | Sheets | SoluM 2.9" (296×128) ×3, 4.2" (400×300) ×3, 7.5" (800×480) ×1, BWR | 10–30 each | Must be OpenEPaperLink-compatible models; factory-locked units need a J-Link to flash — ask for pre-flashed |
+| 6 | Sheet radio | — none — | 0 | The Pi's built-in BLE talks OpenDisplay directly |
+| 7 | Sheets | SoluM M3 2.9" (nRF52811) ×3 and 2.6"/3.5" (EFR32BG22) ×2 with OpenDisplay firmware; one Seeed reTerminal E1001 7.5" as the "page" | 10–30 each (E1001 more) | Ask the friend for pre-flashed tags; larger SoluM sizes are still work-in-progress in OpenDisplay |
 | 8 | Light ring | WS2812B ring, 16 LEDs (Ø ~68 mm) | 6 | Driven from the Pi (PWM/SPI). **This is the brand's ring, for real** |
 | 9 | Diffuser | Frosted acrylic ring or translucent-white printed part | 5 | The logo's silhouette sits behind it |
 | 10 | Button | Momentary, 12 mm | 2 | Confirm / cancel / long-press reset |
@@ -38,7 +40,7 @@ The Dock needs to know *which* sheet is in front of it. Options:
 | 12 | Power | USB-C 5 V / 3 A PSU | 10 | PoE HAT (~25) for Pi 4 pilot units |
 | 13 | Enclosure | 3D-printed, matte carbon PETG/ASA; 28 px-radius silhouette scaled to ~110 mm | 10 | NFC zone marked on top; ring channel; vents |
 | 14 | Cables, headers, standoffs | | 10 | |
-| | **Total (one bench + one demo unit, 7 sheets)** | | **≈ 300–400** | J-Link (~€60 EDU) only if we must flash locked tags ourselves |
+| | **Total (one bench + one demo unit, ~6 sheets)** | | **≈ 250–400** | J-Link (~€60 EDU) only if we must flash locked tags ourselves |
 
 ## Physical layout (demo unit)
 
@@ -47,7 +49,7 @@ The Dock needs to know *which* sheet is in front of it. Options:
         │   ◯  light ring      │  top: frosted ring, NFC zone in the centre ("hold a sheet here")
         │      [ NFC ]         │
         └──────────────────────┘
-        │ Pi Zero 2 W │ ESP32 AP + radio tag │ PN532 under the lid │ button on the side │ USB-C at the back
+        │ Pi Zero 2 W (BLE) │ PN532 under the lid │ button on the side │ USB-C at the back
 ```
 
 Ring: breathing green = ready · blinking = job waiting · fast = printing · solid 3 s = printed · amber / red as in the brand guide's LED table.
@@ -56,18 +58,18 @@ Ring: breathing green = ready · blinking = job waiting · fast = printing · so
 
 ```
 PAPPL printer application (C)   ── IPP/AirPrint/Mopria, DNS-SD, raster, jobs, web UI
-   └─ RePaper driver            ── raster → dither → JPEG → OpenEPaperLink AP (HTTP)
-sidecar (Python first)          ── PN532 tap → sheet ID → tells PAPPL which job to release; drives the ring + button
+   └─ RePaper driver            ── hands the decoded raster to the sidecar
+sidecar (Python)                ── fit + dither + BLE push via py-opendisplay; PN532 tap → sheet ID → releases the job; drives the ring + button
 cloud agent                     ── outbound MQTT/WebSocket: heartbeat, status, config, OTA (see 10-cloud-platform.md)
 ```
 
 ## What to order now
 
-Items 1–5, 8–14 from any Pi retailer today. Items 6–7 via the friend (which AP board, which tag models, pre-flashed?). Sheet sizes for the demo: 2.9" and 4.2" in BWR; one 7.5" if available.
+Items 1–5, 8–14 from any Pi retailer today. Item 7 via the friend (which tag models, pre-flashed?) plus one Seeed reTerminal E1001 from Seeed. Sheet sizes for the demo: 2.9" (label) and 2.6"/3.5" (card) in BWR, 7.5" (page) mono.
 
 ## Open
 
 - Tag models & NFC chip types (A2) — friend
-- AP board & firmware licence — friend
+- Encryption-key model for fleets (the QR carries the key today) and firmware licence for a commercial product — friend
 - Pilot units: Pi 4 + PoE HAT vs. CM4 carrier — after the demo
 - Custom PCB (ESP32 + radio + PN532 + LED driver on one board, Pi/CM as compute) — Phase 4

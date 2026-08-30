@@ -45,9 +45,11 @@ Checked August 2026 before choosing a stack. The question: for each thing the co
 
 Trivial everywhere: Rust `image`, Go `image`, Python Pillow, C in PAPPL. Ordered/error-diffusion dithering is ~50 lines; we already have the Bayer logic from the brand work.
 
-### 5 · Sending to sheets — OpenEPaperLink
+### 5 · Sending to sheets — OpenDisplay (and OpenEPaperLink as the alternative)
 
-The open ESL firmware (SoluM ZBS243 / nRF52811 tags, ESP32 access point) exposes exactly one thing we need: **`POST /imgupload`** on the AP with `mac`, `dither`, and a baseline **JPEG at the tag's exact size** (2.9" = 296×128, 4.2" = 400×300, 1.54" = 152×152; three-colour palette white/black/red, no anti-aliasing, max quality / 4:4:4). Any language with an HTTP client and an image library can do this. Tag firmware can be flashed onto stock SoluM tags (factory-locked ones need a J-Link). Licence of the firmware to be confirmed with the friend; it runs as a separate device, so it doesn't touch our code's licence.
+**OpenDisplay** (https://opendisplay.org, the friend's project): open standard + GPL-3 firmware; the sender pushes a dithered image **directly over BLE** (GATT service 0x2446) — no gateway. `py-opendisplay` (MIT, `bleak`) gives discovery, keyed connect, `upload_image(PIL)` with fit + nine dither modes, and battery/temperature from advertisements; Linux/Raspberry Pi fully supported, protocol documented for a Kotlin/Rust port later. Runs on re-flashed SoluM M3 tags (nRF52811 2.7"/2.9", EFR32BG22 2.6"/3.5" today) and on nRF52840/ESP32 boards, incl. Seeed's ready-made receivers. This is the prototype transport.
+
+**OpenEPaperLink** (the other open ESL firmware): needs an ESP32 access point with a flashed tag as 802.15.4 radio; `POST /imgupload` with tag MAC + baseline JPEG at the exact size (296×128, 400×300, 152×152). Kept as the fallback for tag models OpenDisplay doesn't cover yet.
 
 ### 6 · Dock hardware
 
@@ -70,14 +72,14 @@ My earlier "Rust core + thin shells" recommendation assumed we'd have to write t
 
 **Track 1 — Dock (now): PAPPL.** Build the Dock as a *printer application*: PAPPL handles DNS-SD, IPP, AirPrint/Mopria conformance, raster decoding, job states and a setup web UI. Our own code is small and specific:
 - a PAPPL driver whose "print a page" callback takes the decoded raster, dithers it to the sheet palette and hands it to the transport;
-- a transport module that POSTs JPEGs to the OpenEPaperLink AP (and later NFC / SoluM);
+- a transport module that pushes the dithered image over BLE with `py-opendisplay` (later: Wi-Fi LAN receivers, NFC);
 - a small sidecar (Python at first, later Rust or C) for PN532 tap detection and the LED, talking to the printer app over a local socket;
 - our sheet sizes advertised as media sizes; job stays "pending — media needed" until a tap.
 Language: C99 for the ~500 lines of callbacks. Neither of us is a "C person", but this is glue against a clean API, not systems programming, and it buys us a conformant AirPrint printer in about a week instead of a month.
 
 **Track 2 — Go app (later): Rust core via UniFFI, or Kotlin-native.** Android can't run PAPPL. By then we'll know the exact IPP attribute set we need (we can lift it from our PAPPL config), and the Android IPP listener is a small, well-defined piece. Decide Rust-vs-Kotlin when we start it; nothing in track 1 forecloses either.
 
-**Prototype-first alternative** if a demo in days matters more than a foundation: `ippeveprinter` (ships with CUPS) with a command that takes the PWG raster and uploads it to the OpenEPaperLink AP — that's a working "print to e-paper" demo with almost no code, and everything learned carries over to the PAPPL build.
+**Prototype-first alternative** if a demo in days matters more than a foundation: `ippeveprinter` (ships with CUPS) with a Python command that takes the PWG raster, dithers it and pushes it over BLE with `py-opendisplay` — a working "print to e-paper" demo with almost no code, and everything learned carries over to the PAPPL build.
 
 **Not recommended:** a from-scratch IPP server in Rust/Go for v1 (we'd re-solve PAPPL's problems), anything GPL/AGPL in the core, PDF rendering in v1.
 
@@ -91,5 +93,6 @@ Language: C99 for the ~500 lines of callbacks. Neither of us is a "C person", bu
 - mdns-sd — https://docs.rs/mdns-sd/latest/mdns_sd/ · grandcat/zeroconf — https://pkg.go.dev/github.com/grandcat/zeroconf
 - Driverless standards & PDLs — https://openprinting.github.io/driverless/01-standards-and-their-pdls/ · ppm2pwg — https://github.com/attah/ppm2pwg · rasterview — https://github.com/michaelrsweet/rasterview
 - pdfium-render — https://crates.io/crates/pdfium-render · hayro — https://github.com/LaurenzV/hayro
+- OpenDisplay — https://opendisplay.org · protocol — https://opendisplay.org/protocol/ · firmware — https://github.com/OpenDisplay/Firmware · py-opendisplay — https://github.com/OpenDisplay/py-opendisplay · SoluM M3 — https://opendisplay.org/firmware/reusing_solum_displays.html · Seeed receivers — https://wiki.seeedstudio.com/EN04_opendisplay/
 - OpenEPaperLink — https://github.com/OpenEPaperLink/OpenEPaperLink · image upload — https://github.com/OpenEPaperLink/OpenEPaperLink/wiki/Image-upload · image specs — https://github.com/OpenEPaperLink/OpenEPaperLink/wiki/Image-specifications
 - pn532 (Rust) — https://crates.io/crates/pn532 · UniFFI — https://github.com/mozilla/uniffi-rs
