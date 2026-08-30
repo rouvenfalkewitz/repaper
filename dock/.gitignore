@@ -1,0 +1,5 @@
+sidecar/.venv/
+sidecar/*.egg-info/
+sidecar/.pytest_cache/
+__pycache__/
+.dev-home/
