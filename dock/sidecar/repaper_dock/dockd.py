@@ -134,6 +134,10 @@ def make_handler(dock: Dock):
 
 
 def serve(dock: Dock):
-    srv = ThreadingHTTPServer(("127.0.0.1", dock.cfg["web_port"]), make_handler(dock))
+    ThreadingHTTPServer.allow_reuse_address = True
+    try:
+        srv = ThreadingHTTPServer(("127.0.0.1", dock.cfg["web_port"]), make_handler(dock))
+    except OSError as e:
+        raise SystemExit(f"web UI port {dock.cfg['web_port']} is in use — another repaper-dockd is running? (pkill -f 'repaper-dockd run')  [{e}]")
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     log.info("web UI: http://localhost:%d/", dock.cfg["web_port"])

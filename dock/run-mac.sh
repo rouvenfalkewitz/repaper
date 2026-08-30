@@ -7,11 +7,16 @@ NAME="${REPAPER_PRINTER_NAME:-RePaper Dock}"
 ICON="$HERE/../brand/logo/export/app-icon/ios/AppIcon-1024.png"
 SPOOL="${REPAPER_HOME:-$HOME/.repaper}/ippeve"; mkdir -p "$SPOOL"
 [ -x "$VENV/bin/repaper-print" ] || { echo "sidecar not installed: cd dock/sidecar && .venv/bin/pip install -e ."; exit 1; }
+# a daemon left over from an earlier run would hold the web port
+pkill -f "repaper-dockd run" 2>/dev/null && sleep 1 || true
 "$VENV/bin/repaper-dockd" run &
 DOCKD=$!
-trap 'kill $DOCKD 2>/dev/null || true' EXIT
+cleanup() { kill $DOCKD 2>/dev/null || true; kill $PRINTER 2>/dev/null || true; }
+trap cleanup EXIT INT TERM
 echo "ippeveprinter as \"${NAME}\" - AirPrint (URF) + IPP Everywhere (PWG raster) + JPEG/PNG"
-exec ippeveprinter -v -M RePaper -m "Dock" -l "on this Mac" \
+ippeveprinter -v -M RePaper -m "Dock" -l "on this Mac" \
   -f image/urf,image/pwg-raster,image/jpeg,image/png \
   -r _universal,_print -s 10 -i "$ICON" \
-  -d "$SPOOL" -c "$VENV/bin/repaper-print" "${NAME}"
+  -d "$SPOOL" -c "$VENV/bin/repaper-print" "${NAME}" &
+PRINTER=$!
+wait $PRINTER
