@@ -166,7 +166,15 @@ class Dock:
             w, h = (int(v) for v in text.lower().split("x")); model = SheetModel(w, h, "BWR")
         else:
             if self.state == "printing": raise ValueError("the Dock is printing — try again in a moment")
-            with self.hw_lock: model = tr.describe(ref)
+            log.info("add sheet: %s via %s (%s)", address, transport, "with key" if keys.get("key") else "no key")
+            try:
+                with self.hw_lock: model = tr.describe(ref)
+            except Exception as e:
+                if "encryption key" in str(e) or type(e).__name__ == "AuthenticationRequiredError":
+                    raise ValueError("this sheet is encrypted — add it with the full link from its QR code; the link carries the key, the name alone does not") from e
+                if "timed out" in str(e).lower() or "not found" in str(e).lower():
+                    raise ValueError("could not reach the sheet — wake it up (press its button or open its page once) and keep it within a metre") from e
+                raise ValueError(f"could not read the sheet: {e}") from e
         base = re.sub(r"[^a-z0-9]+", "-", (name or address).lower()).strip("-") or "sheet"; sid = base; n = 2
         while sid in self.registry.ids(): sid = f"{base}-{n}"; n += 1
         self.registry.add(sid, ref, model, serial=serial)
