@@ -11,7 +11,7 @@ Prices are approximate (August 2026, Germany, incl. VAT). Links are to typical s
 | 3 | microSD 32 GB, A2 (SanDisk Extreme / Samsung Pro Plus) | 2 | 20 | Amazon / same shop | One per Pi |
 | 4 | Raspberry Pi **Zero 2 WH** — *deferred, sold out; not needed for the bench prototype. Alternative: Zero 2 W + Pimoroni Hammer Header* | 0 | 22 | BerryBase / reichelt | The demo unit that goes in the enclosure; has BLE |
 | 5 | Micro-USB PSU 5 V / 2.5 A (for the Zero) | 1 | 8 | same shop | |
-| 6 | **PN532 NFC module V3** (Elechouse-type, I²C/SPI switchable) | 2 | 8–12 each | [AZ-Delivery](https://www.az-delivery.de) · BerryBase · Amazon | One per Pi. Reads the sheet stickers |
+| 6 | **PN532 NFC module V3** (Elechouse-type, I²C/SPI switchable) — *sold out at BerryBase; get 2× RC522 (MFRC522, SPI, ~2–3 cm range) today and a PN532 clone or Waveshare PN532 HAT from Amazon for the enclosure* | 2 | 8–12 each | [AZ-Delivery](https://www.az-delivery.de) · BerryBase · Amazon | One per Pi. Reads the sheet stickers |
 | 7 | **NTAG213 NFC stickers**, 25 mm round, 50 pcs | 1 | 10 | Amazon / NFC-Tag-Shop.de | One on the back of every sheet |
 | 8 | **WS2812B LED ring, 16 LEDs**, ~68 mm | 2 | 5–8 each | AZ-Delivery · BerryBase · Adafruit "NeoPixel Ring 16" (~€12) | The light ring |
 | 9 | 74AHCT125 level shifter (or Adafruit NeoPixel level-shifter breakout) | 1 | 2–5 | reichelt · BerryBase | 3.3 V → 5 V data; avoids flaky LEDs |
