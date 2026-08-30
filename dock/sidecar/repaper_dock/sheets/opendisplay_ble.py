@@ -5,8 +5,10 @@ resolves it by scanning). keys["key"] = AES-128 master key as hex (from the shee
 The SDK can dither itself; we pass our already-dithered page with dithering OFF so every transport produces
 identical pixels.
 
-Known firmware limitation (SDK warns about it): on current firmware, BWR/BWY *direct write* stores only one plane,
-so red/yellow may be dropped on some tags until the firmware gains parity. The pipeline is right; the tag may not be yet.
+Firmware notes: the nRF52811/SoluM firmware (Firmware_NRF) writes both BWR planes correctly and does NOT support
+compressed uploads — so the SDK must interrogate the device (read its config) before every upload; bypassing that
+with explicit capabilities makes the SDK compress, and the tag then draws zlib bytes as pixels. The ESP32/nRF52840
+firmware (FINDINGS C1) keeps only one plane on BWR; `bwr_as_mono=True` is the opt-in workaround for those boards.
 """
 from __future__ import annotations
 import asyncio, base64, re, time
@@ -40,7 +42,7 @@ def _run(coro):
 
 
 class OpenDisplayBLETransport(SheetTransport):
-    def __init__(self, registry=None, timeout: float = 30.0, bwr_as_mono: bool = True, refresh_wait: float = 60.0, min_battery_mv: int = 2700):
+    def __init__(self, registry=None, timeout: float = 30.0, bwr_as_mono: bool = False, refresh_wait: float = 60.0, min_battery_mv: int = 2700):
         self.registry = registry; self.timeout = timeout; self.bwr_as_mono = bwr_as_mono; self.refresh_wait = refresh_wait
         self.min_battery_mv = min_battery_mv
 
@@ -145,24 +147,23 @@ class OpenDisplayBLETransport(SheetTransport):
     async def _print_async(self, ref: SheetRef, page: Page, full_refresh: bool):
         from opendisplay import DitherMode, FitMode, RefreshMode, Rotation
         img = page.image.convert("RGB")
-        # Firmware 1.x direct-write on BWR/BWY panels accepts only ONE bit plane (see py-opendisplay FINDINGS C1):
-        # sending two planes stalls the upload. Until firmware parity, send such sheets as MONO with red drawn as black.
+        # Opt-in workaround for boards whose firmware keeps only one plane on BWR (ESP32/nRF52840, FINDINGS C1):
+        # send as MONO with red drawn black. Off by default — the nRF52811/SoluM firmware writes both planes.
         mono = self.bwr_as_mono and ref.keys.get("scheme") in ("BWR", "BWY")
         if mono and page.model.palette in ("BWR", "BWRY"):
             lut = page.image.point(lambda i: 0 if i == 0 else 1, "P")            # index 0 = white, everything else = black
             lut.putpalette([255, 255, 255, 0, 0, 0] + [0] * 762); img = lut.convert("RGB")
-        caps = self._known_caps(ref, mono)
-        from opendisplay import OpenDisplayDevice
-        kw = {"mac_address": ref.address} if _is_mac(ref.address) else {"device_name": ref.address}
-        async with OpenDisplayDevice(encryption_key=self._key(ref), timeout=self.timeout, discovery_timeout=self.timeout,
-                                     capabilities=caps, **kw) as dev:
+        # Always let the SDK interrogate the device: its config decides compression and encoding. Never pass
+        # explicit capabilities for a normal print — that skips the config and the SDK may compress for a tag that can't.
+        async with self._device(ref) as dev:
             dev.TIMEOUT_REFRESH = self.refresh_wait
             c = dev.capabilities; w, h = int(c.width), int(c.height)
             if int(getattr(c, "rotation", 0) or 0) in (90, 270): w, h = h, w            # viewed orientation
             if (w, h) != img.size:
                 raise TransportError(f"sheet shows {w}×{h}, page is {img.width}×{img.height} — re-register the sheet")
             await dev.upload_image(img, refresh_mode=RefreshMode.FULL if full_refresh else RefreshMode.FAST,
-                                   dither_mode=DitherMode.NONE, fit=FitMode.STRETCH, rotate=Rotation.ROTATE_0)
+                                   dither_mode=DitherMode.NONE, fit=FitMode.STRETCH, rotate=Rotation.ROTATE_0,
+                                   compress=bool(ref.keys.get("compress", True)))
 
     def capabilities(self):
         return {"supports_status": True, "supports_partial_refresh": True, "needs_pairing": True, "min_battery_mv": self.min_battery_mv}
