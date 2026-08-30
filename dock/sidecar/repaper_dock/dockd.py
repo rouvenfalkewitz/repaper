@@ -116,10 +116,10 @@ class Dock:
     def save_settings(self, data: dict) -> None:
         from .config import CONFIG
         allowed = {"printer_name": str, "job_timeout_seconds": int, "status_refresh_seconds": int}
+        if "printer_name" in data and not (1 <= len(str(data["printer_name"]).strip()) <= 63): raise ValueError("printer name must be 1–63 characters")
         for k, typ in allowed.items():
-            if k in data and data[k] not in (None, ""):
+            if k in data and data[k] is not None:
                 v = typ(data[k])
-                if k == "printer_name" and not (1 <= len(v.strip()) <= 63): raise ValueError("printer name must be 1–63 characters")
                 if k != "printer_name" and v < 30: raise ValueError(f"{k} must be at least 30")
                 self.cfg[k] = v.strip() if isinstance(v, str) else v
         cur = json.loads(CONFIG.read_text()) if CONFIG.exists() else {}
