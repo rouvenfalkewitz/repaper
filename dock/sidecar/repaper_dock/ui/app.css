@@ -192,3 +192,10 @@
   .or { display: flex; align-items: center; gap: 12px; font-family: var(--font-display); font-stretch: 112%; font-size: .6875rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3) } .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--border) }
   .sheet { min-width: 0 } .fact { min-width: 0 } .fact b { overflow-wrap: anywhere }
   .facts.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px 20px }
+  .sheet-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px }
+  .odname { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-display); font-stretch: 112%; font-weight: 700; font-size: .8125rem; letter-spacing: .08em; color: var(--text-2) }
+  .odname svg { width: 15px; height: 15px; fill: none; stroke: var(--accent-text); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round }
+  .range { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; color: var(--accent-text); background: var(--accent-tint) }
+  .range svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round }
+  .range.off { color: var(--text-3); background: var(--surface-2); position: relative } .range.off::after { content: ""; position: absolute; width: 18px; height: 1.8px; background: currentColor; transform: rotate(-45deg); border-radius: 1px }
+  .sheet.away .fig, .sheet.away .bat { opacity: .7 } .away-note { color: var(--text-3) }

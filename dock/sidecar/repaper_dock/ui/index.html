@@ -47,6 +47,7 @@ const ICON = {
   print: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg>`,
   trash: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14"/></svg>`,
   tap: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="12" height="9" rx="2"/><path d="M15 10a3 3 0 0 1 3 3m-3-6a6 6 0 0 1 6 6"/><path d="M6 20h6"/></svg>`,
+  signal: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 18h.01"/><path d="M8.5 14.5a5 5 0 0 1 7 0"/><path d="M5 11a10 10 0 0 1 14 0"/><path d="M1.5 7.5a15 15 0 0 1 21 0"/></svg>`,
   qr: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v1M17 20h4M14 20h1"/></svg>`,
 };
 const STEPS = [["looking", "Find sheet"], ["connect", "Connect"], ["send", "Send"], ["refresh", "Refresh"]];
@@ -92,7 +93,7 @@ function render(s) {
   } else {
     const ids = Object.keys(s.sheets);
     const info = (k, v) => { const mv = v.battery_volts, low = mv != null && mv * 1000 < (v.min_battery_mv || 2700);
-      return { mv, low, bat: mv == null ? (v.online === false ? "not in range" : "") : mv.toFixed(2) + " V" + (low ? " · low" : "") }; };
+      return { mv, low, bat: (mv == null ? "" : mv.toFixed(2) + " V" + (low ? " · low" : "")) + (v.online === false ? (mv == null ? "not in range" : " · not in range") : "") }; };
     let picker;
     if (ids.length <= 5) {
       picker = `<div class="tiles" role="radiogroup" aria-label="Sheet">` + ids.map((k, i) => { const v = s.sheets[k], x = info(k, v);
@@ -129,12 +130,14 @@ function render(s) {
   el("sheets").innerHTML = Object.entries(s.sheets).map(([k, v]) => {
     const mv = v.battery_volts, pct = mv == null ? null : Math.max(0, Math.min(100, (mv * 1000 - 2400) / 6));
     const low = mv != null && mv * 1000 < (v.min_battery_mv || 2700), hw = v.hw || {};
-    const bat = mv == null ? `<div class="bat"><i><b style="width:0"></b></i><span>${v.online === false ? "not in range" : "battery —"}</span></div>`
+    const away = v.online === false, seen = away && v.seen ? `seen ${fmtAgo(v.seen, now)}` : away ? "not seen yet" : "";
+    const bat = mv == null ? `<div class="bat"><i><b style="width:0"></b></i><span>battery —</span></div>`
                            : `<div class="bat ${low ? "low" : ""}"><i><b style="width:${pct}%"></b></i><span>${mv.toFixed(2)} V${low ? " · replace cell" : ""}${v.temperature_c != null ? " · " + v.temperature_c.toFixed(0) + " °C" : ""}</span></div>`;
-    return `<div class="sheet">${fig(v, v.last ? `/sheet-image/${esc(k)}?t=${v.last.at}` : null)}
+    return `<div class="sheet ${away ? "away" : ""}">
+      <div class="sheet-top"><span class="odname" title="${esc(v.transport)}">${ICON.qr}<span>${esc(v.address)}</span></span><span class="range ${away ? "off" : ""}" title="${away ? "Not in range · " + seen : "In range"}">${ICON.signal}</span></div>
+      ${fig(v, v.last ? `/sheet-image/${esc(k)}?t=${v.last.at}` : null)}
       <div class="sheet-head"><b>${esc(v.name || k)}</b>${dots(v.palette)}</div>
-      <span class="chip" title="${esc(v.transport)}">${ICON.qr}<span>${esc(v.address)}</span></span>
-      ${bat}</div>`;
+      ${bat}${away ? `<span class="mono away-note">not in range · ${seen}</span>` : ""}</div>`;
   }).join("") || `<div class="sheet"><b>No sheets yet</b><span class="mono">Add one in Settings</span></div>`;
   const rec = (s.recent || []).slice().reverse();
   const clock = ts => { const d = new Date(ts * 1000), t = new Date(now * 1000); const hm = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); return d.toDateString() === t.toDateString() ? hm : d.toLocaleDateString([], { day: "numeric", month: "short" }) + " " + hm; };

@@ -52,8 +52,11 @@ class Dock:
                                 except Exception as e: log.debug("hardware %s: %s", sid, e)
                         finally: self.hw_lock.release()
                         with self._status_lock:
-                            self.sheet_status[sid] = {"battery_volts": st.battery_volts, "temperature_c": st.temperature_c,
-                                                      "online": st.online, "at": time.time()}
+                            prev = self.sheet_status.get(sid, {}); now = time.time()
+                            # a passive scan can miss an advertisement — keep the last known readings and remember when it was last seen
+                            self.sheet_status[sid] = {"battery_volts": st.battery_volts if st.online else prev.get("battery_volts"),
+                                                      "temperature_c": st.temperature_c if st.online else prev.get("temperature_c"),
+                                                      "online": st.online, "seen": now if st.online else prev.get("seen"), "at": now}
                     except Exception as e:
                         log.debug("status %s: %s", sid, e)
             time.sleep(self.cfg.get("status_refresh_seconds", 60))
@@ -134,8 +137,8 @@ class Dock:
             mv = v.get("battery_volts"); lim = v.get("min_battery_mv") or 2700
             if mv is not None and mv * 1000 < lim:
                 out.append({"level": "err", "title": f"{v['name'] or k}: battery low ({mv:.2f} V)", "text": "The Dock will not print to it until the cell is replaced — a refresh on a weak cell can leave the sheet half-drawn."})
-            elif v.get("online") is False:
-                out.append({"level": "info", "title": f"{v['name'] or k}: not in range", "text": "The sheet is not advertising nearby. Bring it closer or check its battery."})
+            elif v.get("online") is False and (v.get("seen") is None or time.time() - v["seen"] > 600):
+                out.append({"level": "info", "title": f"{v['name'] or k}: not in range", "text": "The sheet has not been heard nearby for a while. Bring it closer or check its battery."})
         return out
 
     def save_settings(self, data: dict) -> None:
