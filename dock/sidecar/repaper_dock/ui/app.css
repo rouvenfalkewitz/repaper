@@ -59,11 +59,11 @@
   .sheet { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--s-4); display: grid; gap: 6px }
   .sheet b { font-family: var(--font-display); font-weight: 600; font-size: 1rem; letter-spacing: -.01em }
   .bat { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: .75rem; color: var(--text-3); margin-top: 2px }
-  .bat i { width: 64px; height: 22px; border: 1.5px solid var(--text-3); border-radius: 5px; position: relative; display: inline-grid; place-items: center; overflow: visible }
-  .bat i::after { content: ""; position: absolute; right: -5px; top: 6px; width: 3px; height: 8px; background: var(--text-3); border-radius: 0 2px 2px 0 }
-  .bat i b { position: absolute; left: 1px; top: 1px; bottom: 1px; background: var(--accent-tint); border-radius: 3px; max-width: calc(100% - 2px) }
-  .bat i em { position: relative; font-style: normal; font-family: var(--font-mono); font-size: .6875rem; font-weight: 500; letter-spacing: .02em; color: var(--text) }
-  .bat.low i b { background: var(--red-tint) } .bat.low i em, .bat.low span { color: var(--red) }
+  .bat i { width: 28px; height: 12px; border: 1.5px solid var(--text-3); border-radius: 3px; position: relative; display: inline-block; padding: 1px }
+  .bat i::after { content: ""; position: absolute; right: -4px; top: 3px; width: 2px; height: 4px; background: var(--text-3); border-radius: 1px }
+  .bat i b { display: block; height: 100%; background: var(--accent); border-radius: 1px }
+  .bat.low i b { background: var(--red) } .bat.low span { color: var(--red) }
+  .bat span { margin-left: 8px }
   .list { display: grid; gap: 0 }
   .job { border-bottom: 1px solid var(--border) } .job:last-child, .more .job:last-child { border-bottom: 0 }
   .job summary { display: flex; align-items: center; gap: var(--s-3); padding: 10px 0; cursor: pointer; list-style: none } .job summary::-webkit-details-marker { display: none }

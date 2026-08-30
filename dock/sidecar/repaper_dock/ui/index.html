@@ -131,8 +131,8 @@ function render(s) {
     const mv = v.battery_volts, pct = mv == null ? null : Math.max(0, Math.min(100, (mv * 1000 - 2400) / 6));
     const low = mv != null && mv * 1000 < (v.min_battery_mv || 2700), hw = v.hw || {};
     const away = v.online === false, seen = away && v.seen ? `seen ${fmtAgo(v.seen, now)}` : away ? "not seen yet" : "";
-    const bat = mv == null ? `<div class="bat"><i><b style="width:0"></b><em>—</em></i><span>no reading yet</span></div>`
-                           : `<div class="bat ${low ? "low" : ""}"><i><b style="width:${pct}%"></b><em>${mv.toFixed(2)} V</em></i><span>${low ? "replace cell" : ""}${low && v.temperature_c != null ? " · " : ""}${v.temperature_c != null ? v.temperature_c.toFixed(0) + " °C" : ""}</span></div>`;
+    const bat = mv == null ? `<div class="bat"><i title="No reading yet"><b style="width:0"></b></i><span>no reading yet</span></div>`
+                           : `<div class="bat ${low ? "low" : ""}"><i title="${mv.toFixed(2)} V"><b style="width:${pct}%"></b></i><span>${low ? "replace cell" : ""}${low && v.temperature_c != null ? " · " : ""}${v.temperature_c != null ? v.temperature_c.toFixed(0) + " °C" : ""}</span></div>`;
     return `<div class="sheet ${away ? "away" : ""}">
       <div class="sheet-top"><span class="odname" title="${esc(v.transport)}">${ICON.qr}<span>${esc(v.address)}</span></span><span class="range ${away ? "off" : ""}" title="${away ? "Not in range · " + seen : "In range"}">${ICON.signal}</span></div>
       ${fig(v, v.last ? `/sheet-image/${esc(k)}?t=${v.last.at}` : null)}
