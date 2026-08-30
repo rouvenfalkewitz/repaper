@@ -43,6 +43,10 @@ function pillFor(state) {
            "error": ["err", "Failed"], "setup": ["setup", "Setup"] }[state] || ["", state];
 }
 function fmtAgo(ts, now) { if (!ts) return ""; const d = Math.max(0, (now || Date.now()/1000) - ts); if (d < 60) return "just now"; if (d < 3600) return Math.round(d/60) + " min ago"; if (d < 86400) return Math.round(d/3600) + " h ago"; return Math.round(d/86400) + " d ago"; }
+const ICON = {
+  print: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg>`,
+  trash: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14"/></svg>`,
+};
 const STEPS = [["looking", "Find sheet"], ["connect", "Connect"], ["send", "Send"], ["refresh", "Refresh"]];
 function stepIndex(phase) { phase = (phase || "").toLowerCase(); if (phase.startsWith("printed")) return 4; if (phase.includes("refresh")) return 3; if (phase.includes("sending") || phase.includes("rendering")) return 2; if (phase.includes("connect")) return 1; return 0; }
 function stepper(phase, since, now) {
@@ -79,18 +83,28 @@ function render(s) {
   } else if (s.state === "printed") {
     html = `<span class="pill done">Printed</span><div class="title">${esc(j.name)}</div><div class="meta">${esc(s.message)}</div>`;
   } else {
-    const opts = Object.entries(s.sheets).map(([k, v]) => `<option value="${esc(k)}">${esc(v.name || k)} · ${esc(v.size)}</option>`).join("");
+    const ids = Object.keys(s.sheets);
+    const tiles = ids.map((k, i) => { const v = s.sheets[k]; const mv = v.battery_volts; const low = mv != null && mv * 1000 < (v.min_battery_mv || 2700);
+      return `<label class="tile ${v.online === false ? "off" : ""}"><input type="radio" name="sheet" value="${esc(k)}" ${i === 0 ? "checked" : ""}>
+        <span class="mini" style="aspect-ratio:${(v.width / v.height).toFixed(3)}">${v.last ? `<img src="/sheet-image/${esc(k)}?t=${v.last.at}" alt="">` : ""}</span>
+        <b>${esc(v.name || k)}</b><span class="mono">${v.width}×${v.height} · ${esc(v.palette)}</span>
+        <span class="mono ${low ? "low" : ""}">${mv == null ? (v.online === false ? "not in range" : "") : mv.toFixed(2) + " V" + (low ? " · low" : "")}</span></label>`; }).join("");
     const notice = s.identifier === "manual"
-      ? `<div class="notice"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><div><b>No sheet reader on this Dock</b><span>Choose the sheet below and press Print — that is the tap.</span></div></div>`
-      : `<div class="notice info"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg><div><b>Hold the sheet to the Dock</b><span>If the reader doesn't pick it up, choose it below and press Print.</span></div></div>`;
+      ? `<div class="notice"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><div><b>No sheet reader on this Dock</b><span>Choose the sheet and press Print — that is the tap.</span></div></div>`
+      : `<div class="notice info"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg><div><b>Hold the sheet to the Dock</b><span>If the reader doesn't pick it up, choose it here and press Print.</span></div></div>`;
     const err = s.error ? `<div class="notice err"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6m0-6 6 6"/></svg><div><b>Not printed</b><span>${esc(s.error)}</span></div></div>` : "";
     html = `<div class="card-head"><span class="pill wait">Waiting for sheet</span>
-              <form method="post" action="/cancel"><button class="btn ghost small" type="submit" name="job" value="${esc(j.id)}">Discard</button></form></div>
+              <form method="post" action="/cancel"><button class="btn outline small" type="submit" name="job" value="${esc(j.id)}">${ICON.trash}Discard</button></form></div>
             <div class="title">${esc(j.name)}</div>${pages(j)}
             <div class="meta">${j.user ? "from " + esc(j.user) + " · " : ""}${fmtAgo(j.created, now)}</div>
-            <div class="preview">${frame(4, 3, `/preview/${j.id}/${j.next_page}`)}</div>
-            ${err}${notice}
-            <form class="row tap" method="post" action="/tap"><select name="sheet" aria-label="Sheet">${opts}</select><button class="btn primary" type="submit" ${opts ? "" : "disabled"}>Print</button></form>`;
+            <div class="center">
+              <div class="preview">${frame(4, 3, `/preview/${j.id}/${j.next_page}`)}</div>
+              ${err}${notice}
+              <form class="tap" method="post" action="/tap">
+                <div class="tiles" role="radiogroup" aria-label="Sheet">${tiles || `<div class="meta">No sheets yet — add one in Settings.</div>`}</div>
+                <button class="btn primary big" type="submit" ${ids.length ? "" : "disabled"}>${ICON.print}Print</button>
+              </form>
+            </div>`;
   }
   el("job").innerHTML = html;
   el("sheets").innerHTML = Object.entries(s.sheets).map(([k, v]) => {
