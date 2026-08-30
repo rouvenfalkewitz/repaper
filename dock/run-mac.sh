@@ -10,8 +10,8 @@ SPOOL="${REPAPER_HOME:-$HOME/.repaper}/ippeve"; mkdir -p "$SPOOL"
 "$VENV/bin/repaper-dockd" run &
 DOCKD=$!
 trap 'kill $DOCKD 2>/dev/null || true' EXIT
-echo "▶ ippeveprinter as “$NAME” — AirPrint (URF) + IPP Everywhere (PWG raster) + JPEG/PNG"
+echo "ippeveprinter as \"${NAME}\" - AirPrint (URF) + IPP Everywhere (PWG raster) + JPEG/PNG"
 exec ippeveprinter -v -M RePaper -m "Dock" -l "on this Mac" \
   -f image/urf,image/pwg-raster,image/jpeg,image/png \
   -r universal,print -s 10 -i "$ICON" \
-  -d "$SPOOL" -c "$VENV/bin/repaper-print" "$NAME"
+  -d "$SPOOL" -c "$VENV/bin/repaper-print" "${NAME}"
