@@ -42,9 +42,10 @@ def _run(coro):
 
 
 class OpenDisplayBLETransport(SheetTransport):
-    def __init__(self, registry=None, timeout: float = 30.0, bwr_as_mono: bool = False, refresh_wait: float = 60.0, min_battery_mv: int = 2700):
-        self.registry = registry; self.timeout = timeout; self.bwr_as_mono = bwr_as_mono; self.refresh_wait = refresh_wait
-        self.min_battery_mv = min_battery_mv
+    def __init__(self, registry=None, timeout: float = 20.0, scan_timeout: float = 12.0, bwr_as_mono: bool = False,
+                 refresh_wait: float = 60.0, min_battery_mv: int = 2700):
+        self.registry = registry; self.timeout = timeout; self.scan_timeout = scan_timeout; self.bwr_as_mono = bwr_as_mono
+        self.refresh_wait = refresh_wait; self.min_battery_mv = min_battery_mv
 
     @property
     def id(self) -> str: return "opendisplay-ble"
@@ -53,10 +54,22 @@ class OpenDisplayBLETransport(SheetTransport):
         k = ref.keys.get("key")
         return bytes.fromhex(k.replace(":", "").replace(" ", "")) if k else None
 
-    def _device(self, ref: SheetRef):
+    def _device(self, ref: SheetRef, use_cache: bool = True):
+        """Address by BLE address when known (instant), else by OD name (needs a scan, up to `scan_timeout`).
+        The address the SDK resolves is cached in ref.keys['ble_address'] (a CoreBluetooth UUID on macOS, a MAC on Linux)."""
         from opendisplay import OpenDisplayDevice
-        kw = {"mac_address": ref.address} if _is_mac(ref.address) else {"device_name": ref.address}
-        return OpenDisplayDevice(encryption_key=self._key(ref), timeout=self.timeout, discovery_timeout=self.timeout, **kw)
+        cached = ref.keys.get("ble_address") if use_cache else None
+        if _is_mac(ref.address): kw = {"mac_address": ref.address}
+        elif cached: kw = {"mac_address": cached}
+        else: kw = {"device_name": ref.address}
+        return OpenDisplayDevice(encryption_key=self._key(ref), timeout=self.timeout, discovery_timeout=self.scan_timeout, **kw)
+
+    def _remember_address(self, ref: SheetRef, dev) -> None:
+        addr = getattr(dev, "mac_address", None) or getattr(dev, "_mac_address", None)
+        if addr and ref.keys.get("ble_address") != addr:
+            ref.keys["ble_address"] = addr
+            sid = self.registry.find_by_address(self.id, ref.address) if self.registry else None
+            if sid: self.registry.update_keys(sid, ble_address=addr)
 
     def discover(self, timeout: float = 5.0) -> list[SheetRef]:
         try:
@@ -76,6 +89,7 @@ class OpenDisplayBLETransport(SheetTransport):
         *viewed* orientation (native size swapped for 90°/270°) and let the SDK rotate — so rotation is 0 for us.
         The native facts are remembered in ref.keys so later prints need no interrogation round-trip."""
         async with self._device(ref) as dev:
+            self._remember_address(ref, dev)
             caps = dev.capabilities
             scheme = getattr(caps.color_scheme, "name", str(caps.color_scheme))
             w, h, rot = int(caps.width), int(caps.height), int(getattr(caps, "rotation", 0) or 0)
@@ -118,22 +132,31 @@ class OpenDisplayBLETransport(SheetTransport):
         while "md" not in hit and time.time() - t0 < timeout: await asyncio.sleep(0.2)
         await s.stop(); return hit.get("md")
 
-    def print(self, ref: SheetRef, page: Page, *, full_refresh: bool = True) -> PrintResult:
-        """Some tags (seen: SoluM nRF52811, firmware 1.0.0) acknowledge every chunk and the END, report 'refresh
-        started', then drop the BLE link while the panel refreshes and never send REFRESH_COMPLETE. The image is on
-        the panel at that point, so that outcome counts as printed — with a note, not a failure."""
+    _PHASES = (("Resolving device name", "looking for the sheet"), ("Connecting to", "connecting"),
+               ("Authentication successful", "connected — sending"), ("Display refresh started", "sheet is refreshing (about 20 s)"),
+               ("Display refresh complete", "printed"))
+
+    def print(self, ref: SheetRef, page: Page, *, full_refresh: bool = True, progress=None) -> PrintResult:
+        """Phases are read off the SDK's own log lines so the UI can narrate connect → send → refresh.
+        A tag on a weak cell can drop the link mid-refresh; 'refresh started' followed by a link drop still counts
+        as printed (the data was on the panel), with a note."""
         import logging
         t0 = time.time(); seen = {"refresh_started": False}
-        # A refresh on a weak cell browns the tag out mid-refresh (seen: 2.67 V → half-cleared panel, reset, 2.25 V after).
-        st = self.status(ref, timeout=4.0)
-        if st.battery_volts is not None and st.battery_volts * 1000 < self.min_battery_mv:
-            return PrintResult(False, time.time() - t0, f"sheet battery too low to refresh safely ({st.battery_volts:.2f} V < {self.min_battery_mv/1000:.2f} V) — replace the cell")
 
         class _Watch(logging.Handler):
             def emit(self, rec):
-                if rec.getMessage().startswith("Display refresh started"): seen["refresh_started"] = True
-        watch = _Watch(level=logging.DEBUG); lg = logging.getLogger("opendisplay.device"); prev = lg.level
-        lg.addHandler(watch); lg.setLevel(logging.DEBUG)
+                msg = rec.getMessage()
+                if msg.startswith("Display refresh started"): seen["refresh_started"] = True
+                if progress:
+                    for needle, text in OpenDisplayBLETransport._PHASES:
+                        if msg.startswith(needle): progress(text); break
+        watch = _Watch(level=logging.DEBUG); lgs = [logging.getLogger(n) for n in ("opendisplay.device", "opendisplay.transport.connection")]
+        prev = [lg.level for lg in lgs]
+        for lg in lgs: lg.addHandler(watch); lg.setLevel(logging.DEBUG)
+        st = self.status(ref, timeout=4.0)
+        if st.battery_volts is not None and st.battery_volts * 1000 < self.min_battery_mv:
+            for lg, lv in zip(lgs, prev): lg.removeHandler(watch); lg.setLevel(lv)
+            return PrintResult(False, time.time() - t0, f"sheet battery too low to refresh safely ({st.battery_volts:.2f} V < {self.min_battery_mv/1000:.2f} V) — replace the cell")
         try:
             _run(self._print_async(ref, page, full_refresh))
         except Exception as e:
@@ -141,7 +164,7 @@ class OpenDisplayBLETransport(SheetTransport):
                 return PrintResult(True, time.time() - t0, "sent over BLE; panel refresh started, completion not confirmed (tag dropped the link while refreshing)")
             return PrintResult(False, time.time() - t0, f"{type(e).__name__}: {e}")
         finally:
-            lg.removeHandler(watch); lg.setLevel(prev)
+            for lg, lv in zip(lgs, prev): lg.removeHandler(watch); lg.setLevel(lv)
         return PrintResult(True, time.time() - t0, "sent over BLE, refresh complete")
 
     async def _print_async(self, ref: SheetRef, page: Page, full_refresh: bool):
@@ -155,7 +178,13 @@ class OpenDisplayBLETransport(SheetTransport):
             lut.putpalette([255, 255, 255, 0, 0, 0] + [0] * 762); img = lut.convert("RGB")
         # Always let the SDK interrogate the device: its config decides compression and encoding. Never pass
         # explicit capabilities for a normal print — that skips the config and the SDK may compress for a tag that can't.
-        async with self._device(ref) as dev:
+        try:
+            dev_cm = self._device(ref); dev = await dev_cm.__aenter__()
+        except Exception:
+            if not ref.keys.get("ble_address"): raise
+            dev_cm = self._device(ref, use_cache=False); dev = await dev_cm.__aenter__()   # cached address stale → scan by name
+        try:
+            self._remember_address(ref, dev)
             dev.TIMEOUT_REFRESH = self.refresh_wait
             c = dev.capabilities; w, h = int(c.width), int(c.height)
             if int(getattr(c, "rotation", 0) or 0) in (90, 270): w, h = h, w            # viewed orientation
@@ -164,6 +193,8 @@ class OpenDisplayBLETransport(SheetTransport):
             await dev.upload_image(img, refresh_mode=RefreshMode.FULL if full_refresh else RefreshMode.FAST,
                                    dither_mode=DitherMode.NONE, fit=FitMode.STRETCH, rotate=Rotation.ROTATE_0,
                                    compress=bool(ref.keys.get("compress", True)))
+        finally:
+            await dev_cm.__aexit__(None, None, None)
 
     def capabilities(self):
         return {"supports_status": True, "supports_partial_refresh": True, "needs_pairing": True, "min_battery_mv": self.min_battery_mv}

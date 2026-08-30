@@ -109,8 +109,9 @@ class SheetTransport(ABC):
     def status(self, ref: SheetRef) -> SheetStatus: ...
 
     @abstractmethod
-    def print(self, ref: SheetRef, page: Page, *, full_refresh: bool = True) -> PrintResult:
-        """Transmit an already-rendered page. Must not dither, scale or recolour."""
+    def print(self, ref: SheetRef, page: Page, *, full_refresh: bool = True, progress=None) -> PrintResult:
+        """Transmit an already-rendered page. Must not dither, scale or recolour.
+        `progress(text)` — optional callback for human-readable phases ("connecting", "sending", "refreshing")."""
 
     def capabilities(self) -> dict[str, Any]:
         return {"supports_status": False, "supports_partial_refresh": False, "needs_pairing": False}
@@ -133,6 +134,9 @@ class SheetRegistry:
         e = self._data[sheet_id]
         m = dict(e["model"]); m["inset"] = tuple(m.get("inset", (0, 0, 0, 0)))
         return (SheetRef(e["transport"], e["address"], dict(e.get("keys", {})), e.get("name")), SheetModel(**m))
+
+    def update_keys(self, sheet_id: str, **keys) -> None:
+        self._data[sheet_id].setdefault("keys", {}).update(keys); self.save()
 
     def add(self, sheet_id: str, ref: SheetRef, model: SheetModel) -> None:
         self._data[sheet_id] = {"name": ref.name, "transport": ref.transport_id, "address": ref.address,

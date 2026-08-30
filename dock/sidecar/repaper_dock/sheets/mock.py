@@ -25,7 +25,8 @@ class MockTransport(SheetTransport):
     def status(self, ref: SheetRef) -> SheetStatus:
         return SheetStatus(online=True, last_seen=time.time())
 
-    def print(self, ref: SheetRef, page: Page, *, full_refresh: bool = True) -> PrintResult:
+    def print(self, ref: SheetRef, page: Page, *, full_refresh: bool = True, progress=None) -> PrintResult:
+        if progress: progress("writing PNG")
         self.out_dir.mkdir(parents=True, exist_ok=True)
         name = (ref.name or ref.address).replace(" ", "_")
         path = self.out_dir / f"{name}-{time.strftime('%Y%m%d-%H%M%S')}.png"
