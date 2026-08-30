@@ -11,9 +11,9 @@ Both products (Go and Dock) are the same pipeline with different bodies:
                                                   │ 3. Renderer (PDF/URF/PWG →  │
                                                   │    sheet bitmap, dithered)  │
                                                   ├─────────────────────────────┤
-                                                  │ 4. Sheet identification     │  ◀── NFC tap / list pick
+                                                  │ 4. Sheet identification     │  ◀── nfc-sticker / qr / ble-rssi / manual
                                                   ├─────────────────────────────┤
-                                                  │ 5. Display transport(s)     │  ──▶ NFC direct / ESL radio / BLE / SoluM AP
+                                                  │ 5. Sheet transport(s)       │  ──▶ opendisplay-ble / openepaperlink-ap / solum-* / nfc-direct / mock
                                                   └─────────────────────────────┘
                                                   │ UI adapter: app screens (Go) or LED + web UI (Dock)
 ```
@@ -56,16 +56,48 @@ How the device learns *which* sheet is being held to it:
 - **Proximity via radio** (BLE RSSI) as a fallback where NFC isn't available — less reliable, later.
 - **Manual pick** from a list (Go app, web UI).
 
-## 5. Display transports (pluggable)
+## 5. Sheet transports — a hard interface boundary
 
-| Transport | How the image gets to the sheet | Needs | Pros / cons |
-|---|---|---|---|
-| **NFC direct** | The reader powers and writes the panel through NFC (battery-less NFC e-paper) | PN532 / phone NFC | No battery, dead simple; slow (seconds to ~30 s for large panels), must hold still, limited sizes |
-| **Open ESL firmware radio** | Device talks to an access point (e.g. ESP32 with the open AP firmware) which pushes the image to the tag over 2.4 GHz proprietary / 802.15.4 | AP module + flashed tags | Fast-ish, range across a room, battery years; requires flashing tags |
-| **BLE** | Direct BLE image upload to sheets with a BLE SoC | Phone/Pi BLE | Works from phones without extra hardware; per-firmware protocol |
-| **Manufacturer AP (SoluM)** | Dock talks to a SoluM AP / gateway API | Partner agreement | Stock tags, no flashing, enterprise-grade; dependency on partner API |
+**Rule: nothing above this line knows what a sheet physically is.** The first implementation talks OpenDisplay over BLE; a SoluM-specific path, an OpenEPaperLink access point, NFC-powered panels or a partner API must be addable as *another implementation of the same interface*, and several may be active at once. Every language we ever use for the core (Python sidecar now, Rust/Kotlin later) implements exactly this contract.
 
-The transport interface is trivial by design: `send(sheet, bitmap) -> Result` plus `probe(sheet) -> {battery, firmware}`. Everything above it stays identical across Go and Dock.
+### The contract
+
+```
+SheetTransport                       one per physical path (opendisplay-ble, openepaperlink-ap, solum-x, nfc-direct, mock)
+  id() -> "opendisplay-ble"
+  discover() -> [SheetRef]           sheets reachable right now (BLE advertisements, AP tag list, …)
+  describe(ref) -> SheetModel        width, height, palette (BW | BWR | BWRY | GRAY4 | …), orientation, refresh time
+  status(ref) -> SheetStatus         battery, temperature, last seen, firmware — whatever the path can tell
+  print(ref, page: Page, opts) -> PrintResult    page is ALREADY rendered for this sheet: an indexed bitmap in the
+                                                 sheet's palette at its exact pixel size. The transport only transmits.
+  capabilities() -> {supports_status, supports_partial_refresh, max_pixels, needs_pairing, …}
+
+SheetIdentifier                      one per way of learning *which* sheet is being held to the printer
+  id() -> "nfc-sticker" | "qr" | "ble-rssi" | "manual"
+  wait_for_tap(timeout) -> SheetId   blocks until a sheet is presented (or the user picks one)
+
+SheetRegistry                        the only place that maps identities to transports
+  SheetId -> {name, model, transport_id, address, keys, last_status}
+```
+
+Design rules that make it replaceable:
+
+1. **Rendering is above the line.** The core (PAPPL driver / renderer) turns the print job into a `Page` — fit, rotate, dither into the sheet's palette — using `describe()`. Transports never dither; if a path's SDK offers dithering (OpenDisplay's does), we pass the pre-dithered page through with dithering off. One renderer, identical output on every path.
+2. **Addresses and keys are opaque** to the core: a BLE MAC + AES key, an AP tag MAC, a SoluM label ID — all just `address`/`keys` blobs owned by the transport that produced them.
+3. **Identification is separate from transport.** An NFC sticker, a QR scan, "nearest by RSSI" or a manual pick all resolve to a `SheetId`; the registry says which transport delivers to it. Swapping the reader hardware never touches transports and vice versa.
+4. **Status is best-effort and typed.** A path that can't report battery returns `unknown`, not a fake value; the UI and the cloud agent handle `unknown` explicitly.
+5. **Every transport ships with a `mock`** that records what it was asked to print (to a PNG on disk) so the whole pipeline — IPP → render → tap → print — is testable on a laptop with no hardware.
+6. **Selection by configuration**, not by build: the Dock loads the transports listed in its config; a sheet's registry entry names the one that delivers to it. Two Docks in one fleet may use different paths.
+
+### Implementations, in order
+
+| id | Path | Status |
+|---|---|---|
+| `mock` | writes the page as PNG, fakes status | first, for tests |
+| `opendisplay-ble` | `py-opendisplay` over the Pi's / phone's BLE | prototype (v0) |
+| `openepaperlink-ap` | HTTP `POST /imgupload` to an OpenEPaperLink access point | fallback for tags OpenDisplay doesn't cover |
+| `solum-*` | whatever the SoluM partnership yields (their API, pre-flashed tags, a gateway) | when the partnership is concrete |
+| `nfc-direct` | battery-less NFC-powered panels written through the reader itself | consumer sheets, later |
 
 ## Security & enterprise readiness (baseline)
 
