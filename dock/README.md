@@ -8,7 +8,8 @@ printer   ippeveprinter (macOS/CUPS, today) → PAPPL printer application (later
           runs `repaper-print` with the document on stdin
 sidecar   repaper-print   decodes PWG raster / Apple raster (URF) / JPEG / PNG into a spool job
           repaper-dockd   waits for a tap, renders the page for THAT sheet, sends it via a SheetTransport;
-                          local web UI at http://localhost:9631/ (job inbox, manual tap)
+                          serves the Dock's page on the network at http://<host>:9631/ (job inbox, sheets with
+                          battery, recent jobs; manual tap while there is no reader) — styled with brand/tokens.css
 ```
 
 Everything hardware-specific sits behind `repaper_dock/sheets/base.py` (`SheetTransport`, `SheetRegistry`) and
@@ -35,6 +36,7 @@ cd dock/sidecar
 ```
 
 State lives in `~/.repaper/` (`config.json`, `sheets.json`, `spool/`, `mock-out/`); override with `REPAPER_HOME`.
+`config.json`: `web_bind` (default `0.0.0.0` — the page is reachable by phones on the same network; no auth yet, LAN only), `web_port`, `status_refresh_seconds`.
 
 ## Layout
 
@@ -50,7 +52,8 @@ sidecar/repaper_dock/
   render/decode.py     document → page images
   render/fit.py        page image → Page for a sheet (trim, rotate, fit, dither to palette)
   spool.py             jobs on disk
-  dockd.py             the loop + web UI
+  dockd.py             the loop, background sheet status, HTTP API (/api/status, /preview, /tap, /cancel)
+  ui/index.html        the Dock's page — renders from /api/status, no reloads; ui/tokens.css is a copy of brand/tokens.css
   cli.py               repaper-print, repaper-dockd
 tests/                 raster round-trips (reference encoder), rendering, mock printing
 run-mac.sh             ippeveprinter + dockd on macOS
