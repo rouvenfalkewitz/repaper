@@ -4,6 +4,8 @@
 
 A small always-on box that lives on the customer's network as a printer. Print to it from anything; an LED tells you a job is waiting; hold a sheet to the Dock; the sheet updates; the LED confirms; the Dock is ready again.
 
+**Principle: the connection between printer and sheet is physical.** A sheet is printed by the Dock it is held to — like paper coming out of the tray in front of you. The Dock never updates a sheet that isn't right there. This keeps the mental model identical to a printer, needs no gateway infrastructure, and makes "which sheet got which page" unambiguous.
+
 Dock is the product for businesses: it needs no phone, no person's account, and it can be managed as a fleet.
 
 ## Prototype hardware (Raspberry Pi)
@@ -55,7 +57,6 @@ Two layers, both from day one in the architecture but shipped in order:
 ## Enterprise features (later)
 
 - Multiple printer queues on one Dock (e.g. one per sheet size, so the WMS can choose the size by choosing the printer).
-- "Named sheet" mode: the WMS prints to *RePaper Dock – Cart 12* and the Dock updates that specific sheet via radio without anyone holding it. (This is where it becomes an ESL system through the back door — but still 100% via printing.)
 - PoE, DIN-rail mount, IP54 variant.
 - SNMP / printer MIB emulation so print-monitoring tools see it as a normal printer (they check supplies — we report "toner: ∞").
 - Audit log, role-based access on the cloud.

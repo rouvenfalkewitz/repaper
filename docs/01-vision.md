@@ -13,6 +13,7 @@ Printers, on the other hand, are integrated **everywhere**. Every OS, every ERP,
 RePaper's move: **be the printer.** Our devices advertise themselves as a standard network printer. Any existing system prints to them exactly as it would to a Zebra or a HP — and the output appears on a reusable e-paper display instead of on paper.
 
 - Zero integration: plug-and-play replacement of an existing printer / print queue.
+- Physical: a sheet is printed by the printer it is held to. No gateways, no "which display is this" configuration — the same mental model as paper coming out of a tray.
 - Reusable: one display replaces thousands of sheets or labels over its life.
 - Smart: the "paper" can be updated, tracked, and reused — without becoming an IoT project for the customer.
 

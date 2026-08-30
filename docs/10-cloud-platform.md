@@ -21,7 +21,7 @@ Every RePaper printer — a Dock or a phone running Go — is a device that can 
 | **Updates** | Signed OTA for Dock firmware and the sheet AP; release channels (stable/beta) | Scheduled maintenance windows |
 | **Licensing** | Plan per org; entitlements pushed to devices; grace period | Usage-based add-ons, reseller/partner accounts |
 | **Billing** | Stripe: subscriptions, invoices, VAT | Purchase orders for enterprise |
-| **Support** | Device diagnostics bundle on request, remote log tail | Remote "identify" (blink the ring), remote reboot |
+| **Support** | Device diagnostics bundle on request, remote log tail | Remote "identify" (blink the ring), remote reboot. Never remote printing to sheets — the printer-to-sheet link stays physical |
 | **Website** | Marketing site + login → console | Public status page, docs, partner portal |
 
 ## Monetisation — a first model

@@ -18,7 +18,7 @@ The Dock needs to know *which* sheet is in front of it. Options:
 
 ### B. How does the Dock talk to the sheets?
 
-**v0: directly over Bluetooth LE, using OpenDisplay** (https://opendisplay.org — the friend's open standard/firmware, see `06-epaper-hardware.md`). The Pi's own BLE radio pushes the dithered image straight to the sheet with `py-opendisplay`; no access point, no ESP32 module, no second Wi-Fi network. Range is a room (~10 m), which is exactly the Dock's job; warehouse-wide "named sheet" updates later come from more Docks or from ESP32-based receivers in Wi-Fi LAN mode.
+**v0: directly over Bluetooth LE, using OpenDisplay** (https://opendisplay.org — the friend's open standard/firmware, see `06-epaper-hardware.md`). The Pi's own BLE radio pushes the dithered image straight to the sheet with `py-opendisplay`; no access point, no ESP32 module, no second Wi-Fi network. BLE range is a room — and that is the product, not a limitation: **a sheet is printed by the printer it is held to**, the way paper comes out of the tray in front of you. There is no remote "update sheet 12 on the other side of the building" feature, and none is planned.
 
 Sheet identification on top of that: BLE advertisements carry name, manufacturer ID, battery and temperature, so the Dock always knows which sheets are in range; the NFC sticker (A1) or the sheet's own QR code says which one is *being held to it*.
 

@@ -15,7 +15,7 @@ We deliberately keep the sheet hardware open for now; the core is transport-agno
    - Each display shows a QR that links to a page carrying its name, AES-128 key and manufacturer ID — the QR *is* the pairing credential; a browser can push an image via Web Bluetooth right away.
    - **Python SDK** (`py-opendisplay`, MIT, on `bleak`): discovery, connect with key, `upload_image(PIL)` with fit modes and nine dither algorithms, battery/temperature from advertisements. Linux/Raspberry Pi fully supported.
    - Flashing SoluM tags needs a genuine J-Link (V9+); hardware varies between batches — prefer pre-flashed tags from the friend.
-   - Ideal for: the Dock (Pi has BLE), the Go app (phone has BLE), the demo, and as the sheet standard we build on.
+   - Ideal for: the Dock (Pi has BLE), the Go app (phone has BLE), the demo, and as the sheet standard we build on. BLE's room-scale range matches the product principle exactly: the sheet is printed by the printer it is held to.
 
 3. **Battery-less NFC-powered e-paper panels** (e.g. Waveshare-style NFC e-paper, 2.13"–7.5")
    - Powered entirely by the NFC field; the phone/Dock writes the image directly. Perfectly matches "hold it here and it prints". Zero battery, zero radio infrastructure, cheapest sheet.
