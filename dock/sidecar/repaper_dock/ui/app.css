@@ -19,7 +19,6 @@
   .preview { margin: var(--s-4) 0; max-width: 420px }
   .frame { padding: 8px; background: var(--epaper-bezel); border-radius: 12px; border: 1px solid var(--carbon-5); width: 100% }
   .frame img, .frame .blank { display: block; width: 100%; height: 100%; object-fit: contain; background: var(--epaper-panel); border-radius: 3px }
-  .frame.rendering img { animation: eink-refresh 1.6s steps(1) infinite }
   .fig { display: grid; gap: 4px }
   .fig-top { display: flex; justify-content: center; align-items: center; padding: 0 22px 0 0 }
   .fig .dim { font-size: .6875rem; color: var(--text-3); letter-spacing: .04em }
