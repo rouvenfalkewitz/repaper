@@ -46,6 +46,7 @@ function fmtAgo(ts, now) { if (!ts) return ""; const d = Math.max(0, (now || Dat
 const ICON = {
   print: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg>`,
   trash: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2m-9 0 1 14h8l1-14"/></svg>`,
+  tap: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="12" height="9" rx="2"/><path d="M15 10a3 3 0 0 1 3 3m-3-6a6 6 0 0 1 6 6"/><path d="M6 20h6"/></svg>`,
 };
 const STEPS = [["looking", "Find sheet"], ["connect", "Connect"], ["send", "Send"], ["refresh", "Refresh"]];
 function stepIndex(phase) { phase = (phase || "").toLowerCase(); if (phase.startsWith("printed")) return 4; if (phase.includes("refresh")) return 3; if (phase.includes("sending") || phase.includes("rendering")) return 2; if (phase.includes("connect")) return 1; return 0; }
@@ -68,6 +69,7 @@ function frame(w, h, src, palette) {
 function dots(palette) { const c = {BW: ["#FFFFFF", "#000000"], BWR: ["#FFFFFF", "#000000", "#C8102E"], BWRY: ["#FFFFFF", "#000000", "#C8102E", "#F2C400"]}[palette] || ["#FFFFFF", "#000000"]; return `<span class="dots" title="${palette}">${c.map(x => `<i style="background:${x}"></i>`).join("")}</span>`; }
 function render(s) {
   el("printer").textContent = s.printer; el("addr").textContent = s.address || "";
+  const n = (s.notifications || []).length, g = document.querySelector(".gear"); if (g) { g.classList.toggle("has-badge", n > 0); g.setAttribute("data-count", n); g.title = n ? `${n} notification${n > 1 ? "s" : ""}` : "Settings"; }
   el("foot").textContent = `RePaper Dock · ${s.version || ""} · identifier: ${s.identifier}`;
   const j = s.job, now = s.now;
   let html;
@@ -84,14 +86,24 @@ function render(s) {
     html = `<span class="pill done">Printed</span><div class="title">${esc(j.name)}</div><div class="meta">${esc(s.message)}</div>`;
   } else {
     const ids = Object.keys(s.sheets);
-    const tiles = ids.map((k, i) => { const v = s.sheets[k]; const mv = v.battery_volts; const low = mv != null && mv * 1000 < (v.min_battery_mv || 2700);
-      return `<label class="tile ${v.online === false ? "off" : ""}"><input type="radio" name="sheet" value="${esc(k)}" ${i === 0 ? "checked" : ""}>
-        <span class="mini" style="aspect-ratio:${(v.width / v.height).toFixed(3)}">${v.last ? `<img src="/sheet-image/${esc(k)}?t=${v.last.at}" alt="">` : ""}</span>
-        <b>${esc(v.name || k)}</b><span class="mono">${v.width}×${v.height} · ${esc(v.palette)}</span>
-        <span class="mono ${low ? "low" : ""}">${mv == null ? (v.online === false ? "not in range" : "") : mv.toFixed(2) + " V" + (low ? " · low" : "")}</span></label>`; }).join("");
-    const notice = s.identifier === "manual"
-      ? `<div class="notice"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><div><b>No sheet reader on this Dock</b><span>Choose the sheet and press Print — that is the tap.</span></div></div>`
-      : `<div class="notice info"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg><div><b>Hold the sheet to the Dock</b><span>If the reader doesn't pick it up, choose it here and press Print.</span></div></div>`;
+    const info = (k, v) => { const mv = v.battery_volts, low = mv != null && mv * 1000 < (v.min_battery_mv || 2700);
+      return { mv, low, bat: mv == null ? (v.online === false ? "not in range" : "") : mv.toFixed(2) + " V" + (low ? " · low" : "") }; };
+    let picker;
+    if (ids.length <= 5) {
+      picker = `<div class="tiles" role="radiogroup" aria-label="Sheet">` + ids.map((k, i) => { const v = s.sheets[k], x = info(k, v);
+        return `<label class="tile ${v.online === false ? "off" : ""}"><input type="radio" name="sheet" value="${esc(k)}" ${i === 0 ? "checked" : ""}>
+          <span class="mini" style="aspect-ratio:${(v.width / v.height).toFixed(3)}">${v.last ? `<img src="/sheet-image/${esc(k)}?t=${v.last.at}" alt="">` : ""}</span>
+          <b>${esc(v.name || k)}</b>${v.serial ? `<span class="mono serial">${esc(v.serial)}</span>` : ""}<span class="mono">${v.width}×${v.height} · ${esc(v.palette)}</span>
+          <span class="mono ${x.low ? "low" : ""}">${x.bat}</span></label>`; }).join("") + `</div>`;
+    } else {
+      const first = s.sheets[ids[0]];
+      picker = `<details class="dd"><summary><span class="dd-cur"><b>${esc(first.name || ids[0])}</b><span class="mono">${first.serial ? esc(first.serial) + " · " : ""}${first.width}×${first.height} · ${esc(first.palette)}</span></span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+        <div class="dd-list" role="radiogroup" aria-label="Sheet">` + ids.map((k, i) => { const v = s.sheets[k], x = info(k, v);
+        return `<label class="dd-row ${v.online === false ? "off" : ""}"><input type="radio" name="sheet" value="${esc(k)}" ${i === 0 ? "checked" : ""}>
+          <span class="dd-name"><b>${esc(v.name || k)}</b><span class="mono">${v.serial ? esc(v.serial) + " · " : ""}${v.width}×${v.height} · ${esc(v.palette)}</span></span>
+          <span class="mono ${x.low ? "low" : ""}">${x.bat}</span></label>`; }).join("") + `</div></details>`;
+    }
     const err = s.error ? `<div class="notice err"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6m0-6 6 6"/></svg><div><b>Not printed</b><span>${esc(s.error)}</span></div></div>` : "";
     html = `<div class="card-head"><span class="pill wait">Waiting for sheet</span>
               <form method="post" action="/cancel"><button class="btn outline small" type="submit" name="job" value="${esc(j.id)}">${ICON.trash}Discard</button></form></div>
@@ -99,9 +111,11 @@ function render(s) {
             <div class="meta">${j.user ? "from " + esc(j.user) + " · " : ""}${fmtAgo(j.created, now)}</div>
             <div class="center">
               <div class="preview">${frame(4, 3, `/preview/${j.id}/${j.next_page}`)}</div>
-              ${err}${notice}
+              <div class="tap-hint">${ICON.tap}<span>Tap a sheet to print</span></div>
+              ${err}
               <form class="tap" method="post" action="/tap">
-                <div class="tiles" role="radiogroup" aria-label="Sheet">${tiles || `<div class="meta">No sheets yet — add one in Settings.</div>`}</div>
+                <div class="choose">Choose sheet</div>
+                ${ids.length ? picker : `<div class="meta">No sheets yet — add one in Settings.</div>`}
                 <button class="btn primary big" type="submit" ${ids.length ? "" : "disabled"}>${ICON.print}Print</button>
               </form>
             </div>`;
@@ -116,6 +130,7 @@ function render(s) {
     const last = v.last ? `<span class="mono">showing: ${esc(v.last.job)} · ${fmtAgo(v.last.at, now)}</span>` : `<span class="mono">nothing printed yet</span>`;
     return `<div class="sheet">${frame(v.width, v.height, v.last ? `/sheet-image/${esc(k)}?t=${v.last.at}` : null, v.palette)}
       <div class="sheet-head"><b>${esc(v.name || k)}</b>${dots(v.palette)}</div>
+      ${v.serial ? `<span class="mono serial">Label ID ${esc(v.serial)}</span>` : ""}
       <span class="mono">${v.width}×${v.height} · ${esc(v.palette)} · ${esc(v.transport)}</span>
       ${hwline ? `<span class="mono">${esc(hwline)}</span>` : ""}
       ${bat}${last}</div>`;
@@ -139,6 +154,8 @@ async function tick() {
     else if (s.state === "printing") { const st = el("job").querySelector(".stepper"); if (st) { const wrap = document.createElement("div"); wrap.innerHTML = stepper(s.phase, s.printing_since, s.now); st.replaceWith(wrap.firstChild); el("job").querySelector(".phase-line").replaceWith(wrap.lastChild); } }
   } catch (e) {}
 }
+document.addEventListener("change", e => { const dd = e.target.closest(".dd"); if (!dd || e.target.type !== "radio") return;
+  const row = e.target.closest(".dd-row"); dd.querySelector(".dd-cur").innerHTML = row.querySelector(".dd-name").innerHTML; dd.removeAttribute("open"); });
 if (window.__STATE__) render(window.__STATE__); else { tick(); setInterval(tick, 1000); }
 </script>
 </body>

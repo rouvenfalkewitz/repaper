@@ -138,9 +138,10 @@ class SheetRegistry:
     def update_keys(self, sheet_id: str, **keys) -> None:
         self._data[sheet_id].setdefault("keys", {}).update(keys); self.save()
 
-    def add(self, sheet_id: str, ref: SheetRef, model: SheetModel) -> None:
-        self._data[sheet_id] = {"name": ref.name, "transport": ref.transport_id, "address": ref.address,
-                                "keys": ref.keys, "model": asdict(model)}
+    def add(self, sheet_id: str, ref: SheetRef, model: SheetModel, serial: Optional[str] = None) -> None:
+        prev = self._data.get(sheet_id, {})
+        self._data[sheet_id] = {"name": ref.name, "serial": serial if serial is not None else prev.get("serial"),
+                                "transport": ref.transport_id, "address": ref.address, "keys": ref.keys, "model": asdict(model)}
         self.save()
 
     def find_by_address(self, transport_id: str, address: str) -> Optional[str]:

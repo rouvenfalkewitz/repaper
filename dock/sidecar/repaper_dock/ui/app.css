@@ -111,3 +111,20 @@
   .tile.off { opacity: .55 }
   .tile::after { content: ""; position: absolute; top: 10px; right: 10px; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--border-strong) }
   .tile:has(input:checked)::after { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 8px rgba(30,227,165,.6) }
+
+  /* tap hint, choose heading, serial */
+  .tap-hint { display: inline-flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 600; font-size: 1.125rem; letter-spacing: -.01em; color: var(--text) }
+  .tap-hint svg { width: 24px; height: 24px; fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round }
+  .choose { font-family: var(--font-display); font-stretch: 112%; font-size: .6875rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); margin-bottom: -6px }
+  .serial { letter-spacing: .06em }
+  /* gear badge */
+  .gear { position: relative } .gear.has-badge::after { content: attr(data-count); position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--amber); color: #0C100F; font: 700 .6875rem/18px var(--font-display); text-align: center }
+  /* dropdown picker (more than 5 sheets) */
+  .dd { width: 100%; max-width: 480px; position: relative }
+  .dd summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: var(--r-control); border: 1px solid var(--border-strong); background: var(--bg); cursor: pointer }
+  .dd summary::-webkit-details-marker { display: none } .dd summary svg { width: 18px; height: 18px; fill: none; stroke: var(--text-3); stroke-width: 2; flex: none }
+  .dd[open] summary { border-color: var(--accent) }
+  .dd-cur b, .dd-name b { display: block; font-family: var(--font-display); font-weight: 600; font-size: .9375rem } .dd-cur .mono, .dd-name .mono { display: block; font-size: .6875rem }
+  .dd-list { position: absolute; z-index: 5; left: 0; right: 0; margin-top: 6px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-card); box-shadow: var(--shadow-float); max-height: 320px; overflow: auto; padding: 6px }
+  .dd-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: var(--r-control); cursor: pointer; position: relative }
+  .dd-row input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer } .dd-row:hover { background: var(--surface-2) } .dd-row:has(input:checked) { background: var(--accent-tint) } .dd-row.off { opacity: .55 } .dd-row .low { color: var(--red) }

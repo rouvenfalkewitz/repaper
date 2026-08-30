@@ -114,15 +114,29 @@ class Dock:
         try:
             for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET): ips.append(info[4][0])
         except Exception: pass
-        sheets = {k: {"name": e["name"], "transport": e["transport"], "address": e["address"],
-                      "size": f'{e["model"]["width"]}×{e["model"]["height"]} {e["model"]["palette"]}', "inset": list(e["model"].get("inset", (0, 0, 0, 0)))}
+        sheets = {k: {"name": e["name"], "serial": e.get("serial"), "transport": e["transport"], "address": e["address"],
+                      "size": f'{e["model"]["width"]}×{e["model"]["height"]} {e["model"]["palette"]}', "inset": list(e["model"].get("inset", (0, 0, 0, 0))),
+                      "hw": e.get("keys", {}).get("hw", {})}
                   for k, e in self.registry.all().items()}
-        return {"printer_name": self.cfg["printer_name"], "job_timeout_seconds": self.cfg["job_timeout_seconds"],
+        return {"printer_name": self.cfg["printer_name"], "job_timeout_seconds": self.cfg["job_timeout_seconds"], "notifications": self.notifications(self.snapshot()["sheets"]),
                 "address": f"http://{socket.gethostname()}:{self.cfg['web_port']}/", "sheets": sheets,
                 "network": {"hostname": socket.gethostname(), "addresses": ", ".join(sorted(set(ips))) or "—", "dock page": f"http://{socket.gethostname()}:{self.cfg['web_port']}/",
                             "printer": "advertised via DNS-SD (AirPrint, IPP Everywhere)"},
                 "about": {"software": f"RePaper Dock {__version__}", "system": f"{platform.system()} {platform.machine()}",
                           "transports": ", ".join(self.transports), "identifier": self.identifier.id, "state": str(HOME_PATH())}}
+
+    def notifications(self, sheets: dict) -> list[dict]:
+        """Things a person should know about this Dock. Shown in Settings; counted on the gear."""
+        out = []
+        if self.identifier.id == "manual":
+            out.append({"level": "warn", "title": "No sheet reader on this Dock", "text": "Sheets are chosen on the page and printed with the Print button. With a reader, tapping a sheet does this automatically."})
+        for k, v in sheets.items():
+            mv = v.get("battery_volts"); lim = v.get("min_battery_mv") or 2700
+            if mv is not None and mv * 1000 < lim:
+                out.append({"level": "err", "title": f"{v['name'] or k}: battery low ({mv:.2f} V)", "text": "The Dock will not print to it until the cell is replaced — a refresh on a weak cell can leave the sheet half-drawn."})
+            elif v.get("online") is False:
+                out.append({"level": "info", "title": f"{v['name'] or k}: not in range", "text": "The sheet is not advertising nearby. Bring it closer or check its battery."})
+        return out
 
     def save_settings(self, data: dict) -> None:
         from .config import CONFIG
@@ -136,7 +150,7 @@ class Dock:
         cur = json.loads(CONFIG.read_text()) if CONFIG.exists() else {}
         cur.update({k: self.cfg[k] for k in allowed if k in self.cfg}); CONFIG.write_text(json.dumps(cur, indent=2) + "\n")
 
-    def add_sheet(self, text: str, name: str = "") -> dict:
+    def add_sheet(self, text: str, name: str = "", serial: str = "") -> dict:
         """text = QR landing URL, OD name, BLE address, or 'WxH' for the mock transport. Reads size/colours from the sheet."""
         from .sheets import SheetRef, SheetModel
         from .sheets.opendisplay_ble import parse_landing_url, _is_mac
@@ -147,7 +161,7 @@ class Dock:
         elif not (text.upper().startswith("OD") or _is_mac(text)): raise ValueError("paste the sheet's QR link, its OD name (OD…), or a Bluetooth address")
         if transport not in self.transports: raise ValueError(f"transport {transport} is not enabled")
         if self.registry.find_by_address(transport, address): raise ValueError("this sheet is already added")
-        ref = SheetRef(transport, address, keys, name or address); tr = self.transports[transport]
+        ref = SheetRef(transport, address, keys, name or address); tr = self.transports[transport]; serial = (serial or "").strip().upper() or None
         if transport == "mock":
             w, h = (int(v) for v in text.lower().split("x")); model = SheetModel(w, h, "BWR")
         else:
@@ -155,17 +169,19 @@ class Dock:
             with self.hw_lock: model = tr.describe(ref)
         base = re.sub(r"[^a-z0-9]+", "-", (name or address).lower()).strip("-") or "sheet"; sid = base; n = 2
         while sid in self.registry.ids(): sid = f"{base}-{n}"; n += 1
-        self.registry.add(sid, ref, model)
+        self.registry.add(sid, ref, model, serial=serial)
         return {"id": sid, "size": f"{model.width}×{model.height} {model.palette}"}
 
     def update_sheet(self, sid: str, data: dict) -> None:
         ref, model = self.registry.get(sid)
         if "name" in data: ref.name = str(data["name"]).strip() or ref.name
+        serial = self.registry.all()[sid].get("serial")
+        if "serial" in data: serial = re.sub(r"[^A-Za-z0-9-]", "", str(data["serial"])).upper() or None
         if "inset" in data:
             vals = [int(v) for v in re.split(r"[,\s]+", str(data["inset"]).strip()) if v != ""]
             if len(vals) != 4 or min(vals) < 0 or vals[0] + vals[2] >= model.width or vals[1] + vals[3] >= model.height: raise ValueError("inset must be four numbers: left, top, right, bottom")
             model.inset = tuple(vals)
-        self.registry.add(sid, ref, model)
+        self.registry.add(sid, ref, model, serial=serial)
 
     def remove_sheet(self, sid: str) -> None:
         d = self.registry.all(); d.pop(sid); self.registry._data = d; self.registry.save()
@@ -204,12 +220,12 @@ class Dock:
             if lp.exists():
                 try: last = json.loads(lp.read_text())
                 except Exception: last = None
-            sheets[k] = {"name": e["name"], "transport": e["transport"], "address": e["address"],
+            sheets[k] = {"name": e["name"], "serial": e.get("serial"), "transport": e["transport"], "address": e["address"],
                          "width": m["width"], "height": m["height"], "palette": m["palette"], "inset": list(m.get("inset", (0, 0, 0, 0))),
                          "size": f'{m["width"]}×{m["height"]} {m["palette"]}', "hw": e.get("keys", {}).get("hw", {}),
                          "min_battery_mv": caps.get("min_battery_mv"), "last": last, **st.get(k, {})}
         return {"state": self.state, "phase": self.phase, "message": self.message, "error": (self.message if self.state == "error" else getattr(self, "last_error", "")) or "",
-                "printer": self.cfg["printer_name"],
+                "printer": self.cfg["printer_name"], "notifications": self.notifications(sheets),
                 "identifier": self.identifier.id, "version": __version__, "address": f"http://{socket.gethostname()}:{self.cfg['web_port']}/",
                 "job": None if not self.current else {"id": self.current.id, "name": self.current.name, "pages": self.current.pages, "user": self.current.user,
                                                       "next_page": self.current.next_page(), "state": self.current.state,
@@ -260,7 +276,7 @@ def make_handler(dock: Dock):
                 try:
                     data = json.loads(raw or b"{}")
                     if u.path == "/api/settings": dock.save_settings(data); return self._json({"ok": True})
-                    if u.path == "/api/sheets/add": return self._json(dock.add_sheet(data.get("input", ""), data.get("name", "")))
+                    if u.path == "/api/sheets/add": return self._json(dock.add_sheet(data.get("input", ""), data.get("name", ""), data.get("serial", "")))
                     m = re.fullmatch(r"/api/sheets/([A-Za-z0-9_.-]+)(?:/(remove|test-page|calibrate))?", u.path)
                     if m:
                         sid, what = m.group(1), m.group(2)

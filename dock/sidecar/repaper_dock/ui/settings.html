@@ -15,6 +15,9 @@
     <div class="actions"><div class="printer"><b>Settings</b><span id="addr"></span></div><a class="gear" href="/" aria-label="Back to the Dock" title="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/><path style="display:none" d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></a></div>
   </header>
 
+  <h2>Notifications</h2>
+  <div class="card" id="notes"></div>
+
   <h2>Printer</h2>
   <div class="card">
     <form id="printerForm" class="grid2" onsubmit="return savePrinter(event)">
@@ -32,6 +35,7 @@
         <label for="qr">Add a sheet</label>
         <input id="qr" placeholder="Paste the sheet's QR link, its OD name, or a Bluetooth address" required>
         <input id="qrname" placeholder="Name (e.g. Cart 12)">
+        <input id="qrserial" placeholder="Label ID printed on the label (optional)">
         <div class="hint">Size and colours are read from the sheet — keep it awake and nearby.</div>
         <div class="row"><button class="btn primary" type="submit">Add sheet</button></div>
       </form>
@@ -65,6 +69,8 @@ async function load() {
       <span class="mono">visible area inset: ${v.inset.join(", ")} (left, top, right, bottom)</span>
       <div class="tools"><button class="btn ghost small" onclick="rename('${esc(k)}','${esc(v.name || "")}')">Rename</button><button class="btn ghost small" onclick="inset('${esc(k)}','${v.inset.join(",")}')">Calibrate</button><button class="btn ghost small" onclick="act('${esc(k)}','test-page')">Test page</button><button class="btn ghost small" onclick="act('${esc(k)}','calibrate')">Calibration page</button><button class="btn small danger" onclick="remove('${esc(k)}')">Remove</button></div></div>`).join("")
       || `<div class="sheet"><b>No sheets yet</b><span class="mono">add one below</span></div>`;
+  const icons = { warn: `<svg viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>`, err: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6m0-6 6 6"/></svg>`, info: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>` };
+  el("notes").innerHTML = (s.notifications || []).length ? s.notifications.map(n => `<div class="notice ${n.level === "warn" ? "" : n.level}">${icons[n.level] || icons.info}<div><b>${esc(n.title)}</b><span>${esc(n.text)}</span></div></div>`).join("") : `<div class="meta">Nothing needs attention.</div>`;
   el("net").innerHTML = Object.entries(s.network).map(([k, v]) => `<span>${esc(k)}</span><span>${esc(v)}</span>`).join("");
   el("about").innerHTML = Object.entries(s.about).map(([k, v]) => `<span>${esc(k)}</span><span>${esc(v)}</span>`).join("");
 }
