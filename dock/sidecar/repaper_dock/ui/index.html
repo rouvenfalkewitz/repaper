@@ -136,12 +136,16 @@ function render(s) {
       ${bat}${last}</div>`;
   }).join("") || `<div class="sheet"><b>No sheets yet</b><span class="mono">Add one in Settings</span></div>`;
   const rec = (s.recent || []).slice().reverse();
+  const clock = ts => { const d = new Date(ts * 1000), t = new Date(now * 1000); const hm = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); return d.toDateString() === t.toDateString() ? hm : d.toLocaleDateString([], { day: "numeric", month: "short" }) + " " + hm; };
   const row = r => {
     const [c, l] = { done: ["done", "Printed"], cancelled: ["", "Discarded"], failed: ["err", "Failed"] }[r.state] || ["", r.state];
-    const last = r.printed && r.printed.length ? r.printed[r.printed.length - 1] : null;
-    const sheets = r.printed ? [...new Set(r.printed.map(p => p.sheet))].join(", ") : "";
+    const printed = r.printed || [], last = printed.length ? printed[printed.length - 1] : null;
+    const pages = Array.from({ length: r.pages || 0 }, (_, i) => { const p = printed.find(x => x.page === i + 1);
+      return p ? `<div class="jpage"><span class="pn">${i + 1}</span><span class="ps">${esc(p.sheet)}</span><span class="pt mono">${clock(p.at)}</span></div>`
+               : `<div class="jpage skipped"><span class="pn">${i + 1}</span><span class="ps">not printed</span></div>`; }).join("");
+    const fact = (k, v, cls) => v ? `<div class="fact ${cls || ""}"><i>${k}</i><b>${esc(v)}</b></div>` : "";
     return `<details class="job"><summary><span class="jname">${esc(r.name)}</span><span class="jwhen mono">${fmtAgo(last ? last.at : r.created, now)}</span><span class="pill ${c}">${l}</span></summary>
-      <div class="jdetail kv"><span>pages</span><span>${r.printed ? r.printed.length : 0} of ${r.pages} printed</span>${sheets ? `<span>sheet</span><span>${esc(sheets)}</span>` : ""}${r.user ? `<span>from</span><span>${esc(r.user)}</span>` : ""}<span>received</span><span>${fmtAgo(r.created, now)}</span>${r.error ? `<span>note</span><span>${esc(r.error)}</span>` : ""}</div></details>`;
+      <div class="jdetail"><div class="jpages">${pages}</div><div class="facts">${fact("From", r.user)}${fact("Received", clock(r.created))}${fact("Pages", `${printed.length} of ${r.pages} printed`)}${fact("Note", r.error, "err")}</div></div></details>`;
   };
   const head = rec.slice(0, 3), rest = rec.slice(3);
   el("recent").innerHTML = rec.length ? head.map(row).join("") + (rest.length ? `<details class="more"><summary>Show ${rest.length} more</summary>${rest.map(row).join("")}</details>` : "") : `<div class="meta">Nothing printed yet.</div>`;

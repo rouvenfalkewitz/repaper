@@ -62,7 +62,16 @@
   .job { border-bottom: 1px solid var(--border) } .job:last-child, .more .job:last-child { border-bottom: 0 }
   .job summary { display: flex; align-items: center; gap: var(--s-3); padding: 10px 0; cursor: pointer; list-style: none } .job summary::-webkit-details-marker { display: none }
   .job .jname { font-weight: 500; flex: 1 } .job .jwhen { color: var(--text-3); font-size: .75rem }
-  .jdetail { padding: 4px 0 12px 0 }
+  .jdetail { padding: 2px 0 14px; display: grid; gap: 12px }
+  .jpages { display: grid; gap: 4px }
+  .jpage { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: var(--r-control); background: var(--bg); border: 1px solid var(--border); font-size: .875rem }
+  .jpage .pn { flex: none; min-width: 22px; height: 22px; text-align: center; border-radius: 6px; background: var(--accent-tint); color: var(--accent-text); font: 700 .6875rem/22px var(--font-display) }
+  .jpage .ps { flex: 1 } .jpage .ps::before { content: "→"; color: var(--text-3); margin-right: 8px }
+  .jpage .pt { color: var(--text-3); font-size: .75rem }
+  .jpage.skipped .pn { background: var(--surface-2); color: var(--text-3) } .jpage.skipped .ps { color: var(--text-3) }
+  .facts { display: flex; flex-wrap: wrap; gap: 10px 28px }
+  .fact { display: grid; gap: 2px } .fact i { font-style: normal; font-family: var(--font-display); font-stretch: 112%; font-weight: 700; font-size: .625rem; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3) }
+  .fact b { font-weight: 500; font-size: .875rem } .fact.err b { color: var(--red) }
   .more > summary { cursor: pointer; list-style: none; padding: 10px 0 0; color: var(--accent-text); font-size: .875rem; font-weight: 600 } .more > summary::-webkit-details-marker { display: none }
   footer { margin-top: var(--s-8); display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--s-3); font-family: var(--font-mono); font-size: .75rem; color: var(--text-3) }
   footer .m { height: 18px; width: auto } footer .m .ring, footer .m .letters { fill: var(--text-3) }
