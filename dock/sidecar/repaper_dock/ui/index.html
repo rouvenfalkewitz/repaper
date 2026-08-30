@@ -62,9 +62,14 @@ function pages(j) {
   const done = j.printed || 0, cur = j.next_page || j.pages, n = j.pages;
   return `<div class="pages"><span class="count">Page <b>${cur}</b> of ${n}</span><span class="segs">${Array.from({length: n}, (_, k) => `<i class="${k < done ? "done" : k === cur - 1 ? "cur" : ""}"></i>`).join("")}</span></div>`;
 }
-function frame(w, h, src, palette) {
+function frame(w, h, src, cls) {
   const ar = (w / h).toFixed(3);
-  return `<div class="frame" style="aspect-ratio:${ar}">${src ? `<img src="${src}" alt="">` : `<div class="blank"></div>`}</div>`;
+  return `<div class="frame ${cls || ""}" style="aspect-ratio:${ar}">${src ? `<img src="${src}" alt="">` : `<div class="blank"></div>`}</div>`;
+}
+function fig(v, src) {
+  const inch = v.hw && v.hw.inch ? `<span class="inch">${v.hw.inch}"</span>` : "";
+  return `<div class="fig"><div class="fig-top mono"><span class="dim">${v.width} px</span>${inch}</div>
+    <div class="fig-row">${frame(v.width, v.height, src)}<span class="dim dim-h mono">${v.height} px</span></div></div>`;
 }
 function dots(palette) { const c = {BW: ["#FFFFFF", "#000000"], BWR: ["#FFFFFF", "#000000", "#C8102E"], BWRY: ["#FFFFFF", "#000000", "#C8102E", "#F2C400"]}[palette] || ["#FFFFFF", "#000000"]; return `<span class="dots" title="${palette}">${c.map(x => `<i style="background:${x}"></i>`).join("")}</span>`; }
 function render(s) {
@@ -81,7 +86,7 @@ function render(s) {
   } else if (s.state === "printing") {
     html = `<span class="pill busy">Printing</span><div class="title">${esc(j.name)}</div>${pages(j)}
             ${stepper(s.phase, s.printing_since, now)}
-            <div class="preview">${frame(4, 3, `/preview/${j.id}/${j.next_page || j.pages}`)}</div>`;
+            <div class="preview">${frame(4, 3, `/preview/${j.id}/${j.next_page || j.pages}`, /render/i.test(s.phase || "") ? "rendering" : "")}</div>`;
   } else if (s.state === "printed") {
     html = `<span class="pill done">Printed</span><div class="title">${esc(j.name)}</div><div class="meta">${esc(s.message)}</div>`;
   } else {
@@ -126,13 +131,10 @@ function render(s) {
     const low = mv != null && mv * 1000 < (v.min_battery_mv || 2700), hw = v.hw || {};
     const bat = mv == null ? `<div class="bat"><i><b style="width:0"></b></i><span>${v.online === false ? "not in range" : "battery —"}</span></div>`
                            : `<div class="bat ${low ? "low" : ""}"><i><b style="width:${pct}%"></b></i><span>${mv.toFixed(2)} V${low ? " · replace cell" : ""}${v.temperature_c != null ? " · " + v.temperature_c.toFixed(0) + " °C" : ""}</span></div>`;
-    const hwline = [hw.inch ? hw.inch + '"' : null, hw.mm, hw.mcu, hw.board, hw.firmware ? "fw " + hw.firmware : null].filter(Boolean).join(" · ");
     const last = v.last ? `<span class="mono">showing: ${esc(v.last.job)} · ${fmtAgo(v.last.at, now)}</span>` : `<span class="mono">nothing printed yet</span>`;
-    return `<div class="sheet">${frame(v.width, v.height, v.last ? `/sheet-image/${esc(k)}?t=${v.last.at}` : null, v.palette)}
+    return `<div class="sheet">${fig(v, v.last ? `/sheet-image/${esc(k)}?t=${v.last.at}` : null)}
       <div class="sheet-head"><b>${esc(v.name || k)}</b>${dots(v.palette)}</div>
       ${v.serial ? `<span class="mono serial">Label ID ${esc(v.serial)}</span>` : ""}
-      <span class="mono">${v.width}×${v.height} · ${esc(v.palette)} · ${esc(v.transport)}</span>
-      ${hwline ? `<span class="mono">${esc(hwline)}</span>` : ""}
       ${bat}${last}</div>`;
   }).join("") || `<div class="sheet"><b>No sheets yet</b><span class="mono">Add one in Settings</span></div>`;
   const rec = (s.recent || []).slice().reverse();
@@ -155,7 +157,7 @@ async function tick() {
     const s = await (await fetch("/api/status", {cache: "no-store"})).json();
     const sig = JSON.stringify([s.state, s.job && s.job.id, s.job && s.job.next_page, s.message, Object.keys(s.sheets).length, s.recent && s.recent.length, Object.values(s.sheets).map(v => [v.battery_volts, v.online, v.last && v.last.at, v.hw && v.hw.firmware])]);
     if (sig !== last) { render(s); last = sig; }
-    else if (s.state === "printing") { const st = el("job").querySelector(".stepper"); if (st) { const wrap = document.createElement("div"); wrap.innerHTML = stepper(s.phase, s.printing_since, s.now); st.replaceWith(wrap.firstChild); el("job").querySelector(".phase-line").replaceWith(wrap.lastChild); } }
+    else if (s.state === "printing") { const st = el("job").querySelector(".stepper"); if (st) { const wrap = document.createElement("div"); wrap.innerHTML = stepper(s.phase, s.printing_since, s.now); st.replaceWith(wrap.firstChild); el("job").querySelector(".phase-line").replaceWith(wrap.lastChild); const fr = el("job").querySelector(".frame"); if (fr) fr.classList.toggle("rendering", /render/i.test(s.phase || "")); } }
   } catch (e) {}
 }
 document.addEventListener("change", e => { const dd = e.target.closest(".dd"); if (!dd || e.target.type !== "radio") return;
