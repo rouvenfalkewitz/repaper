@@ -26,9 +26,8 @@ cd dock/sidecar
 .venv/bin/repaper-dockd add-sheet mock-card --transport mock --address 400x300 --size 400x300 --palette BWR --name "Mock card"
 .venv/bin/repaper-dockd test-page mock-card          # → ~/.repaper/mock-out/*.png
 
-# your OpenDisplay label (MAC + key from its QR page; size/palette from the label)
-.venv/bin/repaper-dockd discover
-.venv/bin/repaper-dockd add-sheet label-1 --transport opendisplay-ble --address AA:BB:CC:DD:EE:FF --key <hex> --size 296x128 --palette BWR --name "SoluM 2.9"
+# your OpenDisplay label: paste the URL from its QR code — name and key are in it; size/colours are read from the label
+.venv/bin/repaper-dockd add-sheet label-1 --qr "https://opendisplay.org/l/?AACX2b4fpogM3q10pFLXgtzZgtNhAAQ" --name "SoluM 2.9"
 .venv/bin/repaper-dockd test-page label-1
 
 # the printer + the daemon

@@ -31,10 +31,11 @@ def dockd(argv=None):
     sub = p.add_subparsers(dest="cmd")
     sub.add_parser("run", help="run the Dock (default)")
     sub.add_parser("discover", help="list sheets reachable by every loaded transport")
-    a = sub.add_parser("add-sheet", help="register a sheet"); a.add_argument("id"); a.add_argument("--transport", required=True)
-    a.add_argument("--address", required=True, help="mock: WxH · opendisplay-ble: MAC"); a.add_argument("--name", default=None)
-    a.add_argument("--size", required=True, help="WxH in pixels"); a.add_argument("--palette", default="BW", choices=["BW", "BWR", "BWRY"])
-    a.add_argument("--key", default=None, help="opendisplay: AES-128 key as hex (from the sheet's QR page)")
+    a = sub.add_parser("add-sheet", help="register a sheet"); a.add_argument("id")
+    a.add_argument("--qr", default=None, help="opendisplay: the sheet's QR / landing URL (https://opendisplay.org/l/?…) — sets transport, address and key")
+    a.add_argument("--transport", default=None); a.add_argument("--address", default=None, help="mock: WxH · opendisplay-ble: MAC or OD name")
+    a.add_argument("--name", default=None); a.add_argument("--size", default=None, help="WxH in pixels (opendisplay: read from the sheet if omitted)")
+    a.add_argument("--palette", default=None, choices=["BW", "BWR", "BWRY"]); a.add_argument("--key", default=None, help="opendisplay: AES-128 key as hex")
     sub.add_parser("sheets", help="list registered sheets"); sub.add_parser("jobs", help="list spool jobs")
     t = sub.add_parser("test-page", help="render + print a built-in test page to a sheet (no printer needed)"); t.add_argument("sheet")
     args = p.parse_args(argv)
@@ -43,10 +44,24 @@ def dockd(argv=None):
     from .sheets import SheetRegistry, SheetRef, SheetModel, load_transports
     reg = SheetRegistry(SHEETS); cfg = load_config()
     if args.cmd == "add-sheet":
-        w, h = (int(v) for v in args.size.lower().split("x"))
-        keys = {"key": args.key} if args.key else {}
-        reg.add(args.id, SheetRef(args.transport, args.address, keys, args.name), SheetModel(w, h, args.palette))
-        print(f"registered {args.id}: {args.transport} {args.address} {w}×{h} {args.palette}"); return 0
+        transport, address, key = args.transport, args.address, args.key
+        if args.qr:
+            from .sheets.opendisplay_ble import parse_landing_url
+            info = parse_landing_url(args.qr); transport = transport or "opendisplay-ble"; address = address or info["name"]; key = key or info["key"]
+            print(f"QR: device {info['name']} · key {'set' if info['key'] else 'none'} · manufacturer {info['manufacturer_id']} · tag_type {info['tag_type']}")
+        if not transport or not address: p.error("need --qr, or --transport and --address")
+        keys = {"key": key} if key else {}
+        ref = SheetRef(transport, address, keys, args.name or (address if transport == "opendisplay-ble" else None))
+        if args.size:
+            w, h = (int(v) for v in args.size.lower().split("x")); model = SheetModel(w, h, args.palette or "BW")
+        elif transport == "opendisplay-ble":
+            print("reading size and colours from the sheet over BLE (keep it awake and nearby) …")
+            from .sheets.opendisplay_ble import OpenDisplayBLETransport
+            model = OpenDisplayBLETransport(None).describe(ref)
+            if args.palette: model.palette = args.palette
+        else: p.error("--size is required for this transport")
+        reg.add(args.id, ref, model)
+        print(f"registered {args.id}: {transport} {address} {model.width}×{model.height} {model.palette}"); return 0
     if args.cmd == "sheets":
         for k, e in reg.all().items(): print(f'{k:16} {e["transport"]:16} {e["address"]:20} {e["model"]["width"]}×{e["model"]["height"]} {e["model"]["palette"]}  {e["name"] or ""}')
         return 0
