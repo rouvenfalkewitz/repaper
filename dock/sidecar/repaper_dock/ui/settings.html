@@ -20,32 +20,15 @@
 
   <h2>Printer</h2>
   <div class="card">
-    <form id="printerForm" class="grid2" oninput="dirty()" onsubmit="return savePrinter(event)">
+    <form id="printerForm" class="stack" oninput="dirty()" onsubmit="return savePrinter(event)">
       <div class="field"><label for="pname">Printer name</label><input id="pname" name="printer_name" maxlength="63" required autocomplete="off"><div class="hint">What people see in their print dialog. Applied when the printer restarts.</div></div>
       <div class="field"><label for="timeout">Job timeout</label><input id="timeout" name="job_timeout_seconds" type="number" min="30" max="86400" step="30"><div class="hint">Seconds a job waits for a sheet before it is discarded.</div></div>
-      <div class="row" style="align-self:end"><button class="btn primary" id="saveBtn" type="submit" disabled></button></div>
+      <div class="row end"><button class="btn primary" id="saveBtn" type="submit" disabled>Save</button></div>
     </form>
   </div>
 
   <h2>Sheets</h2>
   <div class="sheets" id="sheets"></div>
-  <div class="card" style="margin-top:var(--s-3)">
-    <div class="grid2">
-      <form class="field" id="addForm" onsubmit="return addSheet(event)">
-        <label for="qr">Add a sheet</label>
-        <input id="qr" placeholder="Paste the sheet's QR link, its OD name, or a Bluetooth address" required autocomplete="off">
-        <input id="qrname" placeholder="Name (e.g. Cart 12)" autocomplete="off">
-        <input id="qrserial" placeholder="Label ID printed on the sheet (optional)" autocomplete="off" style="font-family:var(--font-mono);letter-spacing:.06em;text-transform:uppercase">
-        <div class="hint">Size and colours are read from the sheet — keep it awake and nearby.</div>
-        <div class="row"><button class="btn primary" id="addBtn" type="submit"></button></div>
-      </form>
-      <div class="field">
-        <label>Nearby displays</label>
-        <div class="row"><button class="btn ghost" id="scanBtn" type="button" onclick="scan()"></button><span id="scanState"></span></div>
-        <div id="found" class="list"></div>
-      </div>
-    </div>
-  </div>
 
   <h2>Network</h2>
   <div class="card">
@@ -56,6 +39,24 @@
   <h2>About</h2>
   <div class="card"><div class="facts" id="about"></div></div>
 </div>
+<dialog class="modal" id="addDlg">
+  <div class="modal-head"><b>Add a sheet</b><button class="iconbtn" type="button" onclick="closeAdd()" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="modal-body">
+    <form class="field" id="addForm" onsubmit="return addSheet(event)">
+      <label for="qr">Sheet</label>
+      <input id="qr" placeholder="Paste the QR link, the OD name, or a Bluetooth address" required autocomplete="off">
+      <input id="qrname" placeholder="Name (e.g. Cart 12)" autocomplete="off">
+      <input id="qrserial" placeholder="Label ID printed on the sheet (optional)" autocomplete="off" style="font-family:var(--font-mono);letter-spacing:.06em;text-transform:uppercase">
+      <div class="hint">Size and colours are read from the sheet — keep it awake and nearby.</div>
+      <div class="row end"><button class="btn primary" id="addBtn" type="submit"></button></div>
+    </form>
+    <div class="or">or pick one nearby</div>
+    <div class="field">
+      <div class="row"><button class="btn outline" id="scanBtn" type="button" onclick="scan()"></button><span id="scanState"></span></div>
+      <div id="found" class="list"></div>
+    </div>
+  </div>
+</dialog>
 <div class="toast" id="toast" role="status"><span class="ic"></span><span class="tx"></span></div>
 <script>
 const el = id => document.getElementById(id);
@@ -97,13 +98,13 @@ function card(k, v) {
     <div class="name-row"><b>${esc(v.name || k)}</b><button class="iconbtn" data-act="name" title="Rename" aria-label="Rename">${ICON.pencil}</button></div>
     ${chip}
     <div class="facts">${fact("Size", v.size)}${fact("Link", v.transport + " · " + v.address)}${fact("Panel", [hw.inch ? hw.inch + '"' : null, hw.mm, hw.panel].filter(Boolean).join(" · "))}${fact("Board", hw.board)}${fact("MCU", hw.mcu)}${fact("Firmware", hw.firmware)}${fact("Cell", hw.battery_mah ? hw.battery_mah + " mAh" : null)}${fact("Hidden edge px", ins.some(x => x) ? ins.join(", ") + " (l, t, r, b)" : null)}</div>
-    <div class="tools"><button class="btn ghost small" data-act="inset">${ICON.ruler}Calibrate</button><button class="btn ghost small" data-act="test-page">${ICON.print}Test page</button><button class="btn ghost small" data-act="calibrate">${ICON.grid}Calibration page</button><button class="btn small danger" data-act="remove">${ICON.trash}Remove</button></div>
+    <div class="tools"><button class="btn small" data-act="test-page">${ICON.print}Test page</button><button class="btn small" data-act="calibrate">${ICON.grid}Calibration page</button><button class="btn small" data-act="inset">${ICON.ruler}Calibrate</button><button class="btn small danger" data-act="remove" title="Remove" aria-label="Remove">${ICON.trash}</button></div>
     <div class="editor" hidden></div></div>`;
 }
 async function load() {
   const s = S = await api("/api/settings");
   el("pname").value = s.printer_name; el("timeout").value = s.job_timeout_seconds; el("addr").textContent = s.address; dirty();
-  el("sheets").innerHTML = Object.entries(s.sheets).map(([k, v]) => card(k, v)).join("") || `<div class="sheet"><b>No sheets yet</b><span class="mono">Add one below — paste its QR link or scan for it.</span></div>`;
+  el("sheets").innerHTML = Object.entries(s.sheets).map(([k, v]) => card(k, v)).join("") + `<button class="sheet addcard" type="button" onclick="openAdd()"><span class="plus">${ICON.plus}</span><span>${Object.keys(s.sheets).length ? "Add a sheet" : "Add your first sheet"}</span></button>`;
   el("notes").innerHTML = (s.notifications || []).length
     ? s.notifications.map(n => `<div class="notice ${n.level === "warn" ? "" : n.level}">${ICON[n.level] || ICON.info}<div><b>${esc(n.title)}</b><span>${esc(n.text)}</span></div></div>`).join("")
     : `<div class="allgood"><span class="ic">${ICON.check}</span><span>Nothing needs attention.</span></div>`;
@@ -124,7 +125,7 @@ async function savePrinter(e) {
 async function addSheet(e) {
   e.preventDefault(); const b = el("addBtn"), done = busy(b, "Reading the sheet…");
   try { const r = await api("/api/sheets/add", {input: el("qr").value.trim(), name: el("qrname").value.trim(), serial: el("qrserial").value.trim()});
-    done("Added"); toast(`Added ${r.name || r.id} · ${r.size}`); el("addForm").reset(); await load();
+    done("Added"); toast(`Added ${el("qrname").value.trim() || r.id} · ${r.size}`); await wait(400); closeAdd(); await load();
     const c = el("sheets").querySelector(`[data-id="${CSS.escape(r.id)}"]`); if (c) { c.classList.add("enter", "hi"); c.scrollIntoView({behavior: "smooth", block: "center"}); }
   } catch (x) { done("Could not add", true); shake(el("qr")); toast(x.message, "err"); }
   return false;
@@ -135,7 +136,10 @@ async function scan() {
     el("found").innerHTML = r.found.map((f, i) => `<div class="found" style="animation-delay:${i * 50}ms"><span>${esc(f.name || f.address)}<span class="mono">${esc(f.transport)} · ${esc(f.address)}${f.registered ? " · already added as " + esc(f.registered) : ""}</span></span>${f.registered ? `<span class="chip">${ICON.check}<span>added</span></span>` : `<button class="btn ghost small" onclick="useFound(this)" data-v="${esc(f.name || f.address)}">${ICON.plus}Use</button>`}</div>`).join("");
   } catch (x) { done("Scan failed", true); el("scanState").innerHTML = ""; toast(x.message, "err"); }
 }
-function useFound(b) { el("qr").value = b.dataset.v; el("qrname").focus(); el("addForm").scrollIntoView({behavior: "smooth", block: "center"}); }
+function useFound(b) { el("qr").value = b.dataset.v; el("qrname").focus(); }
+function openAdd() { const d = el("addDlg"); el("addForm").reset(); el("found").innerHTML = ""; el("scanState").innerHTML = ""; d.showModal(); el("qr").focus(); }
+function closeAdd() { el("addDlg").close(); }
+el("addDlg").addEventListener("click", e => { if (e.target === el("addDlg")) closeAdd(); });
 /* per-sheet inline editors */
 const editors = {
   name: v => `<form class="ed" data-ed="name"><label>Name</label><input name="value" value="${esc(v.name || "")}" maxlength="40" required><div class="row"><button class="btn primary small" type="submit">${ICON.check}Save</button><button class="btn outline small" type="button" data-act="cancel">Cancel</button></div></form>`,
@@ -166,7 +170,7 @@ el("sheets").addEventListener("submit", async e => {
     await api(`/api/sheets/${id}`, body); done("Saved"); toast({name: "Renamed.", serial: body.serial ? "Label ID saved." : "Label ID removed.", inset: "Calibration saved."}[kind]); await wait(500); await load();
   } catch (x) { done("Not saved", true); const i = f.querySelector("input"); if (i) shake(i); toast(x.message, "err"); }
 });
-el("saveBtn").innerHTML = ICON.check + "<span>Save</span>"; el("addBtn").innerHTML = ICON.plus + "<span>Add sheet</span>"; el("scanBtn").innerHTML = ICON.scan + "<span>Scan for sheets</span>";
+el("addBtn").innerHTML = ICON.plus + "<span>Add sheet</span>"; el("scanBtn").innerHTML = ICON.scan + "<span>Scan for sheets</span>";
 load().catch(x => toast(x.message, "err"));
 </script>
 </body>
