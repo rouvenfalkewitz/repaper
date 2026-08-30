@@ -6,7 +6,7 @@ Prices are approximate (August 2026, Germany, incl. VAT). Links are to typical s
 
 | # | Part | Qty | ~€ | Where | Notes |
 |---|---|---|---|---|---|
-| 1 | Raspberry Pi 4 Model B, **4 GB** | 1 | 60–75 | [BerryBase](https://www.berrybase.de/en/raspberry-pi-4-computer-model-b-4gb-ram) · [reichelt](https://www.reichelt.com/de/en/shop/product/raspberry_pi_4_b_4x_1_5_ghz_4_gb_ram_wlan_bt-259920) · Welectron · rasppishop.de | Bench unit: Ethernet, BLE 5.0, PoE HAT later. (Pi 5 works too but needs a 5 A PSU + cooler for no benefit) |
+| 1 | Raspberry Pi 4 Model B, **2 GB is enough** (4 GB if in stock; Pi 5 2 GB also fine, needs its 27 W PSU) | 1 | 60–75 | [BerryBase](https://www.berrybase.de/en/raspberry-pi-4-computer-model-b-4gb-ram) · [reichelt](https://www.reichelt.com/de/en/shop/product/raspberry_pi_4_b_4x_1_5_ghz_4_gb_ram_wlan_bt-259920) · Welectron · rasppishop.de | Bench unit: Ethernet, BLE 5.0, PoE HAT later. (Pi 5 works too but needs a 5 A PSU + cooler for no benefit) |
 | 2 | Official Raspberry Pi USB-C PSU 5.1 V / 3 A | 1 | 10 | same shop | |
 | 3 | microSD 32 GB, A2 (SanDisk Extreme / Samsung Pro Plus) | 2 | 20 | Amazon / same shop | One per Pi |
 | 4 | Raspberry Pi **Zero 2 WH** (header pre-soldered) | 1 | 22 | BerryBase / reichelt | The demo unit that goes in the enclosure; has BLE |
