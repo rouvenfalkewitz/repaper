@@ -40,8 +40,9 @@ def _run(coro):
 
 
 class OpenDisplayBLETransport(SheetTransport):
-    def __init__(self, registry=None, timeout: float = 30.0, bwr_as_mono: bool = True, refresh_wait: float = 60.0):
+    def __init__(self, registry=None, timeout: float = 30.0, bwr_as_mono: bool = True, refresh_wait: float = 60.0, min_battery_mv: int = 2700):
         self.registry = registry; self.timeout = timeout; self.bwr_as_mono = bwr_as_mono; self.refresh_wait = refresh_wait
+        self.min_battery_mv = min_battery_mv
 
     @property
     def id(self) -> str: return "opendisplay-ble"
@@ -89,15 +90,31 @@ class OpenDisplayBLETransport(SheetTransport):
         scheme = ColorScheme.MONO if mono else getattr(ColorScheme, ref.keys.get("scheme", "MONO"), ColorScheme.MONO)
         return DeviceCapabilities(width=nw, height=nh, color_scheme=scheme, rotation=int(ref.keys.get("rotation", 0)))
 
-    def status(self, ref: SheetRef) -> SheetStatus:
-        """Online = seen in a short scan. Battery/temperature from advertisements come in a later revision."""
+    def status(self, ref: SheetRef, timeout: float = 6.0) -> SheetStatus:
+        """From the sheet's BLE advertisement (no connection): battery (10 mV steps), temperature (0.5 °C), reboot flag.
+        Manufacturer data 0x2446, v1 layout: [..11]=temp (t+40)*2, [12]=mV/10 low byte, [13]=bit0 mV MSB, bit1 reboot."""
         try:
-            from opendisplay import discover_devices
-            found = _run(discover_devices(timeout=4.0))
+            adv = _run(self._scan_for(ref, timeout))
         except Exception:
             return SheetStatus()
-        seen = ref.address.upper() in {v.upper() for v in found.values()} or ref.address.upper() in {k.upper() for k in found}
-        return SheetStatus(online=seen, last_seen=time.time() if seen else None)
+        if adv is None: return SheetStatus(online=False)
+        md = adv
+        mv = (md[12] | ((md[13] & 1) << 8)) * 10 if len(md) >= 14 else None
+        temp = md[11] / 2 - 40 if len(md) >= 12 else None
+        pct = None if mv is None else max(0.0, min(100.0, (mv - 2400) / (3000 - 2400) * 100))   # rough, lithium primary
+        return SheetStatus(battery_percent=pct, battery_volts=None if mv is None else mv / 1000, temperature_c=temp,
+                           online=True, last_seen=time.time())
+
+    async def _scan_for(self, ref: SheetRef, timeout: float):
+        from bleak import BleakScanner
+        want = ref.address.upper(); hit = {}
+        def cb(d, adv):
+            md = adv.manufacturer_data.get(0x2446)
+            if md and (want in ((d.name or adv.local_name or "").upper(), d.address.upper())): hit["md"] = bytes(md)
+        s = BleakScanner(detection_callback=cb); await s.start()
+        t0 = time.time()
+        while "md" not in hit and time.time() - t0 < timeout: await asyncio.sleep(0.2)
+        await s.stop(); return hit.get("md")
 
     def print(self, ref: SheetRef, page: Page, *, full_refresh: bool = True) -> PrintResult:
         """Some tags (seen: SoluM nRF52811, firmware 1.0.0) acknowledge every chunk and the END, report 'refresh
@@ -105,6 +122,10 @@ class OpenDisplayBLETransport(SheetTransport):
         the panel at that point, so that outcome counts as printed — with a note, not a failure."""
         import logging
         t0 = time.time(); seen = {"refresh_started": False}
+        # A refresh on a weak cell browns the tag out mid-refresh (seen: 2.67 V → half-cleared panel, reset, 2.25 V after).
+        st = self.status(ref, timeout=4.0)
+        if st.battery_volts is not None and st.battery_volts * 1000 < self.min_battery_mv:
+            return PrintResult(False, time.time() - t0, f"sheet battery too low to refresh safely ({st.battery_volts:.2f} V < {self.min_battery_mv/1000:.2f} V) — replace the cell")
 
         class _Watch(logging.Handler):
             def emit(self, rec):
@@ -144,4 +165,4 @@ class OpenDisplayBLETransport(SheetTransport):
                                    dither_mode=DitherMode.NONE, fit=FitMode.STRETCH, rotate=Rotation.ROTATE_0)
 
     def capabilities(self):
-        return {"supports_status": True, "supports_partial_refresh": True, "needs_pairing": True}
+        return {"supports_status": True, "supports_partial_refresh": True, "needs_pairing": True, "min_battery_mv": self.min_battery_mv}

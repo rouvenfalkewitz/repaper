@@ -37,6 +37,7 @@ def dockd(argv=None):
     a.add_argument("--name", default=None); a.add_argument("--size", default=None, help="WxH in pixels (opendisplay: read from the sheet if omitted)")
     a.add_argument("--palette", default=None, choices=["BW", "BWR", "BWRY"]); a.add_argument("--key", default=None, help="opendisplay: AES-128 key as hex")
     sub.add_parser("sheets", help="list registered sheets"); sub.add_parser("jobs", help="list spool jobs")
+    st = sub.add_parser("status", help="battery / temperature / online for a sheet (no connection)"); st.add_argument("sheet")
     t = sub.add_parser("test-page", help="render + print a built-in test page to a sheet (no printer needed)"); t.add_argument("sheet")
     args = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
@@ -76,6 +77,10 @@ def dockd(argv=None):
                 known = reg.find_by_address(tid, ref.address)
                 print(f"{tid:16} {ref.address:20} {ref.name or '':24} {'→ ' + known if known else '(not registered)'}")
         return 0
+    if args.cmd == "status":
+        ref, model = reg.get(args.sheet); tr = transports[ref.transport_id]; st = tr.status(ref)
+        v = "?" if st.battery_volts is None else f"{st.battery_volts:.2f} V"; t = "?" if st.temperature_c is None else f"{st.temperature_c:.1f} °C"
+        print(f"{args.sheet}: online={st.online} battery={v} temp={t} min_to_print={tr.capabilities().get('min_battery_mv','-')} mV"); return 0
     if args.cmd == "test-page":
         from .render import render_for_sheet
         from .testpage import test_page
