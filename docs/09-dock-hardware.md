@@ -73,3 +73,20 @@ Items 1–5, 8–14 from any Pi retailer today. Item 7 via the friend (which tag
 - Encryption-key model for fleets (the QR carries the key today) and firmware licence for a commercial product — friend
 - Pilot units: Pi 4 + PoE HAT vs. CM4 carrier — after the demo
 - Custom PCB (ESP32 + radio + PN532 + LED driver on one board, Pi/CM as compute) — Phase 4
+
+## Enclosure v0 — spec for the 3D print (Pi 3 A+ pilot unit)
+
+The case is the product: a small pedestal you hold a sheet against. Function over looks for v0.
+
+**Layout (bottom to top):** Pi 3 A+ on M2.5 bosses (hole pattern 58 × 49 mm, board 65 × 56 mm, ~14 mm tall with header) → reader board → top plate. LED ring recessed in the top plate, shining upward through a diffuser.
+
+**Hard constraints**
+- NFC reader sits directly under the top plate; wall above the antenna **≤ 2 mm** (RC522 only has ~2–3 cm range through air; every millimetre of plastic costs range). No metal, no screws, no LED-ring wiring within ~10 mm of the antenna area.
+- Top plate: flat rest area ≥ 120 × 120 mm so a 4.2" tag lies fully supported; the glowing ring is the "hold it here" marker, centred on the antenna.
+- LED ring: 16× WS2812, ~68 mm outer Ø. Recess with a 1–2 mm translucent diffuser above (white PETG/PLA printed at 2 perimeters works). Glow is light, never ink — the ring is the only light on the device.
+- Port access: micro-USB power and the USB-A (BLE dongle) must exit cleanly; microSD reachable without opening the case is a plus for v0.
+- Ventilation slots on the sides/bottom; the A+ is passively fine but sealed boxes cook radios.
+- Material: plain PLA or PETG. **No carbon-fibre or "conductive" filament** anywhere near the antenna.
+- Colour: Carbon-dark body if available; the diffuser ring stays white/natural (the green comes from the LEDs).
+
+**Nice to have:** cable channel from Pi to reader, snap-fit or 4 self-tapping screws from below, a v0 without the ring cutout printed first just to validate NFC range through the actual wall.
