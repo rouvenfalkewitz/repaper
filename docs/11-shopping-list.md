@@ -47,3 +47,9 @@ PoE HAT for the Pi 4 (~€25), a second Pi 4 for a second Dock, 3D printing serv
 - **Sheet sizes for the demo.** The 2.13" label (128 addressed / 122 visible rows) is fine for tests but tiny for a "page"; get the 2.9" (296×128) and 4.2" (400×300) tags from your mate and keep the reTerminal E1001 (7.5") as the page-size piece. Every panel needs one calibration pass (hidden edge rows) — the Dock has a Calibrate flow for that now.
 - **Pi OS Bookworm (64-bit) is required**, not Bullseye: the sidecar needs Python ≥ 3.11 and BlueZ ≥ 5.66 for bleak. Nothing to buy, but flash the right image.
 - Unchanged: Pi 4B 4 GB + Zero 2 WH, PN532 V3 (I²C), WS2812 ring 16 + 74AHCT125, Pixel 9a as the Android phone.
+
+## G. Zero 2 W alternative (verified 31 Aug 2026)
+
+**Raspberry Pi 3 Model A+** — in stock at reichelt, €29.90 ("ab Lager, 1–2 Werktage"): https://www.reichelt.de/de/de/shop/produkt/raspberry_pi_3_a_4x_1_4_ghz_512_mb_ram_wlan_bt-243791
+Same quad Cortex-A53 / 512 MB class as the Zero 2 W (a bit faster), full pre-soldered 40-pin GPIO, dual-band WiFi + BT 4.2, one USB-A for the BLE dongle; runs the identical Pi OS Bookworm stack (bleak, rpi_ws281x, PN532 overlays). Bigger footprint (65×56 mm) and micro-USB power. In production into 2030, so a pilot can scale on it.
+Zero 2 W itself is unavailable across DE (BerryBase/reichelt/rasppishop/Semaf; scalpers ~€70); Welectron lists €19.90 "soon in stock" — set a stock alert there. Radxa/Orange Pi Zero-form boards ruled out: no rpi_ws281x, Armbian-class images, and mostly sold out anyway.
