@@ -27,13 +27,16 @@ Every RePaper printer — a Dock or a phone running Go — is a device that can 
 ## Monetisation — a first model
 
 Keep it simple to start; make it explainable in one sentence per product.
+Refined Sep 2026 into a three-tier sketch (draft numbers, shown as a preview on the console's Billing page):
 
-- **Dock**: sold as hardware (one-time). **RePaper Cloud** as a subscription per Dock per month (fleet view, remote config, OTA, alerts). Without Cloud the Dock still prints, has its local web UI, and gets updates manually.
-- **Go app**: free for one printer and a few sheets; **Pro** subscription (per user or per org) for teams, unlimited sheets, cloud sync and support.
-- **Sheets & accessories**: hardware margin.
-- **Enterprise**: per-site licence bundling Docks + Cloud + support SLA; on-prem option priced separately.
+- **Free — €0 forever**: one device per account, all its sheets, unlimited prints, fleet view & claiming, manual updates, personal workspace. The honest entry that keeps the "it's just a printer" promise.
+- **Team — ~€4 / device / month**: unlimited devices priced each; organisations (members, roles, invitations), sites, alerts with email digest, automatic signed updates, read API keys.
+- **Pro — ~€9 / device / month**: everything in Team plus write API & webhooks, staged rollouts & maintenance windows, 12-month history, remote diagnostics & priority support, org branding in the console.
+- **Enterprise**: a conversation — on-prem, SSO, purchase orders, SLAs.
+- **Sheets & accessories**: hardware margin, sold in the console's Shop.
+- **Go app**: free tier maps to Free (the phone is the one device); paid tiers per device like Docks.
 
-Things deliberately *not* metered in v1: per-page or per-sheet fees — they fight the "it's just a printer" promise and the reuse story.
+Things deliberately *not* metered, in any tier, ever: per-page or per-sheet fees — they fight the "it's just a printer" promise and the reuse story.
 
 ## Architecture
 
