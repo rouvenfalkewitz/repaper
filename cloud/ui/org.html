@@ -13,46 +13,24 @@
 <div class="layout">
   <aside class="side" id="side"></aside>
   <main class="main">
-    <div class="pagehead"><h1 id="pageTitle">Organisation</h1></div>
-
-    <div class="card stack" id="orgCard" style="margin-bottom:var(--s-3)">
-      <div class="notice info" id="personalNote" hidden></div>
-      <form class="row" style="align-items:flex-end" onsubmit="return saveOrg(event)">
-        <div class="field" style="flex:1;min-width:220px"><label for="oname">Name</label><input id="oname" maxlength="63" required autocomplete="off" oninput="orgDirty()"></div>
-        <button class="btn primary" id="orgBtn" type="submit" disabled>Save</button>
-      </form>
-      <div class="facts" id="orgFacts"></div>
+    <div class="pagehead">
+      <div class="orghead"><span id="orgLogo"></span><div><h1 id="orgTitle">Organisation</h1><span class="mono" id="orgMeta"></span></div></div>
+      <span class="row" style="gap:8px">
+        <button class="btn outline small" id="detailsBtn" onclick="openDetails()" hidden></button>
+        <button class="btn primary small" id="inviteBtn" onclick="openInvite()" hidden></button>
+      </span>
     </div>
 
-    <h2>Company details</h2>
+    <div class="notice info" id="personalNote" hidden></div>
+
     <div class="card">
-      <form class="stack" id="companyForm" oninput="compDirty()" onsubmit="return saveCompany(event)">
-        <div class="grid2">
-          <div class="field"><label for="c_company_name">Company (legal name)</label><input id="c_company_name" maxlength="120" autocomplete="organization"></div>
-          <div class="field"><label for="c_vat_id">VAT ID</label><input id="c_vat_id" maxlength="20" placeholder="DE…" autocomplete="off" style="text-transform:uppercase"></div>
-          <div class="field"><label for="c_contact_name">Contact person</label><input id="c_contact_name" maxlength="120" autocomplete="name"></div>
-          <div class="field"><label for="c_billing_email">Billing email</label><input id="c_billing_email" type="email" maxlength="120" autocomplete="email"></div>
-          <div class="field"><label for="c_phone">Phone</label><input id="c_phone" type="tel" maxlength="30" autocomplete="tel"></div>
-          <div class="field"><label for="c_address">Address</label><input id="c_address" maxlength="120" autocomplete="street-address"></div>
-          <div class="field"><label for="c_zip">ZIP</label><input id="c_zip" maxlength="12" autocomplete="postal-code"></div>
-          <div class="field"><label for="c_city">City</label><input id="c_city" maxlength="80" autocomplete="address-level2"></div>
-          <div class="field"><label for="c_country">Country</label><input id="c_country" maxlength="60" autocomplete="country-name"></div>
-        </div>
-        <div class="row between"><span class="hint" style="color:var(--text-3);font-size:.8125rem">Goes on your invoices once billing is live. Optional until then.</span><button class="btn primary" id="compBtn" type="submit" disabled>Save</button></div>
-      </form>
+      <div class="searchrow" id="searchRow" hidden><span class="searchic" id="searchIc"></span><input id="search" placeholder="Search members…" autocomplete="off" oninput="renderTeam()"></div>
+      <div id="team"></div>
     </div>
-
-    <h2 class="rowh">Members <button class="btn primary small" id="inviteBtn" onclick="openInvite()" hidden></button></h2>
-    <div class="card" id="team"></div>
 
     <div id="adminSections" hidden>
       <h2>API keys <span class="mono" style="font-weight:400;text-transform:none;letter-spacing:0">— read-only fleet access for your own tools</span></h2>
       <div class="card" id="keysCard"></div>
-
-      <h2>Branding</h2>
-      <div class="card">
-        <div class="twofa"><span class="okic off" id="orgIcon"></span><div style="flex:1"><b>Your logo on this console</b><span>Show your organisation's mark to your team. Coming with the first customer orgs.</span></div><button class="btn outline small" disabled>Upload logo</button></div>
-      </div>
     </div>
   </main>
 </div>
@@ -66,48 +44,106 @@
 <script src="/app.js"></script>
 <script>
 let T = null, ORG = null;
+const CFIELDS = ["company_name", "vat_id", "contact_name", "billing_email", "address", "zip", "city", "country"];
+const DIAL = [["🇩🇪","+49","Germany"],["🇦🇹","+43","Austria"],["🇨🇭","+41","Switzerland"],["🇳🇱","+31","Netherlands"],["🇧🇪","+32","Belgium"],["🇫🇷","+33","France"],["🇬🇧","+44","United Kingdom"],["🇮🇪","+353","Ireland"],["🇩🇰","+45","Denmark"],["🇸🇪","+46","Sweden"],["🇳🇴","+47","Norway"],["🇫🇮","+358","Finland"],["🇵🇱","+48","Poland"],["🇨🇿","+420","Czechia"],["🇮🇹","+39","Italy"],["🇪🇸","+34","Spain"],["🇵🇹","+351","Portugal"],["🇱🇺","+352","Luxembourg"],["🇺🇸","+1","USA / Canada"],["🇦🇺","+61","Australia"],["🇯🇵","+81","Japan"],["🌐","+","Other"]];
 
-/* ── organisation card ── */
-async function loadOrg() {
-  try { ORG = await api("/api/org"); renderOrg(); renderCompany(); } catch {}
-}
-function renderOrg() {
-  if (!ORG || !ME) return;
-  const admin = ME.role === "admin";
-  el("oname").value = ORG.name; el("oname").disabled = !admin; orgDirty();
-  el("personalNote").hidden = !ORG.personal;
-  if (ORG.personal) el("personalNote").innerHTML = `${ICON.info}<div><b>This is your personal space.</b><span>Give it a name and invite people below — the moment someone joins, it works like an organisation: shared fleet, roles, the lot.</span></div>`;
-  el("orgFacts").innerHTML = fact("Members", String(ORG.members)) + fact("Devices", String(ORG.devices)) + fact("Created", new Date(ORG.created * 1000).toLocaleDateString());
-}
-function orgDirty() { const b = el("orgBtn"); if (!ORG) return; if (!b.classList.contains("busy") && !b.classList.contains("ok")) b.disabled = el("oname").value.trim() === ORG.name || el("oname").disabled; }
-
-/* company details */
-const CFIELDS = ["company_name", "vat_id", "contact_name", "billing_email", "phone", "address", "zip", "city", "country"];
-function renderCompany() {
-  if (!ORG || !ME) return;
-  const admin = ME.role === "admin";
-  for (const fld of CFIELDS) { const i = el("c_" + fld); i.value = (ORG.company || {})[fld] || ""; i.disabled = !admin; }
-  compDirty();
-}
-function compDirty() {
+/* ── header ── */
+async function loadOrg() { try { ORG = await api("/api/org"); renderHead(); } catch {} }
+function renderHead() {
   if (!ORG) return;
-  const dirty = CFIELDS.some(fld => el("c_" + fld).value.trim() !== ((ORG.company || {})[fld] || ""));
-  const b = el("compBtn");
-  if (!b.classList.contains("busy") && !b.classList.contains("ok")) b.disabled = !dirty || ME?.role !== "admin";
+  el("orgTitle").textContent = ORG.name;
+  el("orgLogo").innerHTML = ORG.logo ? `<img class="orglogo" src="${esc(ORG.logo)}" alt="">` : "";
+  el("orgMeta").textContent = `${ORG.members} member${ORG.members === 1 ? "" : "s"} · ${ORG.devices} device${ORG.devices === 1 ? "" : "s"} · since ${new Date(ORG.created * 1000).toLocaleDateString()}`;
+  el("personalNote").hidden = !ORG.personal;
+  if (ORG.personal) el("personalNote").innerHTML = `${ICON.info}<div><b>This is your personal space.</b><span>Invite people below and it works like an organisation — shared fleet, roles, the lot. Name and details live behind “Details”.</span></div>`;
 }
-async function saveCompany(e) {
-  e.preventDefault(); const done = busy(el("compBtn"), "Saving…");
-  const company = {};
-  for (const fld of CFIELDS) company[fld] = el("c_" + fld).value.trim();
-  try { await api("/api/org", {company}); ORG.company = {...company}; done("Saved"); toast("Company details saved."); }
-  catch (x) { done("Not saved", true); toast(x.message, "err"); }
-  return false;
+
+/* ── members ── */
+async function loadTeam() { try { T = await api("/api/team"); renderTeam(); } catch {} }
+function renderTeam() {
+  if (!T || !ME) return;
+  const admin = ME.role === "admin";
+  el("inviteBtn").hidden = !admin; el("inviteBtn").innerHTML = ICON.plus + "<span>Invite</span>";
+  el("detailsBtn").hidden = !admin; el("detailsBtn").innerHTML = ICON.gear + "<span>Details</span>";
+  el("searchRow").hidden = T.users.length + (T.invites || []).length < 6;
+  el("searchIc").innerHTML = ICON.search;
+  const q = (el("search").value || "").trim().toLowerCase();
+  const match = (s) => !q || (s || "").toLowerCase().includes(q);
+  const users = T.users.filter(u => match(u.name) || match(u.email));
+  const invites = (T.invites || []).filter(i => match(i.email));
+  const roleCtl = (u) => admin && !u.you
+    ? `<span class="selwrap"><select class="rolesel" data-uid="${u.id}" title="Change role"><option value="member" ${u.role === "member" ? "selected" : ""}>Member</option><option value="admin" ${u.role === "admin" ? "selected" : ""}>Admin</option></select></span>`
+    : `<span class="rolestat">${u.role === "admin" ? "Admin" : "Member"}</span>`;
+  const rows = users.map(u => `<div class="member"><span class="mrow">${avatarHtml(u, 36)}<span class="who2"><b>${esc(u.name || u.email)}${u.you ? ` <span class="youtag">you</span>` : ""}</b><span class="mono">${esc(u.email)}</span></span></span><span class="row" style="gap:6px;flex-wrap:nowrap">${roleCtl(u)}${admin && !u.you ? `<button class="iconbtn danger" data-uid="${u.id}" data-name="${esc(u.name || u.email)}" data-act="kick" title="Remove">${ICON.trash}</button>` : ""}</span></div>`).join("");
+  const inv = invites.map(i => `<div class="member dim"><span class="mrow"><span class="av" style="width:36px;height:36px;background:var(--surface-2);color:var(--text-3);font-size:14px">✉</span><span class="who2"><b>${esc(i.email)}</b><span class="mono">invited by ${esc(i.invited_by_email)} · expires ${new Date(i.expires * 1000).toLocaleDateString()}</span></span></span><span class="row" style="gap:6px;flex-wrap:nowrap"><span class="rolestat">Invited</span><button class="iconbtn danger" data-iid="${i.id}" data-act="revoke" title="Revoke invitation">${ICON.x}</button></span></div>`).join("");
+  el("team").innerHTML = (rows + inv) || `<div class="devmeta" style="padding:8px 0">${q ? "Nobody matches your search." : "Just you so far."}</div>`;
 }
-async function saveOrg(e) {
-  e.preventDefault(); const done = busy(el("orgBtn"), "Saving…");
-  try { await api("/api/org", {name: el("oname").value.trim()}); ORG.name = el("oname").value.trim(); done("Saved"); toast("Renamed."); renderShell(); if (ME) ME.org = ORG.name; }
-  catch (x) { done("Not saved", true); toast(x.message, "err"); }
-  return false;
+el("team").addEventListener("change", async e => {
+  const s = e.target.closest(".rolesel"); if (!s) return;
+  const prev = s.value === "admin" ? "member" : "admin";
+  try { await api(`/api/team/${s.dataset.uid}/role`, {role: s.value}); toast(`Role changed to ${s.value}.`); loadTeam(); }
+  catch (x) { s.value = prev; toast(x.message, "err"); }
+});
+el("team").addEventListener("click", async e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  if (b.dataset.act === "kick") {
+    return setModal("Remove from team", `<form class="ed" data-ed="kick" data-uid="${esc(b.dataset.uid)}"><p>Remove <b>${esc(b.dataset.name)}</b> from this organisation? Their account is deleted; devices stay in the fleet. You can invite them again any time.</p><div class="row end"><button class="btn outline" type="button" data-act="close">Keep</button><button class="btn danger" type="submit">${ICON.trash}Remove</button></div></form>`);
+  }
+  if (b.dataset.act === "revoke") {
+    try { await api(`/api/invites/${b.dataset.iid}/revoke`, {}); toast("Invitation revoked."); loadTeam(); loadOrg(); }
+    catch (x) { toast(x.message, "err"); }
+  }
+});
+function openInvite() {
+  setModal("Invite someone", `<form class="ed" data-ed="invite">
+    <p>They get a one-time link (valid 14 days) and pick their own password. No invitation, no account — that's the whole door.</p>
+    <label for="edMail">Email</label><input id="edMail" name="email" type="email" required autocomplete="off" placeholder="name@company.com">
+    <label class="checkline"><input type="checkbox" name="admin"> Can manage the organisation (admin)</label>
+    <div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Invite</button></div></form>`);
+}
+
+/* ── details modal: identity + company ── */
+function splitPhone(full) {
+  const f = (full || "").trim();
+  for (const [, code] of DIAL) if (code !== "+" && f.startsWith(code)) return [code, f.slice(code.length).trim()];
+  return [f.startsWith("+") ? "+" : "+49", f.replace(/^\+/, "")];
+}
+function openDetails() {
+  const c = ORG.company || {}, [dial, rest] = splitPhone(c.phone);
+  setModal("Organisation details", `<form class="ed" data-ed="details">
+    <div class="detid"><button class="avbtn" type="button" id="logoBtn" title="Change logo">${ORG.logo ? `<img class="av" src="${esc(ORG.logo)}" style="width:56px;height:56px;border-radius:12px">` : `<span class="av" style="width:56px;height:56px;border-radius:12px;background:var(--surface-2);color:var(--text-3)">${ICON.camera}</span>`}<span class="avhint" style="border-radius:12px">${ICON.camera}</span></button>
+      <div class="field" style="flex:1"><label for="d_name">Display name</label><input id="d_name" value="${esc(ORG.name)}" maxlength="63" required autocomplete="off"><div class="hint">What your team sees. The legal name below goes on invoices.</div></div></div>
+    <input type="file" id="logoFile" accept="image/png,image/jpeg" hidden>
+    <div class="grid2">
+      <div class="field"><label for="d_company_name">Company (legal name)</label><input id="d_company_name" value="${esc(c.company_name || "")}" maxlength="120"></div>
+      <div class="field"><label for="d_vat_id">VAT ID</label><input id="d_vat_id" value="${esc(c.vat_id || "")}" maxlength="20" placeholder="DE…" style="text-transform:uppercase"></div>
+      <div class="field"><label for="d_contact_name">Contact person</label><input id="d_contact_name" value="${esc(c.contact_name || "")}" maxlength="120"></div>
+      <div class="field"><label for="d_billing_email">Billing email</label><input id="d_billing_email" type="email" value="${esc(c.billing_email || "")}" maxlength="120"></div>
+      <div class="field" style="grid-column:1/-1"><label for="d_phone">Phone</label><div class="phonerow"><span class="selwrap"><select id="d_dial">${DIAL.map(([fl, code, name]) => `<option value="${code}" ${code === dial ? "selected" : ""}>${fl} ${code}</option>`).join("")}</select></span><input id="d_phone" inputmode="tel" value="${esc(rest)}" maxlength="20" placeholder="151 2345678" style="flex:1"></div></div>
+      <div class="field" style="grid-column:1/-1"><label for="d_address">Address</label><input id="d_address" value="${esc(c.address || "")}" maxlength="120"></div>
+      <div class="field"><label for="d_zip">ZIP</label><input id="d_zip" value="${esc(c.zip || "")}" maxlength="12"></div>
+      <div class="field"><label for="d_city">City</label><input id="d_city" value="${esc(c.city || "")}" maxlength="80"></div>
+      <div class="field"><label for="d_country">Country</label><input id="d_country" value="${esc(c.country || "")}" maxlength="60"></div>
+    </div>
+    <div class="row between"><span class="hint" style="color:var(--text-3);font-size:.8125rem">Company details go on your invoices once billing is live.</span>
+      <span class="row"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Save</button></span></div>
+  </form>`);
+  el("logoBtn").addEventListener("click", () => el("logoFile").click());
+  el("logoFile").addEventListener("change", () => {
+    const file = el("logoFile").files[0]; if (!file) return;
+    const img = new Image();
+    img.onload = async () => {
+      const c2 = document.createElement("canvas"); c2.width = c2.height = 128;
+      const s = Math.min(img.width, img.height);
+      c2.getContext("2d").drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 128, 128);
+      const data = c2.toDataURL("image/png");
+      try { await api("/api/org", {logo: data}); ORG.logo = data; renderHead(); toast("Logo updated."); el("logoBtn").querySelector(".av").outerHTML = `<img class="av" src="${data}" style="width:56px;height:56px;border-radius:12px">`; }
+      catch (x) { toast(x.message, "err"); }
+      URL.revokeObjectURL(img.src);
+    };
+    img.src = URL.createObjectURL(file);
+    el("logoFile").value = "";
+  });
 }
 
 /* ── API keys ── */
@@ -129,51 +165,23 @@ function openNewKey() {
     <label for="edKn">What will use it?</label><input id="edKn" name="name" maxlength="40" required placeholder="e.g. Grafana dashboard" autocomplete="off">
     <div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Create key</button></div></form>`);
 }
-async function loadTeam() { try { T = await api("/api/team"); renderTeam(); } catch {} }
-function renderTeam() {
-  if (!T || !ME) return;
-  const admin = ME.role === "admin";
-  const btn = el("inviteBtn"); btn.hidden = !admin; btn.innerHTML = ICON.plus + "<span>Invite someone</span>";
-  const rows = T.users.map(u => {
-    const pill = admin && !u.you
-      ? `<button class="pill ${u.role === "admin" ? "" : "setup"} pillbtn" data-act="role" data-uid="${u.id}" data-name="${esc(u.name || u.email)}" data-role="${esc(u.role)}" title="Change role">${esc(u.role)}</button>`
-      : `<span class="pill ${u.role === "admin" ? "" : "setup"}">${esc(u.role)}</span>`;
-    return `<div class="member"><span class="mrow">${avatarHtml(u, 36)}<span class="who2"><b>${esc(u.name || u.email)}${u.you ? " (you)" : ""}</b><span class="mono">${esc(u.email)}</span></span></span><span class="row" style="gap:8px">${pill}${admin && !u.you ? `<button class="iconbtn danger" data-uid="${u.id}" data-name="${esc(u.name || u.email)}" data-act="kick" title="Remove">${ICON.trash}</button>` : ""}</span></div>`;
-  }).join("");
-  const inv = (T.invites || []).map(i => `<div class="member"><span class="mrow"><span class="av" style="width:36px;height:36px;background:var(--surface-2);color:var(--text-3);font-size:14px">✉</span><span class="who2"><b>${esc(i.email)}</b><span class="mono">invited by ${esc(i.invited_by_email)} · expires ${new Date(i.expires * 1000).toLocaleDateString()}</span></span></span><span class="row" style="gap:8px"><span class="pill amber">invited</span><button class="iconbtn danger" data-iid="${i.id}" data-act="revoke" title="Revoke invitation">${ICON.x}</button></span></div>`).join("");
-  el("team").innerHTML = rows + inv
-    + (admin ? "" : `<div class="hint" style="margin-top:10px;color:var(--text-3);font-size:.8125rem">Admins can invite and remove people.</div>`);
-}
-async function copyInv(link) { try { await navigator.clipboard.writeText(link); toast("Link copied."); } catch { toast("Copy failed — select it by hand.", "err"); } }
-el("team").addEventListener("click", async e => {
-  const b = e.target.closest("[data-act]"); if (!b) return;
-  if (b.dataset.act === "kick") return openKick(b.dataset.uid, b.dataset.name);
-  if (b.dataset.act === "role") {
-    const next = b.dataset.role === "admin" ? "member" : "admin";
-    return setModal("Change role", `<form class="ed" data-ed="role" data-uid="${esc(b.dataset.uid)}" data-role="${next}">
-      <p>Make <b>${esc(b.dataset.name)}</b> ${next === "admin" ? "an <b>admin</b>? They can invite and remove people and manage API keys." : "a <b>member</b>? They keep seeing and operating the fleet, but stop managing the team."}</p>
-      <div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Make ${next}</button></div></form>`);
-  }
-  if (b.dataset.act === "revoke") {
-    try { await api(`/api/invites/${b.dataset.iid}/revoke`, {}); toast("Invitation revoked."); loadTeam(); }
-    catch (x) { toast(x.message, "err"); }
-  }
-});
-function openKick(uid, name) {
-  setModal("Remove from team", `<form class="ed" data-ed="kick" data-uid="${esc(uid)}"><p>Remove <b>${esc(name)}</b> from this organisation? Their account is deleted; devices stay in the fleet. You can invite them again any time.</p><div class="row end"><button class="btn outline" type="button" data-act="close">Keep</button><button class="btn danger" type="submit">${ICON.trash}Remove</button></div></form>`);
-}
-function openInvite() {
-  setModal("Invite someone", `<form class="ed" data-ed="invite">
-    <p>They get a one-time link (valid 14 days) and pick their own password. No invitation, no account — that's the whole door.</p>
-    <label for="edMail">Email</label><input id="edMail" name="email" type="email" required autocomplete="off" placeholder="name@company.com">
-    <label class="checkline"><input type="checkbox" name="admin"> Can manage the team (admin)</label>
-    <div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Invite</button></div></form>`);
-}
+
+/* ── shared modal submit ── */
 el("edDlg").addEventListener("click", e => { const b = e.target.closest("[data-act=close]"); if (b) closeModal(); });
 el("edDlg").addEventListener("submit", async e => {
   e.preventDefault(); const f = e.target, kind = f.dataset.ed, sb = f.querySelector("button[type=submit]");
-  const done = busy(sb, {invite: "Inviting…", kick: "Removing…", role: "Changing…", newkey: "Creating…"}[kind] || "Working…");
+  const done = busy(sb, {invite: "Inviting…", kick: "Removing…", newkey: "Creating…", details: "Saving…"}[kind] || "Working…");
   try {
+    if (kind === "details") {
+      const company = {};
+      for (const fld of CFIELDS) company[fld] = el("d_" + fld).value.trim();
+      const num = el("d_phone").value.trim();
+      company.phone = num ? (el("d_dial").value === "+" ? num : `${el("d_dial").value} ${num}`) : "";
+      await api("/api/org", {name: el("d_name").value.trim(), company});
+      ORG.name = el("d_name").value.trim(); ORG.company = {...company};
+      done("Saved"); toast("Saved."); renderHead(); renderShell(); await wait(400); closeModal();
+      return;
+    }
     if (kind === "newkey") {
       const r = await api("/api/keys", {name: f.elements.name.value.trim()});
       loadKeys();
@@ -192,13 +200,14 @@ el("edDlg").addEventListener("submit", async e => {
         <div class="row end"><button class="btn outline" type="button" onclick="copyInv('${esc(r.link)}')">Copy link</button><button class="btn primary" type="button" data-act="close">Done</button></div></div>`;
       return;
     }
-    if (kind === "kick") { await api(`/api/team/${f.dataset.uid}/remove`, {}); el("edDlg").close(); toast("Removed from the team."); loadTeam(); return; }
-    if (kind === "role") { await api(`/api/team/${f.dataset.uid}/role`, {role: f.dataset.role}); el("edDlg").close(); toast("Role changed."); loadTeam(); return; }
+    if (kind === "kick") { await api(`/api/team/${f.dataset.uid}/remove`, {}); el("edDlg").close(); toast("Removed from the team."); loadTeam(); loadOrg(); return; }
   } catch (x) { done("Failed", true); const i = f.querySelector("input"); if (i) shake(i); toast(x.message, "err"); }
 });
+async function copyInv(link) { try { await navigator.clipboard.writeText(link); toast("Link copied."); } catch { toast("Copy failed — select it by hand.", "err"); } }
+
 function onMe() {
-  renderTeam(); renderOrg(); renderCompany();
-  if (ME && ME.role === "admin") { el("adminSections").hidden = false; el("orgIcon").innerHTML = ICON.people; loadKeys(); }
+  renderTeam(); renderHead();
+  if (ME && ME.role === "admin") { el("adminSections").hidden = false; loadKeys(); }
 }
 document.addEventListener("me-ready", onMe);
 if (ME) onMe();

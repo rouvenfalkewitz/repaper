@@ -92,7 +92,7 @@ if (!(db.prepare("PRAGMA table_info(invite)").all() as { name: string }[]).some(
 // company/billing profile on the org (what invoices will need)
 {
   const ocols = (db.prepare("PRAGMA table_info(org)").all() as { name: string }[]).map((c) => c.name);
-  for (const col of ["company_name", "contact_name", "billing_email", "phone", "address", "zip", "city", "country", "vat_id"])
+  for (const col of ["company_name", "contact_name", "billing_email", "phone", "address", "zip", "city", "country", "vat_id", "logo"])
     if (!ocols.includes(col)) db.exec(`ALTER TABLE org ADD COLUMN ${col} TEXT`);
 }
 
@@ -141,7 +141,9 @@ export type OrgRow = {
   id: number; name: string; created: number;
   company_name: string | null; contact_name: string | null; billing_email: string | null; phone: string | null;
   address: string | null; zip: string | null; city: string | null; country: string | null; vat_id: string | null;
+  logo: string | null;
 };
+export const setOrgLogo = (id: number, logo: string | null) => db.prepare("UPDATE org SET logo=? WHERE id=?").run(logo, id);
 export const COMPANY_FIELDS = ["company_name", "contact_name", "billing_email", "phone", "address", "zip", "city", "country", "vat_id"] as const;
 export const updateCompany = (orgId: number, values: Record<string, string | null>) => {
   const cols = COMPANY_FIELDS.filter((f) => f in values);

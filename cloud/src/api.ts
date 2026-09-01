@@ -11,7 +11,7 @@ import {
   inviteByTokenHash, loginPendingByToken, markInviteUsed, markResetUsed, orgActivity, orgApiKeys,
   orgDevices, orgInvites, orgUsers, pendingInviteFor, publicCounts, recentResetFor, renameDevice, renameOrg,
   resetByTokenHash, revokeApiKey, revokeInvite, setDeviceSite, setTotpPending, setUserAvatar,
-  setUserName, setUserRole, updateCompany, updatePassword, useRecoveryCode, COMPANY_FIELDS,
+  setOrgLogo, setUserName, setUserRole, updateCompany, updatePassword, useRecoveryCode, COMPANY_FIELDS,
   type DeviceRow, type UserRow,
 } from "./db.js";
 import { COOKIE, endSession, hashPassword, loginAllowed, loginFailed, loginOk, requireUser, startSession, verifyPassword } from "./auth.js";
@@ -285,7 +285,7 @@ export const registerApi = (app: FastifyInstance) => {
       const org = getOrg(u.org_id)!;
       const company: Record<string, string | null> = {};
       for (const fld of COMPANY_FIELDS) company[fld] = org[fld];
-      return { name: org.name, created: org.created, members: orgUsers(u.org_id).length,
+      return { name: org.name, created: org.created, logo: org.logo, members: orgUsers(u.org_id).length,
                devices: orgDevices(u.org_id).length, personal: isPersonal(u.org_id), company };
     });
 
@@ -297,6 +297,15 @@ export const registerApi = (app: FastifyInstance) => {
         const name = String(body.name).trim();
         if (!name || name.length > 63) return reply.code(400).send({ error: "name must be 1–63 characters" });
         renameOrg(u.org_id, name);
+      }
+      if (body.logo !== undefined) {
+        const logo = body.logo as string | null;
+        if (logo !== null) {
+          if (typeof logo !== "string" || !/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(logo))
+            return reply.code(400).send({ error: "the logo must be a PNG or JPEG" });
+          if (logo.length > 96 * 1024) return reply.code(400).send({ error: "logo too large" });
+        }
+        setOrgLogo(u.org_id, logo);
       }
       if (body.company && typeof body.company === "object") {
         const values: Record<string, string | null> = {};
