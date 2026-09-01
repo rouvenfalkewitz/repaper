@@ -64,9 +64,12 @@ Things deliberately *not* metered in v1: per-page or per-sheet fees — they fig
 3. Billing + entitlements.
 4. Alerts, reports, SSO, on-prem.
 
+## Pilot deployment (decided Sep 2026)
+
+The pilot runs on Rouven's existing Hetzner server, on a `schisch.net` subdomain next to the projects already hosted there. It is a **closed pilot**: console only (no marketing pages), no public signup — accounts are created manually, demos happen with Rouven's own login. `noindex`, but no basic-auth in front (it would break the device channel, which shares the host). Devices learn the cloud URL from config, so moving to the real product domain later is a config push, not a migration.
+
 ## Open decisions
 
-- Domain (`repaper.io` / `.eu` / `.de` — still unchecked) and whether the console lives at `/console` or `app.` subdomain.
+- Product domain (`repaper.io` / `.eu` / `.de` — still unchecked) and whether the console lives at `/console` or `app.` subdomain. The pilot lives on `schisch.net` regardless.
 - Pricing numbers (Cloud per Dock per month, Go Pro per user).
-- MQTT vs. WebSocket for the device channel (MQTT is the standard; WebSocket is simpler to host). Recommendation: MQTT.
-- EU hosting provider.
+- MQTT vs. WebSocket for the device channel. For the pilot: plain WebSocket from the sidecar, but with the message vocabulary above kept intact so the transport can be swapped later (same pattern as SheetTransport). A broker only when the fleet justifies it.
