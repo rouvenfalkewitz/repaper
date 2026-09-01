@@ -42,10 +42,36 @@ async function signIn(e) {
     const r = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: el("email").value.trim(), password: el("password").value }) });
     const j = await r.json();
     if (!r.ok || j.error) throw new Error(j.error || r.statusText);
+    if (j.twofa) return showTwofa();
     location.href = "/";
   } catch (x) {
     b.classList.remove("busy"); b.disabled = false; b.innerHTML = "Sign in";
     shake(el("password")); toast(x.message, "err");
+  }
+  return false;
+}
+function showTwofa() {
+  document.querySelector(".card").innerHTML = `<h1>One more step</h1>
+    <p class="sub">Enter the 6-digit code from your authenticator app — or one of your recovery codes.</p>
+    <form class="stack" onsubmit="return sendCode(event)">
+      <div class="field"><label for="code">Code</label><input id="code" inputmode="numeric" autocomplete="one-time-code" required style="font-family:var(--font-mono);letter-spacing:.2em"></div>
+      <button class="btn primary" id="codeBtn" type="submit">Continue</button>
+    </form>
+    <p class="backline"><a class="alink" href="/login">Start over</a></p>`;
+  el("code").focus();
+  return false;
+}
+async function sendCode(e) {
+  e.preventDefault();
+  const b = el("codeBtn"); b.disabled = true; b.classList.add("busy"); b.innerHTML = ICON.spin + "<span>Checking…</span>";
+  try {
+    const r = await fetch("/api/login/2fa", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: el("code").value.trim() }) });
+    const j = await r.json();
+    if (!r.ok || j.error) throw new Error(j.error || r.statusText);
+    location.href = "/";
+  } catch (x) {
+    b.classList.remove("busy"); b.disabled = false; b.innerHTML = "Continue";
+    shake(el("code")); toast(x.message, "err");
   }
   return false;
 }

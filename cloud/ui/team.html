@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark light"><meta name="theme-color" content="#0C100F">
+<meta name="robots" content="noindex">
+<title>RePaper Cloud · Team</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,600;62..125,700;62..125,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/tokens.css"><link rel="stylesheet" href="/app.css">
+</head>
+<body data-page="team">
+<div class="layout">
+  <aside class="side" id="side"></aside>
+  <main class="main">
+    <div class="pagehead"><h1>Team</h1><button class="btn primary small" id="inviteBtn" onclick="openInvite()" hidden></button></div>
+    <div class="card" id="team"></div>
+  </main>
+</div>
+
+<dialog class="modal" id="edDlg">
+  <div class="modal-head"><b id="edTitle"></b><button class="iconbtn" type="button" onclick="closeModal()" aria-label="Close">✕</button></div>
+  <div class="modal-body" id="edBody"></div>
+</dialog>
+<div class="toast" id="toast" role="status"><span class="ic"></span><span class="tx"></span></div>
+
+<script src="/app.js"></script>
+<script>
+let T = null;
+async function loadTeam() { try { T = await api("/api/team"); renderTeam(); } catch {} }
+function renderTeam() {
+  if (!T || !ME) return;
+  const admin = ME.role === "admin";
+  const btn = el("inviteBtn"); btn.hidden = !admin; btn.innerHTML = ICON.plus + "<span>Invite someone</span>";
+  const rows = T.users.map(u => `<div class="member"><span class="mrow">${avatarHtml(u, 36)}<span class="who2"><b>${esc(u.name || u.email)}${u.you ? " (you)" : ""}</b><span class="mono">${esc(u.email)}</span></span></span><span class="row" style="gap:8px"><span class="pill ${u.role === "admin" ? "" : "setup"}">${esc(u.role)}</span>${admin && !u.you ? `<button class="iconbtn danger" data-uid="${u.id}" data-name="${esc(u.name || u.email)}" data-act="kick" title="Remove">${ICON.trash}</button>` : ""}</span></div>`).join("");
+  const inv = (T.invites || []).map(i => `<div class="member"><span class="mrow"><span class="av" style="width:36px;height:36px;background:var(--surface-2);color:var(--text-3);font-size:14px">✉</span><span class="who2"><b>${esc(i.email)}</b><span class="mono">invited by ${esc(i.invited_by_email)} · expires ${new Date(i.expires * 1000).toLocaleDateString()}</span></span></span><span class="row" style="gap:8px"><span class="pill amber">invited</span><button class="iconbtn danger" data-iid="${i.id}" data-act="revoke" title="Revoke invitation">${ICON.x}</button></span></div>`).join("");
+  el("team").innerHTML = rows + inv
+    + (admin ? "" : `<div class="hint" style="margin-top:10px;color:var(--text-3);font-size:.8125rem">Admins can invite and remove people.</div>`);
+}
+async function copyInv(link) { try { await navigator.clipboard.writeText(link); toast("Link copied."); } catch { toast("Copy failed — select it by hand.", "err"); } }
+el("team").addEventListener("click", async e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  if (b.dataset.act === "kick") return openKick(b.dataset.uid, b.dataset.name);
+  if (b.dataset.act === "revoke") {
+    try { await api(`/api/invites/${b.dataset.iid}/revoke`, {}); toast("Invitation revoked."); loadTeam(); }
+    catch (x) { toast(x.message, "err"); }
+  }
+});
+function openKick(uid, name) {
+  setModal("Remove from team", `<form class="ed" data-ed="kick" data-uid="${esc(uid)}"><p>Remove <b>${esc(name)}</b> from this organisation? Their account is deleted; devices stay in the fleet. You can invite them again any time.</p><div class="row end"><button class="btn outline" type="button" data-act="close">Keep</button><button class="btn danger" type="submit">${ICON.trash}Remove</button></div></form>`);
+}
+function openInvite() {
+  setModal("Invite someone", `<form class="ed" data-ed="invite">
+    <p>They get a one-time link (valid 14 days) and pick their own password. No invitation, no account — that's the whole door.</p>
+    <label for="edMail">Email</label><input id="edMail" name="email" type="email" required autocomplete="off" placeholder="name@company.com">
+    <label class="checkline"><input type="checkbox" name="admin"> Can manage the team (admin)</label>
+    <div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Invite</button></div></form>`);
+}
+el("edDlg").addEventListener("click", e => { const b = e.target.closest("[data-act=close]"); if (b) closeModal(); });
+el("edDlg").addEventListener("submit", async e => {
+  e.preventDefault(); const f = e.target, kind = f.dataset.ed, sb = f.querySelector("button[type=submit]");
+  const done = busy(sb, {invite: "Inviting…", kick: "Removing…"}[kind]);
+  try {
+    if (kind === "invite") {
+      const email = f.elements.email.value.trim();
+      const r = await api("/api/invites", {email, role: f.elements.admin.checked ? "admin" : "member"});
+      loadTeam();
+      el("edBody").innerHTML = `<div class="ed"><p><b>Invitation created for ${esc(email)}.</b> ${r.mailed ? "An email with the link is on its way." : "Mail sending is off for now — pass them the link yourself:"}</p>
+        <div class="linkbox mono">${esc(r.link)}</div>
+        <div class="row end"><button class="btn outline" type="button" onclick="copyInv('${esc(r.link)}')">Copy link</button><button class="btn primary" type="button" data-act="close">Done</button></div></div>`;
+      return;
+    }
+    if (kind === "kick") { await api(`/api/team/${f.dataset.uid}/remove`, {}); el("edDlg").close(); toast("Removed from the team."); loadTeam(); return; }
+  } catch (x) { done("Failed", true); const i = f.querySelector("input"); if (i) shake(i); toast(x.message, "err"); }
+});
+document.addEventListener("me-ready", renderTeam);
+loadTeam();
+</script>
+</body>
+</html>

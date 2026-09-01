@@ -25,13 +25,21 @@ const page = (name: string) => readFileSync(join(UI, name));
 const STATIC: Record<string, [string, string]> = {
   "/tokens.css": ["tokens.css", "text/css"],
   "/app.css": ["app.css", "text/css"],
+  "/app.js": ["app.js", "text/javascript; charset=utf-8"],
   "/favicon.svg": ["favicon.svg", "image/svg+xml"],
 };
 
-app.get("/", (req, reply) => {
-  if (!userFromRequest(req)) return reply.redirect("/login");
-  reply.header("Cache-Control", "no-store").header("X-Robots-Tag", "noindex").type("text/html; charset=utf-8").send(page("index.html"));
-});
+/* signed-in pages: one route each, same shell */
+const APP_PAGES: Record<string, string> = {
+  "/": "index.html", "/team": "team.html", "/account": "account.html",
+  "/billing": "billing.html", "/shop": "shop.html",
+};
+for (const [path, file] of Object.entries(APP_PAGES)) {
+  app.get(path, (req, reply) => {
+    if (!userFromRequest(req)) return reply.redirect("/login");
+    reply.header("Cache-Control", "no-store").header("X-Robots-Tag", "noindex").type("text/html; charset=utf-8").send(page(file));
+  });
+}
 app.get("/login", (req, reply) => {
   if (userFromRequest(req)) return reply.redirect("/");
   reply.header("Cache-Control", "no-store").header("X-Robots-Tag", "noindex").type("text/html; charset=utf-8").send(page("login.html"));

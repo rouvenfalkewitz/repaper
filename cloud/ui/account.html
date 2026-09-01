@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark light"><meta name="theme-color" content="#0C100F">
+<meta name="robots" content="noindex">
+<title>RePaper Cloud · Account</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,600;62..125,700;62..125,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/tokens.css"><link rel="stylesheet" href="/app.css">
+</head>
+<body data-page="account">
+<div class="layout">
+  <aside class="side" id="side"></aside>
+  <main class="main">
+    <div class="pagehead"><h1>Account</h1></div>
+
+    <h2>Profile</h2>
+    <div class="card">
+      <div class="profile">
+        <button class="avbtn" id="avBtn" title="Change picture" aria-label="Change picture"></button>
+        <input type="file" id="avFile" accept="image/png,image/jpeg" hidden>
+        <form class="stack" style="flex:1;min-width:220px" oninput="profDirty()" onsubmit="return saveProfile(event)">
+          <div class="field"><label for="pname">Name</label><input id="pname" maxlength="63" autocomplete="name"></div>
+          <div class="field"><label>Email</label><input id="pmail" disabled></div>
+          <div class="row between"><button class="btn ghost small" type="button" id="avRemove" onclick="removeAvatar()" hidden>Remove picture</button><button class="btn primary" id="profBtn" type="submit" disabled>Save</button></div>
+        </form>
+      </div>
+    </div>
+
+    <h2>Password</h2>
+    <div class="card">
+      <form class="stack" onsubmit="return savePassword(event)">
+        <div class="field"><label for="cur">Current password</label><input id="cur" type="password" autocomplete="current-password" required></div>
+        <div class="field"><label for="next">New password</label><input id="next" type="password" minlength="10" autocomplete="new-password" required><div class="hint">At least 10 characters. Everywhere else you're signed in gets signed out.</div></div>
+        <div class="row end"><button class="btn primary" id="pwBtn" type="submit">Change password</button></div>
+      </form>
+    </div>
+
+    <h2>Two-factor authentication</h2>
+    <div class="card" id="twofaCard"></div>
+  </main>
+</div>
+
+<dialog class="modal" id="edDlg">
+  <div class="modal-head"><b id="edTitle"></b><button class="iconbtn" type="button" onclick="closeModal()" aria-label="Close">✕</button></div>
+  <div class="modal-body" id="edBody"></div>
+</dialog>
+<div class="toast" id="toast" role="status"><span class="ic"></span><span class="tx"></span></div>
+
+<script src="/app.js"></script>
+<script>
+function renderProfile() {
+  if (!ME) return;
+  el("pname").value = ME.name || ""; el("pmail").value = ME.email;
+  el("avBtn").innerHTML = avatarHtml(ME, 72) + `<span class="avhint">${ICON.camera}</span>`;
+  el("avRemove").hidden = !ME.avatar;
+  renderTwofa(); profDirty();
+}
+function profDirty() { if (!ME) return; el("profBtn").disabled = el("pname").value.trim() === (ME.name || ""); }
+async function saveProfile(e) {
+  e.preventDefault(); const done = busy(el("profBtn"), "Saving…");
+  try { await api("/api/account", {name: el("pname").value.trim()}); ME.name = el("pname").value.trim(); done("Saved"); toast("Saved."); renderShell(); }
+  catch (x) { done("Not saved", true); toast(x.message, "err"); }
+  return false;
+}
+
+/* avatar: pick → downscale to 96px on a canvas → upload as data URL */
+el("avBtn").addEventListener("click", () => el("avFile").click());
+el("avFile").addEventListener("change", () => {
+  const file = el("avFile").files[0]; if (!file) return;
+  const img = new Image();
+  img.onload = async () => {
+    const c = document.createElement("canvas"); c.width = c.height = 96;
+    const s = Math.min(img.width, img.height);
+    c.getContext("2d").drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 96, 96);
+    const data = c.toDataURL("image/jpeg", 0.85);
+    try { await api("/api/account/avatar", {avatar: data}); ME.avatar = data; renderProfile(); renderShell(); toast("Picture updated."); }
+    catch (x) { toast(x.message, "err"); }
+    URL.revokeObjectURL(img.src);
+  };
+  img.src = URL.createObjectURL(file);
+  el("avFile").value = "";
+});
+async function removeAvatar() {
+  try { await api("/api/account/avatar", {avatar: null}); ME.avatar = null; renderProfile(); renderShell(); toast("Picture removed."); }
+  catch (x) { toast(x.message, "err"); }
+}
+
+async function savePassword(e) {
+  e.preventDefault(); const done = busy(el("pwBtn"), "Changing…");
+  try { await api("/api/account/password", {current: el("cur").value, next: el("next").value});
+    done("Changed"); toast("Password changed — other sessions were signed out."); el("cur").value = el("next").value = ""; }
+  catch (x) { done("Failed", true); shake(el("cur")); toast(x.message, "err"); }
+  return false;
+}
+
+/* ── 2FA ── */
+function renderTwofa() {
+  el("twofaCard").innerHTML = ME.twofa
+    ? `<div class="twofa"><span class="okic">${ICON.shield}</span><div style="flex:1"><b>On</b><span>Signing in asks for a code from your authenticator app. Keep your recovery codes safe — they are the only way back in without the app.</span></div><button class="btn outline small" onclick="openDisable()">Turn off</button></div>`
+    : `<div class="twofa"><span class="okic off">${ICON.shield}</span><div style="flex:1"><b>Off</b><span>Add a second lock: any authenticator app (1Password, Google Authenticator, Apple Passwords, …) plus your password.</span></div><button class="btn primary small" onclick="startEnable()">Turn on</button></div>`;
+}
+async function startEnable() {
+  try {
+    const r = await api("/api/2fa/setup", {});
+    setModal("Turn on two-factor auth", `<form class="ed" data-ed="enable">
+      <p>Scan this with your authenticator app, then enter the 6-digit code it shows.</p>
+      <div class="qrwrap"><img src="${r.qr}" width="180" height="180" alt="QR code for the authenticator app"></div>
+      <p class="mono" style="font-size:.6875rem;color:var(--text-3);overflow-wrap:anywhere">Can't scan? Enter this secret manually: ${esc(r.secret)}</p>
+      <label for="edCode">Code from the app</label><input id="edCode" name="code" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" required autocomplete="one-time-code" style="font-family:var(--font-mono);letter-spacing:.2em">
+      <div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Verify & turn on</button></div></form>`);
+  } catch (x) { toast(x.message, "err"); }
+}
+function openDisable() {
+  setModal("Turn off two-factor auth", `<form class="ed" data-ed="disable">
+    <p>Confirm with your password and a current code from the app.</p>
+    <label for="edPw">Password</label><input id="edPw" name="password" type="password" autocomplete="current-password" required>
+    <label for="edCode">Code from the app</label><input id="edCode" name="code" inputmode="numeric" maxlength="7" required autocomplete="one-time-code" style="font-family:var(--font-mono);letter-spacing:.2em">
+    <div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn danger" type="submit">Turn off</button></div></form>`);
+}
+el("edDlg").addEventListener("click", e => { const b = e.target.closest("[data-act=close]"); if (b) closeModal(); });
+el("edDlg").addEventListener("submit", async e => {
+  e.preventDefault(); const f = e.target, kind = f.dataset.ed, sb = f.querySelector("button[type=submit]");
+  const done = busy(sb, kind === "enable" ? "Checking…" : "Turning off…");
+  try {
+    if (kind === "enable") {
+      const r = await api("/api/2fa/enable", {code: f.elements.code.value});
+      ME.twofa = true; renderTwofa();
+      el("edTitle").textContent = "Save your recovery codes";
+      el("edBody").innerHTML = `<div class="ed"><p><b>Two-factor auth is on.</b> These codes are shown exactly once — each one signs you in a single time if you lose the app. Keep them in your password manager.</p>
+        <div class="codes mono">${r.codes.map(c => `<span>${esc(c)}</span>`).join("")}</div>
+        <div class="row end"><button class="btn outline" type="button" onclick="copyCodes()">Copy all</button><button class="btn primary" type="button" data-act="close">Done</button></div></div>`;
+      return;
+    }
+    if (kind === "disable") {
+      await api("/api/2fa/disable", {password: f.elements.password.value, code: f.elements.code.value});
+      ME.twofa = false; renderTwofa(); closeModal(); toast("Two-factor auth is off.");
+      return;
+    }
+  } catch (x) { done("Failed", true); const i = f.querySelector("input"); if (i) shake(i); toast(x.message, "err"); }
+});
+
+async function copyCodes() {
+  const codes = [...document.querySelectorAll(".codes span")].map(s => s.textContent).join("\n");
+  try { await navigator.clipboard.writeText(codes); toast("Copied — now put them somewhere safe."); }
+  catch { toast("Copy failed — select them by hand.", "err"); }
+}
+document.addEventListener("me-ready", renderProfile);
+if (ME) renderProfile();
+</script>
+</body>
+</html>

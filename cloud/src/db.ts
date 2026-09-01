@@ -77,11 +77,35 @@ if (!(db.prepare("PRAGMA table_info(user)").all() as { name: string }[]).some((c
   db.exec("ALTER TABLE user ADD COLUMN role TEXT NOT NULL DEFAULT 'member'");
   db.exec("UPDATE user SET role='admin' WHERE id IN (SELECT MIN(id) FROM user GROUP BY org_id)");
 }
+// account features: avatar + TOTP 2FA
+{
+  const cols = (db.prepare("PRAGMA table_info(user)").all() as { name: string }[]).map((c) => c.name);
+  if (!cols.includes("avatar")) db.exec("ALTER TABLE user ADD COLUMN avatar TEXT");
+  if (!cols.includes("totp_secret")) db.exec("ALTER TABLE user ADD COLUMN totp_secret TEXT");
+  if (!cols.includes("totp_pending")) db.exec("ALTER TABLE user ADD COLUMN totp_pending TEXT");
+}
+db.exec(`
+CREATE TABLE IF NOT EXISTS twofa_login (
+  token TEXT PRIMARY KEY,           -- password already verified; waiting for the code
+  user_id INTEGER NOT NULL REFERENCES user(id),
+  attempts INTEGER NOT NULL DEFAULT 0,
+  expires REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS recovery_code (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES user(id),
+  code_hash TEXT NOT NULL,
+  used_at REAL
+);
+`);
 
 const now = () => Date.now() / 1000;
 
 export type OrgRow = { id: number; name: string; created: number };
-export type UserRow = { id: number; org_id: number; email: string; name: string; pass_hash: string; created: number; role: string };
+export type UserRow = {
+  id: number; org_id: number; email: string; name: string; pass_hash: string; created: number; role: string;
+  avatar: string | null; totp_secret: string | null; totp_pending: string | null;
+};
 export type InviteRow = { id: number; org_id: number; email: string; role: string; token_hash: string; invited_by: number; created: number; expires: number; used_at: number | null };
 export type DeviceRow = {
   id: string; org_id: number | null; kind: string; name: string; secret_hash: string;
@@ -102,7 +126,33 @@ export const createUser = (orgId: number, email: string, name: string, passHash:
 export const firstAdmin = (orgId: number) =>
   db.prepare("SELECT * FROM user WHERE org_id=? AND role='admin' ORDER BY id LIMIT 1").get(orgId) as UserRow | undefined;
 export const orgUsers = (orgId: number) =>
-  db.prepare("SELECT id, email, name, role, created FROM user WHERE org_id=? ORDER BY created").all(orgId) as Pick<UserRow, "id" | "email" | "name" | "role" | "created">[];
+  db.prepare("SELECT id, email, name, role, created, avatar FROM user WHERE org_id=? ORDER BY created").all(orgId) as Pick<UserRow, "id" | "email" | "name" | "role" | "created" | "avatar">[];
+export const setUserName = (id: number, name: string) => db.prepare("UPDATE user SET name=? WHERE id=?").run(name, id);
+export const setUserAvatar = (id: number, avatar: string | null) => db.prepare("UPDATE user SET avatar=? WHERE id=?").run(avatar, id);
+export const deleteOtherSessions = (userId: number, keep: string) => db.prepare("DELETE FROM session WHERE user_id=? AND token<>?").run(userId, keep);
+
+// ── 2FA ─────────────────────────────────────────────────────────────────────
+export const setTotpPending = (id: number, secret: string) => db.prepare("UPDATE user SET totp_pending=? WHERE id=?").run(secret, id);
+export const enableTotp = (id: number, secret: string) => db.prepare("UPDATE user SET totp_secret=?, totp_pending=NULL WHERE id=?").run(secret, id);
+export const disableTotp = (id: number) => {
+  db.prepare("DELETE FROM recovery_code WHERE user_id=?").run(id);
+  return db.prepare("UPDATE user SET totp_secret=NULL, totp_pending=NULL WHERE id=?").run(id);
+};
+export const addRecoveryCodes = (userId: number, hashes: string[]) => {
+  db.prepare("DELETE FROM recovery_code WHERE user_id=?").run(userId);
+  const ins = db.prepare("INSERT INTO recovery_code(user_id, code_hash) VALUES(?,?)");
+  for (const h of hashes) ins.run(userId, h);
+};
+export const useRecoveryCode = (userId: number, hash: string): boolean =>
+  db.prepare("UPDATE recovery_code SET used_at=? WHERE user_id=? AND code_hash=? AND used_at IS NULL").run(now(), userId, hash).changes > 0;
+export const createLoginPending = (token: string, userId: number) =>
+  db.prepare("INSERT INTO twofa_login(token, user_id, expires) VALUES(?,?,?)").run(token, userId, now() + 300);
+export const loginPendingByToken = (token: string) => {
+  const r = db.prepare("SELECT * FROM twofa_login WHERE token=?").get(token) as { token: string; user_id: number; attempts: number; expires: number } | undefined;
+  return r && r.expires > now() ? r : undefined;
+};
+export const bumpLoginPending = (token: string) => db.prepare("UPDATE twofa_login SET attempts=attempts+1 WHERE token=?").run(token);
+export const deleteLoginPending = (token: string) => db.prepare("DELETE FROM twofa_login WHERE token=?").run(token);
 export const deleteUser = (id: number) => {
   db.prepare("DELETE FROM session WHERE user_id=?").run(id);
   db.prepare("DELETE FROM invite WHERE invited_by=? AND used_at IS NULL").run(id);

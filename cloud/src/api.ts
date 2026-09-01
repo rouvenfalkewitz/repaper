@@ -1,12 +1,16 @@
 /* Console API: everything a signed-in user does. Device-facing traffic lives in devices.ts. */
 import { createHash, randomBytes } from "node:crypto";
+import QRCode from "qrcode";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { generateSecret, otpauthUrl, totpCheck } from "./totp.js";
 import {
-  addEvent, claimDevice, createInvite, createReset, createUser, deleteDevice, deleteSessionsFor,
-  deleteUser, deviceEvents, findClaimable, firstAdmin, getDevice, getOrg, getOrgByName, getUser,
-  getUserByEmail, inviteByTokenHash, markInviteUsed, markResetUsed, orgDevices, orgInvites,
-  orgUsers, pendingInviteFor, recentResetFor, renameDevice, resetByTokenHash, revokeInvite,
-  updatePassword, type DeviceRow, type UserRow,
+  addEvent, addRecoveryCodes, bumpLoginPending, claimDevice, createInvite, createLoginPending,
+  createReset, createUser, deleteDevice, deleteLoginPending, deleteOtherSessions, deleteSessionsFor,
+  deleteUser, deviceEvents, disableTotp, enableTotp, findClaimable, firstAdmin, getDevice, getOrg,
+  getOrgByName, getUser, getUserByEmail, inviteByTokenHash, loginPendingByToken, markInviteUsed,
+  markResetUsed, orgDevices, orgInvites, orgUsers, pendingInviteFor, recentResetFor, renameDevice,
+  resetByTokenHash, revokeInvite, setTotpPending, setUserAvatar, setUserName, updatePassword,
+  useRecoveryCode, type DeviceRow, type UserRow,
 } from "./db.js";
 import { COOKIE, endSession, hashPassword, loginAllowed, loginFailed, loginOk, requireUser, startSession, verifyPassword } from "./auth.js";
 import { mailEnabled, sendInviteMail, sendRegisterMail, sendResetMail } from "./mail/index.js";
@@ -41,6 +45,32 @@ export const registerApi = (app: FastifyInstance) => {
       return reply.code(401).send({ error: "wrong email or password" });
     }
     loginOk(req.ip);
+    if (user.totp_secret) {
+      // password verified — park the login until the authenticator code arrives
+      const t = randomBytes(32).toString("hex");
+      createLoginPending(t, user.id);
+      reply.setCookie("rp_pending", t, { path: "/", httpOnly: true, sameSite: "lax", secure: req.protocol === "https", maxAge: 300 });
+      return { twofa: true };
+    }
+    reply.setCookie(COOKIE, startSession(user.id), {
+      path: "/", httpOnly: true, sameSite: "lax", secure: req.protocol === "https", maxAge: 30 * 86400,
+    });
+    return { ok: true };
+  });
+
+  app.post("/api/login/2fa", async (req, reply) => {
+    const t = req.cookies?.rp_pending;
+    const pending = t ? loginPendingByToken(t) : undefined;
+    if (!pending) return reply.code(401).send({ error: "sign in again — the code window expired" });
+    if (pending.attempts >= 6) { deleteLoginPending(pending.token); return reply.code(429).send({ error: "too many wrong codes — sign in again" }); }
+    const user = getUser(pending.user_id)!;
+    const code = String(((req.body ?? {}) as { code?: string }).code ?? "").trim();
+    const recovery = code.replace(/-/g, "").toLowerCase();
+    const ok = (user.totp_secret && totpCheck(user.totp_secret, code))
+      || (/^[a-f0-9]{10}$/.test(recovery) && useRecoveryCode(user.id, sha256(recovery)));
+    if (!ok) { bumpLoginPending(pending.token); return reply.code(401).send({ error: "that code didn't match" }); }
+    deleteLoginPending(pending.token);
+    reply.clearCookie("rp_pending", { path: "/" });
     reply.setCookie(COOKIE, startSession(user.id), {
       path: "/", httpOnly: true, sameSite: "lax", secure: req.protocol === "https", maxAge: 30 * 86400,
     });
@@ -146,6 +176,76 @@ export const registerApi = (app: FastifyInstance) => {
       const u = (req as Authed).user;
       const org = getOrg(u.org_id)!;
       return { org: org.name, user: { email: u.email, name: u.name, role: u.role }, devices: orgDevices(u.org_id).map(publicDevice) };
+    });
+
+    // ── account ────────────────────────────────────────────────────────────
+    const me = (u: UserRow) => ({
+      email: u.email, name: u.name, role: u.role, org: getOrg(u.org_id)!.name,
+      avatar: u.avatar, twofa: !!u.totp_secret, mail: mailEnabled,
+    });
+
+    f.get("/api/me", async (req) => me((req as Authed).user));
+
+    f.post("/api/account", async (req, reply) => {
+      const u = (req as Authed).user;
+      const name = String(((req.body ?? {}) as { name?: string }).name ?? "").trim();
+      if (name.length > 63) return reply.code(400).send({ error: "name must be at most 63 characters" });
+      setUserName(u.id, name);
+      return { ok: true };
+    });
+
+    f.post("/api/account/avatar", async (req, reply) => {
+      const u = (req as Authed).user;
+      const avatar = ((req.body ?? {}) as { avatar?: string | null }).avatar ?? null;
+      if (avatar !== null) {
+        if (typeof avatar !== "string" || !/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(avatar))
+          return reply.code(400).send({ error: "avatar must be a PNG or JPEG" });
+        if (avatar.length > 64 * 1024) return reply.code(400).send({ error: "avatar too large" });
+      }
+      setUserAvatar(u.id, avatar);
+      return { ok: true };
+    });
+
+    f.post("/api/account/password", async (req, reply) => {
+      const u = (req as Authed).user;
+      const { current, next } = (req.body ?? {}) as { current?: string; next?: string };
+      if (!current || !verifyPassword(current, u.pass_hash)) return reply.code(401).send({ error: "the current password is wrong" });
+      if (!next || next.length < 10) return reply.code(400).send({ error: "pick a password of at least 10 characters" });
+      updatePassword(u.id, hashPassword(next));
+      deleteOtherSessions(u.id, req.cookies![COOKIE]!);   // every other device is signed out
+      return { ok: true };
+    });
+
+    // ── two-factor auth (TOTP) ─────────────────────────────────────────────
+    f.post("/api/2fa/setup", async (req, reply) => {
+      const u = (req as Authed).user;
+      if (u.totp_secret) return reply.code(409).send({ error: "two-factor auth is already on" });
+      const secret = generateSecret();
+      setTotpPending(u.id, secret);
+      const url = otpauthUrl(secret, u.email);
+      return { secret, qr: await QRCode.toDataURL(url, { margin: 1, width: 220 }) };
+    });
+
+    f.post("/api/2fa/enable", async (req, reply) => {
+      const u = (req as Authed).user;
+      const fresh = getUser(u.id)!;
+      const code = String(((req.body ?? {}) as { code?: string }).code ?? "");
+      if (!fresh.totp_pending) return reply.code(400).send({ error: "start the setup first" });
+      if (!totpCheck(fresh.totp_pending, code)) return reply.code(401).send({ error: "that code didn't match — check the app and try again" });
+      enableTotp(u.id, fresh.totp_pending);
+      const codes = Array.from({ length: 8 }, () => randomBytes(5).toString("hex"));
+      addRecoveryCodes(u.id, codes.map(sha256));
+      return { ok: true, codes: codes.map((c) => `${c.slice(0, 5)}-${c.slice(5)}`) };   // shown exactly once
+    });
+
+    f.post("/api/2fa/disable", async (req, reply) => {
+      const u = (req as Authed).user;
+      const { password, code } = (req.body ?? {}) as { password?: string; code?: string };
+      if (!u.totp_secret) return reply.code(400).send({ error: "two-factor auth is not on" });
+      if (!password || !verifyPassword(password, u.pass_hash)) return reply.code(401).send({ error: "the password is wrong" });
+      if (!code || !totpCheck(u.totp_secret, code)) return reply.code(401).send({ error: "that code didn't match" });
+      disableTotp(u.id);
+      return { ok: true };
     });
 
     // ── team ───────────────────────────────────────────────────────────────

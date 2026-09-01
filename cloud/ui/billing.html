@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark light"><meta name="theme-color" content="#0C100F">
+<meta name="robots" content="noindex">
+<title>RePaper Cloud · Billing</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,600;62..125,700;62..125,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/tokens.css"><link rel="stylesheet" href="/app.css">
+</head>
+<body data-page="billing">
+<div class="layout">
+  <aside class="side" id="side"></aside>
+  <main class="main">
+    <div class="pagehead"><h1>Billing</h1><span class="pill amber">preview — nothing is charged</span></div>
+
+    <h2>Plan</h2>
+    <div class="card plan">
+      <div class="row between">
+        <div><b class="planname">Pilot</b><div class="devmeta">Everything included while RePaper Cloud grows up. Printing itself is never metered — no per-page, no per-sheet fees, ever.</div></div>
+        <div class="price"><b>€0</b><span>/ month</span></div>
+      </div>
+      <div class="planlist">
+        <div class="planline"><span>Fleet view, claiming &amp; remote care</span><span class="mono">included</span></div>
+        <div class="planline"><span>Team accounts &amp; roles</span><span class="mono">included</span></div>
+        <div class="planline"><span>Signed software updates</span><span class="mono">soon</span></div>
+        <div class="planline"><span>Alerts (offline, battery low)</span><span class="mono">soon</span></div>
+      </div>
+      <div class="notice info" style="margin:0"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg><div><b>How pricing will work</b><span>Docks are hardware you own. RePaper Cloud becomes a small subscription per Dock per month; the Go app gets a free tier and a Pro plan per user. Numbers aren't final — what's shown here is illustrative.</span></div></div>
+      <div class="row end"><button class="btn outline" disabled>Change plan</button></div>
+    </div>
+
+    <h2>Payment method</h2>
+    <div class="card">
+      <div class="twofa"><span class="okic off" id="payIcon"></span><div style="flex:1"><b>None needed yet</b><span>During the pilot there is nothing to pay. Card and SEPA via Stripe land here together with the first paid plan.</span></div><button class="btn outline small" disabled>Add payment method</button></div>
+    </div>
+
+    <h2>Invoices</h2>
+    <div class="card">
+      <div class="inv sample"><span class="mono">2026-1042</span><span>RePaper Cloud · 3 Docks</span><span class="mono">€12.00</span><span class="pill">paid</span></div>
+      <div class="inv sample"><span class="mono">2026-0987</span><span>RePaper Cloud · 3 Docks</span><span class="mono">€12.00</span><span class="pill">paid</span></div>
+      <div class="inv sample"><span class="mono">2026-0925</span><span>RePaper Cloud · 2 Docks</span><span class="mono">€8.00</span><span class="pill">paid</span></div>
+      <div class="hint" style="margin-top:12px;color:var(--text-3);font-size:.8125rem">Sample data — your real invoices appear here once billing is live.</div>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status"><span class="ic"></span><span class="tx"></span></div>
+<script src="/app.js"></script>
+<script>el("payIcon").innerHTML = ICON.card;</script>
+</body>
+</html>
