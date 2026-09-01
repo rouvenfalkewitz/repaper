@@ -2,13 +2,14 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import {
-  addEvent, claimDevice, createInvite, createUser, deleteDevice, deleteUser, deviceEvents,
-  findClaimable, firstAdmin, getDevice, getOrg, getOrgByName, getUser, getUserByEmail,
-  inviteByTokenHash, markInviteUsed, orgDevices, orgInvites, orgUsers, pendingInviteFor,
-  renameDevice, revokeInvite, type DeviceRow, type UserRow,
+  addEvent, claimDevice, createInvite, createReset, createUser, deleteDevice, deleteSessionsFor,
+  deleteUser, deviceEvents, findClaimable, firstAdmin, getDevice, getOrg, getOrgByName, getUser,
+  getUserByEmail, inviteByTokenHash, markInviteUsed, markResetUsed, orgDevices, orgInvites,
+  orgUsers, pendingInviteFor, recentResetFor, renameDevice, resetByTokenHash, revokeInvite,
+  updatePassword, type DeviceRow, type UserRow,
 } from "./db.js";
 import { COOKIE, endSession, hashPassword, loginAllowed, loginFailed, loginOk, requireUser, startSession, verifyPassword } from "./auth.js";
-import { mailEnabled, sendInviteMail, sendRegisterMail } from "./mail.js";
+import { mailEnabled, sendInviteMail, sendRegisterMail, sendResetMail } from "./mail.js";
 import { dropDevice, isOnline, sendToDevice } from "./devices.js";
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
@@ -76,6 +77,43 @@ export const registerApi = (app: FastifyInstance) => {
     try { await sendRegisterMail(email, `${req.protocol}://${req.host}/join/${token}`, org.name); }
     catch (e) { req.log.warn({ err: e }, "register mail failed"); }
     return neutral;
+  });
+
+  // ── forgot password: neutral reply, one-time link, 2 h, old sessions die ─
+  app.post("/api/reset-request", async (req, reply) => {
+    const hit = regHits.get("r:" + req.ip);
+    if (hit && Date.now() - hit.t < 15 * 60_000 && hit.n >= 5) return reply.code(429).send({ error: "too many attempts — try again in a few minutes" });
+    regHits.set("r:" + req.ip, !hit || Date.now() - hit.t > 15 * 60_000 ? { n: 1, t: Date.now() } : { n: hit.n + 1, t: hit.t });
+    const email = String(((req.body ?? {}) as { email?: string }).email ?? "").trim().toLowerCase();
+    if (!EMAIL_RE.test(email)) return reply.code(400).send({ error: "that doesn't look like an email address" });
+    const user = getUserByEmail(email);
+    if (!user || recentResetFor(user.id)) return { ok: true };
+    const token = randomBytes(32).toString("hex");
+    createReset(user.id, sha256(token));
+    try { await sendResetMail(email, `${req.protocol}://${req.host}/reset/${token}`); }
+    catch (e) { req.log.warn({ err: e }, "reset mail failed"); }
+    return { ok: true };
+  });
+
+  app.get("/api/reset/lookup", async (req, reply) => {
+    const token = String((req.query as { token?: string }).token ?? "");
+    const r = /^[a-f0-9]{64}$/.test(token) ? resetByTokenHash(sha256(token)) : undefined;
+    if (!r) return reply.code(404).send({ error: "this reset link is no longer valid — request a fresh one" });
+    return { email: getUser(r.user_id)!.email };
+  });
+
+  app.post("/api/reset", async (req, reply) => {
+    const { token, password } = (req.body ?? {}) as { token?: string; password?: string };
+    const r = token && /^[a-f0-9]{64}$/.test(token) ? resetByTokenHash(sha256(token)) : undefined;
+    if (!r) return reply.code(404).send({ error: "this reset link is no longer valid — request a fresh one" });
+    if (!password || password.length < 10) return reply.code(400).send({ error: "pick a password of at least 10 characters" });
+    updatePassword(r.user_id, hashPassword(password));
+    markResetUsed(r.id);
+    deleteSessionsFor(r.user_id);   // whoever held the old password is out
+    reply.setCookie(COOKIE, startSession(r.user_id), {
+      path: "/", httpOnly: true, sameSite: "lax", secure: req.protocol === "https", maxAge: 30 * 86400,
+    });
+    return { ok: true };
   });
 
   // ── joining by invite (the only way in — there is no open signup) ────────

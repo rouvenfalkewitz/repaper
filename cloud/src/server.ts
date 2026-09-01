@@ -43,6 +43,10 @@ app.get("/register", (req, reply) => {
   if (userFromRequest(req)) return reply.redirect("/");
   reply.header("Cache-Control", "no-store").header("X-Robots-Tag", "noindex").type("text/html; charset=utf-8").send(page("register.html"));
 });
+for (const p of ["/reset", "/reset/:token"]) {
+  app.get(p, (_req, reply) =>
+    reply.header("Cache-Control", "no-store").header("X-Robots-Tag", "noindex").type("text/html; charset=utf-8").send(page("reset.html")));
+}
 app.get("/robots.txt", (_req, reply) => reply.type("text/plain").send("User-agent: *\nDisallow: /\n"));
 for (const [path, [file, type]] of Object.entries(STATIC)) {
   app.get(path, (_req, reply) => reply.header("Cache-Control", "no-store").type(type).send(page(file)));

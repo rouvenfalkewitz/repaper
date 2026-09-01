@@ -51,6 +51,14 @@ CREATE TABLE IF NOT EXISTS event (
   data TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS event_device ON event(device_id, at);
+CREATE TABLE IF NOT EXISTS reset (
+  id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES user(id),
+  token_hash TEXT NOT NULL UNIQUE,
+  created REAL NOT NULL,
+  expires REAL NOT NULL,
+  used_at REAL
+);
 CREATE TABLE IF NOT EXISTS invite (
   id INTEGER PRIMARY KEY,
   org_id INTEGER NOT NULL REFERENCES org(id),
@@ -100,6 +108,20 @@ export const deleteUser = (id: number) => {
   db.prepare("DELETE FROM invite WHERE invited_by=? AND used_at IS NULL").run(id);
   return db.prepare("DELETE FROM user WHERE id=?").run(id);
 };
+
+// ── password resets ─────────────────────────────────────────────────────────
+export type ResetRow = { id: number; user_id: number; token_hash: string; created: number; expires: number; used_at: number | null };
+export const createReset = (userId: number, tokenHash: string, hours = 2) =>
+  db.prepare("INSERT INTO reset(user_id, token_hash, created, expires) VALUES(?,?,?,?)").run(userId, tokenHash, now(), now() + hours * 3600);
+export const resetByTokenHash = (tokenHash: string) => {
+  const r = db.prepare("SELECT * FROM reset WHERE token_hash=?").get(tokenHash) as ResetRow | undefined;
+  return r && !r.used_at && r.expires > now() ? r : undefined;
+};
+export const recentResetFor = (userId: number, minutes = 10) =>
+  db.prepare("SELECT id FROM reset WHERE user_id=? AND used_at IS NULL AND created>?").get(userId, now() - minutes * 60) as { id: number } | undefined;
+export const markResetUsed = (id: number) => db.prepare("UPDATE reset SET used_at=? WHERE id=?").run(now(), id);
+export const updatePassword = (userId: number, passHash: string) => db.prepare("UPDATE user SET pass_hash=? WHERE id=?").run(passHash, userId);
+export const deleteSessionsFor = (userId: number) => db.prepare("DELETE FROM session WHERE user_id=?").run(userId);
 
 // ── invites ─────────────────────────────────────────────────────────────────
 export const createInvite = (orgId: number, email: string, role: string, tokenHash: string, invitedBy: number, days = 14) =>

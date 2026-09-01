@@ -27,6 +27,16 @@ export const sendMail = async (to: string, subject: string, text: string): Promi
   await smtp.sendMail({ from: FROM, to, subject, text });
 };
 
+export const sendResetMail = (to: string, link: string) =>
+  sendMail(
+    to,
+    "Reset your RePaper Cloud password",
+    `Someone (hopefully you) asked to reset the password for this account on RePaper Cloud.\n\n` +
+      `Set a new one here (the link works once and expires in 2 hours):\n\n  ${link}\n\n` +
+      `If this wasn't you, ignore this mail — your password stays as it is.\n\n` +
+      `— RePaper Cloud`
+  );
+
 export const sendRegisterMail = (to: string, link: string, orgName: string) =>
   sendMail(
     to,
