@@ -29,8 +29,8 @@ Every RePaper printer — a Dock or a phone running Go — is a device that can 
 Keep it simple to start; make it explainable in one sentence per product.
 Refined Sep 2026 into a three-tier sketch (draft numbers, shown as a preview on the console's Billing page):
 
-- **Free — €0 forever**: one device per account, all its sheets, unlimited prints, fleet view & claiming, manual updates, personal workspace. The honest entry that keeps the "it's just a printer" promise.
-- **Team — ~€4 / device / month**: unlimited devices priced each; organisations (members, roles, invitations), sites, alerts with email digest, automatic signed updates, read API keys.
+- **Free — €0 forever**: one device per account, up to 10 sheets, unlimited prints, fleet view & claiming, manual updates, personal workspace. The honest entry that keeps the "it's just a printer" promise.
+- **Team — ~€4 / device / month**: unlimited devices and sheets (devices priced each, sheets never — BLE range meters big fleets into more Docks by itself); organisations (members, roles, invitations), sites, alerts with email digest, automatic signed updates, read API keys.
 - **Pro — ~€9 / device / month**: everything in Team plus write API & webhooks, staged rollouts & maintenance windows, 12-month history, remote diagnostics & priority support, org branding in the console.
 - **Enterprise**: a conversation — on-prem, SSO, purchase orders, SLAs.
 - **Sheets & accessories**: hardware margin, sold in the console's Shop.
