@@ -14,6 +14,7 @@
   <aside class="side" id="side"></aside>
   <main class="main">
     <div class="pagehead"><h1>Fleet</h1><span class="mono" id="orgName"></span></div>
+    <div id="alerts"></div>
     <div class="fleet" id="fleet"></div>
   </main>
 </div>
@@ -41,19 +42,33 @@ function card(d) {
       <span class="iconrow"><button class="iconbtn" data-act="name" title="Rename" aria-label="Rename">${ICON.pencil}</button><button class="iconbtn" data-act="details" title="Details" aria-label="Details">${ICON.info}</button><button class="iconbtn danger" data-act="remove" title="Remove" aria-label="Remove">${ICON.trash}</button></span></div>
     <b>${esc(name)}</b>
     <div class="devmeta">${esc(st.printer || "—")} · ${sheetsTxt}</div>
-    <div class="dev-foot"><span class="presence ${off ? "off" : ""}"><span class="dot"></span><b>${off ? "seen " + ago(d.last_seen) : "online"}</b></span><span>${esc(d.version ? "v" + d.version : "")}</span></div>
+    <div class="dev-foot"><span class="presence ${off ? "off" : ""}"><span class="dot"></span><b>${off ? "seen " + ago(d.last_seen) : "online"}</b></span>${spark(d.stats)}<span>${esc(d.version ? "v" + d.version : "")}</span></div>
     <div class="tools"><button class="btn small" data-act="identify" ${off ? "disabled" : ""}>${ICON.ping}Identify</button></div></div>`;
 }
 
 function render() {
   el("orgName").textContent = S.org || "";
-  el("fleet").innerHTML = S.devices.map(card).join("")
+  const bySite = new Map();
+  for (const d of S.devices) { const k = d.site || ""; if (!bySite.has(k)) bySite.set(k, []); bySite.get(k).push(d); }
+  let html = "";
+  if (bySite.size > 1) {
+    for (const [site, devs] of [...bySite.entries()].sort((a, b) => (a[0] || "~").localeCompare(b[0] || "~")))
+      html += `<div class="sitehead">${esc(site || "No site")}</div>` + devs.map(card).join("");
+  } else html = S.devices.map(card).join("");
+  el("fleet").innerHTML = html
     + `<button class="addcard" type="button" onclick="openModal('claim')"><span class="plus">${ICON.plus}</span><span>${S.devices.length ? "Claim a device" : "Claim your first device"}</span></button>`
     + (S.devices.length ? "" : `<div class="empty-hint" style="grid-column:1/-1">A Dock shows its claim code on its settings page under <b>RePaper Cloud</b> once it is pointed at this cloud. Enter the code here and it joins your fleet.</div>`);
 }
 
+function renderAlerts(alerts) {
+  el("alerts").innerHTML = (alerts || []).map(a =>
+    `<div class="notice ${a.level === "err" ? "err" : ""}">${a.level === "err" ? ICON.x : ICON.warn}<div><b>${esc(a.title)}</b><span>${esc(a.text)}</span></div></div>`).join("");
+}
+
 async function load() {
-  S = { ...S, ...(await api("/api/fleet")) };
+  const [fleet, al] = await Promise.all([api("/api/fleet"), api("/api/alerts").catch(() => null)]);
+  S = { ...S, ...fleet };
+  if (al) renderAlerts(al.alerts);
   if (!document.querySelector("dialog[open]")) render();
 }
 
@@ -74,9 +89,16 @@ function openDetails(id) {
       + fact("Local page", st.web) + fact("Claimed", d.claimed_at ? new Date(d.claimed_at * 1000).toLocaleDateString() : "")
       + fact("Last seen", d.online ? "online now" : ago(d.last_seen)) + fact("Device id", d.id)
     }</div>${sheets.length ? `<div><h2 style="margin-top:0">Sheets</h2><div class="dsheets">${rows}</div></div>` : ""}
-    ${evts ? `<div><h2 style="margin-top:0">Activity</h2><div>${evts}</div></div>` : ""}`;
+    ${evts ? `<div><h2 style="margin-top:0">Activity</h2><div>${evts}</div></div>` : ""}
+    <div><h2 style="margin-top:0">Diagnostics</h2>${full.diag ? `<pre class="diaglog mono">${esc(full.diag.log)}</pre><div class="hint" style="color:var(--text-3);font-size:.75rem">captured ${ago(full.diag.at)}</div>` : `<div class="devmeta">No bundle yet — ask the device for its recent log.</div>`}
+    <div class="row" style="margin-top:10px"><button class="btn outline small" onclick="requestDiag('${esc(d.id)}', this)" ${d.online ? "" : "disabled"}>Request diagnostics</button></div></div>`;
     el("detDlg").showModal();
   }).catch(x => toast(x.message, "err"));
+}
+async function requestDiag(id, b) {
+  const done = busy(b, "Asking…");
+  try { await api(`/api/devices/${id}/diag`, {}); done("Requested"); toast("The device is sending its log — reopen the details in a few seconds."); }
+  catch (x) { done("Failed", true); toast(x.message, "err"); }
 }
 
 const modals = {
@@ -84,7 +106,10 @@ const modals = {
     <p>On the Dock, open <b>Settings → RePaper Cloud</b> and point it at this cloud. Its claim code appears there.</p>
     <label for="edCode">Claim code</label><input id="edCode" name="value" class="serial" placeholder="3F9A-B2C1" maxlength="9" required autocomplete="off" style="font-family:var(--font-mono);text-transform:uppercase">
     <div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Claim</button></div></form>`],
-  name: (d) => ["Rename", `<form class="ed" data-ed="name" data-id="${esc(d.id)}"><label for="edName">Name</label><input id="edName" name="value" value="${esc(d.name || (d.status || {}).printer || "")}" maxlength="63" required autocomplete="off"><div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Save</button></div></form>`],
+  name: (d) => ["Edit device", `<form class="ed" data-ed="name" data-id="${esc(d.id)}">
+    <label for="edName">Name</label><input id="edName" name="value" value="${esc(d.name || (d.status || {}).printer || "")}" maxlength="63" required autocomplete="off">
+    <label for="edSite">Site <span style="color:var(--text-3);font-weight:400">(optional — groups the fleet)</span></label><input id="edSite" name="site" value="${esc(d.site || "")}" maxlength="40" placeholder="e.g. Office Witten" autocomplete="off">
+    <div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Save</button></div></form>`],
   remove: (d) => ["Remove device", `<form class="ed" data-ed="remove" data-id="${esc(d.id)}"><p>Remove <b>${esc(d.name || (d.status || {}).printer || d.id)}</b> from this fleet? The device keeps working on its own and can be claimed again with a fresh code.</p><div class="row end"><button class="btn outline" type="button" data-act="close">Keep</button><button class="btn danger" type="submit">${ICON.trash}Remove</button></div></form>`],
 };
 function openModal(kind, id) {
@@ -104,7 +129,7 @@ el("edDlg").addEventListener("submit", async e => {
       return;
     }
     if (kind === "remove") { await api(`/api/devices/${id}/remove`, {}); el("edDlg").close(); const c = el("fleet").querySelector(`[data-id="${CSS.escape(id)}"]`); if (c) { c.classList.add("leave"); await wait(240); } toast("Removed."); await load(); render(); return; }
-    await api(`/api/devices/${id}`, {name: f.elements.value.value.trim()}); done("Saved"); await load(); toast("Renamed."); await wait(400); closeModal(); render();
+    await api(`/api/devices/${id}`, {name: f.elements.value.value.trim(), site: f.elements.site.value}); done("Saved"); await load(); toast("Saved."); await wait(400); closeModal(); render();
   } catch (x) { done(kind === "claim" ? "Not claimed" : "Failed", true); const i = f.querySelector("input"); if (i) shake(i); toast(x.message, "err"); }
 });
 el("fleet").addEventListener("click", async e => {

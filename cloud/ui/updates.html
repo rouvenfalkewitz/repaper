@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark light"><meta name="theme-color" content="#0C100F">
+<meta name="robots" content="noindex">
+<title>RePaper Cloud · Updates</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,600;62..125,700;62..125,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/tokens.css"><link rel="stylesheet" href="/app.css">
+</head>
+<body data-page="updates">
+<div class="layout">
+  <aside class="side" id="side"></aside>
+  <main class="main">
+    <div class="pagehead"><h1>Updates</h1><span class="pill amber">preview — rollout isn't wired yet</span></div>
+
+    <h2>Latest release</h2>
+    <div class="card plan">
+      <div class="row between">
+        <div><b class="planname">RePaper Dock 0.0.1</b><div class="devmeta">Cloud channel, sheet security fixes, the new add-sheet flow.</div></div>
+        <span class="pill">stable</span>
+      </div>
+      <div class="planlist">
+        <div class="planline"><span>Channel</span><span class="mono">stable · beta (soon)</span></div>
+        <div class="planline"><span>Delivery</span><span class="mono">signed bundle over the device channel — soon</span></div>
+        <div class="planline"><span>Maintenance window</span><span class="mono">soon</span></div>
+      </div>
+      <div class="row end"><button class="btn primary" disabled>Roll out to fleet</button></div>
+    </div>
+
+    <h2>Your devices</h2>
+    <div class="card" id="devs"></div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status"><span class="ic"></span><span class="tx"></span></div>
+<script src="/app.js"></script>
+<script>
+const LATEST = "0.0.1";
+async function load() {
+  const { devices } = await api("/api/fleet");
+  el("devs").innerHTML = devices.length ? devices.map(d => {
+    const st = d.status || {}, current = d.version === LATEST;
+    return `<div class="member"><span class="mrow"><span class="okic ${d.online ? "" : "off"}" style="width:36px;height:36px">${ICON.dock}</span>
+      <span class="who2"><b>${esc(d.name || st.printer || d.id)}</b><span class="mono">${d.online ? "online" : "seen " + ago(d.last_seen)}</span></span></span>
+      <span class="row" style="gap:10px"><span class="mono">v${esc(d.version || "?")}</span><span class="pill ${current ? "" : "amber"}">${current ? "up to date" : "update available"}</span></span></div>`;
+  }).join("") : `<div class="devmeta">No devices claimed yet.</div>`;
+}
+load().catch(x => { if (x.message !== "signed out") toast(x.message, "err"); });
+</script>
+</body>
+</html>

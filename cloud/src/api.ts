@@ -4,17 +4,18 @@ import QRCode from "qrcode";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { generateSecret, otpauthUrl, totpCheck } from "./totp.js";
 import {
-  addEvent, addRecoveryCodes, bumpLoginPending, claimDevice, createInvite, createLoginPending,
-  createReset, createUser, deleteDevice, deleteLoginPending, deleteOtherSessions, deleteSessionsFor,
-  deleteUser, deviceEvents, disableTotp, enableTotp, findClaimable, firstAdmin, getDevice, getOrg,
-  getOrgByName, getUser, getUserByEmail, inviteByTokenHash, loginPendingByToken, markInviteUsed,
-  markResetUsed, orgDevices, orgInvites, orgUsers, pendingInviteFor, recentResetFor, renameDevice,
-  resetByTokenHash, revokeInvite, setTotpPending, setUserAvatar, setUserName, updatePassword,
-  useRecoveryCode, type DeviceRow, type UserRow,
+  addEvent, addRecoveryCodes, bumpLoginPending, claimDevice, createApiKey, createInvite,
+  createLoginPending, createReset, createUser, deleteDevice, deleteLoginPending,
+  deleteOtherSessions, deleteSessionsFor, deleteUser, deviceEvents, deviceStats, disableTotp,
+  enableTotp, findClaimable, firstAdmin, getDevice, getOrg, getOrgByName, getUser, getUserByEmail,
+  inviteByTokenHash, loginPendingByToken, markInviteUsed, markResetUsed, orgActivity, orgApiKeys,
+  orgDevices, orgInvites, orgUsers, pendingInviteFor, publicCounts, recentResetFor, renameDevice,
+  resetByTokenHash, revokeApiKey, revokeInvite, setDeviceSite, setTotpPending, setUserAvatar,
+  setUserName, setUserRole, updatePassword, useRecoveryCode, type DeviceRow, type UserRow,
 } from "./db.js";
 import { COOKIE, endSession, hashPassword, loginAllowed, loginFailed, loginOk, requireUser, startSession, verifyPassword } from "./auth.js";
 import { mailEnabled, sendInviteMail, sendRegisterMail, sendResetMail } from "./mail/index.js";
-import { dropDevice, isOnline, sendToDevice } from "./devices.js";
+import { dropDevice, isOnline, onlineCount, sendToDevice } from "./devices.js";
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -22,10 +23,27 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 type Authed = FastifyRequest & { user: UserRow };
 
 const publicDevice = (d: DeviceRow) => ({
-  id: d.id, kind: d.kind, name: d.name, version: d.version,
+  id: d.id, kind: d.kind, name: d.name, version: d.version, site: d.site,
   online: isOnline(d.id), last_seen: d.last_seen, claimed_at: d.claimed_at,
   status: JSON.parse(d.status || "{}"),
+  stats: deviceStats(d.id).reverse(),
 });
+
+const LOW_MV = 2700;
+const orgAlerts = (orgId: number) => {
+  const out: { level: string; title: string; text: string; device_id: string }[] = [];
+  const now = Date.now() / 1000;
+  for (const d of orgDevices(orgId)) {
+    const st = JSON.parse(d.status || "{}");
+    const name = d.name || st.printer || d.id;
+    if (!isOnline(d.id) && d.last_seen && now - d.last_seen > 600)
+      out.push({ level: "warn", title: `${name} is offline`, text: `Last heard ${Math.round((now - d.last_seen) / 60)} min ago. Printing on site still works — the cloud just can't see it.`, device_id: d.id });
+    for (const s of st.sheets || [])
+      if (s.battery_volts != null && s.battery_volts * 1000 < LOW_MV)
+        out.push({ level: "err", title: `${s.name || s.id} on ${name}: battery low (${s.battery_volts.toFixed(2)} V)`, text: "The Dock refuses to print to it until the cell is replaced — a refresh on a weak cell can leave the sheet half-drawn.", device_id: d.id });
+  }
+  return out;
+};
 
 /* a device row must belong to the caller's org */
 const ownDevice = (req: Authed): DeviceRow | undefined => {
@@ -35,6 +53,12 @@ const ownDevice = (req: Authed): DeviceRow | undefined => {
 
 export const registerApi = (app: FastifyInstance) => {
   app.get("/api/health", async () => ({ status: "ok" }));
+
+  /* aggregate numbers for the public status page — never per-org detail */
+  app.get("/api/public-status", async () => {
+    const c = publicCounts();
+    return { status: "operational", devices_online: onlineCount(), devices: c.devices, orgs: c.orgs };
+  });
 
   app.post("/api/login", async (req, reply) => {
     const { email, password } = (req.body ?? {}) as { email?: string; password?: string };
@@ -290,6 +314,41 @@ export const registerApi = (app: FastifyInstance) => {
       return { ok: true };
     });
 
+    f.post("/api/team/:id/role", async (req, reply) => {
+      if (!requireAdmin(req, reply)) return;
+      const u = (req as Authed).user;
+      const target = getUser(Number((req.params as { id: string }).id));
+      const role = ((req.body ?? {}) as { role?: string }).role;
+      if (!target || target.org_id !== u.org_id) return reply.code(404).send({ error: "no such member" });
+      if (target.id === u.id) return reply.code(400).send({ error: "you can't change your own role" });
+      if (role !== "admin" && role !== "member") return reply.code(400).send({ error: "role must be admin or member" });
+      setUserRole(target.id, role);
+      return { ok: true };
+    });
+
+    // ── API keys (org-scoped, read-only bearer access) ─────────────────────
+    f.get("/api/keys", async (req, reply) => {
+      if (!requireAdmin(req, reply)) return;
+      return { keys: orgApiKeys((req as Authed).user.org_id) };
+    });
+
+    f.post("/api/keys", async (req, reply) => {
+      if (!requireAdmin(req, reply)) return;
+      const u = (req as Authed).user;
+      const name = String(((req.body ?? {}) as { name?: string }).name ?? "").trim();
+      if (!name || name.length > 40) return reply.code(400).send({ error: "give the key a short name (what will use it?)" });
+      const token = "rpk_" + randomBytes(24).toString("hex");
+      createApiKey(u.org_id, name, sha256(token));
+      return { ok: true, token };   // shown exactly once — only the hash is stored
+    });
+
+    f.post("/api/keys/:id/revoke", async (req, reply) => {
+      if (!requireAdmin(req, reply)) return;
+      const r = revokeApiKey(Number((req.params as { id: string }).id), (req as Authed).user.org_id);
+      if (!r.changes) return reply.code(404).send({ error: "no such key" });
+      return { ok: true };
+    });
+
     f.post("/api/team/:id/remove", async (req, reply) => {
       if (!requireAdmin(req, reply)) return;
       const u = (req as Authed).user;
@@ -303,18 +362,47 @@ export const registerApi = (app: FastifyInstance) => {
     f.get("/api/devices/:id", async (req, reply) => {
       const d = ownDevice(req as Authed);
       if (!d) return reply.code(404).send({ error: "unknown device" });
-      return { ...publicDevice(d), created: d.created, events: deviceEvents(d.id, 12) };
+      return { ...publicDevice(d), created: d.created, events: deviceEvents(d.id, 12),
+               diag: d.diag_at ? { at: d.diag_at, log: d.diag } : null };
     });
 
     f.post("/api/devices/:id", async (req, reply) => {
       const d = ownDevice(req as Authed);
       if (!d) return reply.code(404).send({ error: "unknown device" });
-      const name = String(((req.body ?? {}) as { name?: string }).name ?? "").trim();
-      if (!name || name.length > 63) return reply.code(400).send({ error: "name must be 1–63 characters" });
-      renameDevice(d.id, name);
-      addEvent(d.id, "renamed", name);
+      const body = (req.body ?? {}) as { name?: string; site?: string };
+      if (body.name !== undefined) {
+        const name = String(body.name).trim();
+        if (!name || name.length > 63) return reply.code(400).send({ error: "name must be 1–63 characters" });
+        renameDevice(d.id, name);
+        addEvent(d.id, "renamed", name);
+      }
+      if (body.site !== undefined) {
+        const site = String(body.site).trim().slice(0, 40);
+        setDeviceSite(d.id, site || null);
+      }
       return { ok: true };
     });
+
+    f.post("/api/devices/:id/diag", async (req, reply) => {
+      const d = ownDevice(req as Authed);
+      if (!d) return reply.code(404).send({ error: "unknown device" });
+      if (!sendToDevice(d.id, { t: "diag" })) return reply.code(409).send({ error: "the device is offline right now" });
+      return { ok: true };   // the bundle arrives asynchronously; details show it once it lands
+    });
+
+    f.get("/api/alerts", async (req) => ({ alerts: orgAlerts((req as Authed).user.org_id) }));
+
+    f.get("/api/sheets", async (req) => {
+      const out: object[] = [];
+      for (const d of orgDevices((req as Authed).user.org_id)) {
+        const st = JSON.parse(d.status || "{}");
+        for (const s of st.sheets || [])
+          out.push({ ...s, device: d.name || st.printer || d.id, device_id: d.id, device_online: isOnline(d.id) });
+      }
+      return { sheets: out };
+    });
+
+    f.get("/api/activity", async (req) => ({ activity: orgActivity((req as Authed).user.org_id) }));
 
     f.post("/api/devices/:id/identify", async (req, reply) => {
       const d = ownDevice(req as Authed);

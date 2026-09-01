@@ -4,7 +4,7 @@
    signed-in user enters their claim code in the console. */
 import type { WebSocket } from "ws";
 import { hashSecret, secretMatches } from "./auth.js";
-import { addEvent, getDevice, getOrg, registerDevice, saveDeviceStatus, touchDevice } from "./db.js";
+import { addEvent, getDevice, getOrg, registerDevice, saveDeviceStatus, saveDiag, touchDevice, upsertStat } from "./db.js";
 
 const live = new Map<string, WebSocket>(); // device id → open socket
 
@@ -67,6 +67,12 @@ export const handleDeviceSocket = (ws: WebSocket, remote: string) => {
     if (msg.t === "status") {
       const { t: _t, ...status } = msg;
       saveDeviceStatus(deviceId, JSON.stringify(status).slice(0, 256 * 1024));
+      if (typeof status.jobs_today === "number")
+        upsertStat(deviceId, new Date().toISOString().slice(0, 10), status.jobs_today);
+    }
+    if (msg.t === "diag") {
+      saveDiag(deviceId, String(msg.log ?? "").slice(0, 64 * 1024));
+      addEvent(deviceId, "diagnostics");
     }
   });
 

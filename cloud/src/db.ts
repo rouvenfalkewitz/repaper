@@ -84,6 +84,30 @@ if (!(db.prepare("PRAGMA table_info(user)").all() as { name: string }[]).some((c
   if (!cols.includes("totp_secret")) db.exec("ALTER TABLE user ADD COLUMN totp_secret TEXT");
   if (!cols.includes("totp_pending")) db.exec("ALTER TABLE user ADD COLUMN totp_pending TEXT");
 }
+// fleet features: sites, diagnostics, per-day usage, API keys
+{
+  const dcols = (db.prepare("PRAGMA table_info(device)").all() as { name: string }[]).map((c) => c.name);
+  if (!dcols.includes("site")) db.exec("ALTER TABLE device ADD COLUMN site TEXT");
+  if (!dcols.includes("diag")) db.exec("ALTER TABLE device ADD COLUMN diag TEXT");
+  if (!dcols.includes("diag_at")) db.exec("ALTER TABLE device ADD COLUMN diag_at REAL");
+}
+db.exec(`
+CREATE TABLE IF NOT EXISTS device_stat (
+  device_id TEXT NOT NULL REFERENCES device(id) ON DELETE CASCADE,
+  day TEXT NOT NULL,                -- YYYY-MM-DD, device-local enough for a sparkline
+  jobs INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (device_id, day)
+);
+CREATE TABLE IF NOT EXISTS api_key (
+  id INTEGER PRIMARY KEY,
+  org_id INTEGER NOT NULL REFERENCES org(id),
+  name TEXT NOT NULL,
+  token_hash TEXT NOT NULL UNIQUE,
+  created REAL NOT NULL,
+  last_used REAL
+);
+`);
+
 db.exec(`
 CREATE TABLE IF NOT EXISTS twofa_login (
   token TEXT PRIMARY KEY,           -- password already verified; waiting for the code
@@ -110,6 +134,7 @@ export type InviteRow = { id: number; org_id: number; email: string; role: strin
 export type DeviceRow = {
   id: string; org_id: number | null; kind: string; name: string; secret_hash: string;
   claim_code: string; version: string; status: string; created: number; claimed_at: number | null; last_seen: number | null;
+  site: string | null; diag: string | null; diag_at: number | null;
 };
 
 // ── orgs & users ────────────────────────────────────────────────────────────
@@ -213,6 +238,35 @@ export const touchDevice = (id: string, version?: string) =>
 export const saveDeviceStatus = (id: string, status: string) =>
   db.prepare("UPDATE device SET status=?, last_seen=? WHERE id=?").run(status, now(), id);
 export const renameDevice = (id: string, name: string) => db.prepare("UPDATE device SET name=? WHERE id=?").run(name, id);
+export const setDeviceSite = (id: string, site: string | null) => db.prepare("UPDATE device SET site=? WHERE id=?").run(site, id);
+export const saveDiag = (id: string, diag: string) => db.prepare("UPDATE device SET diag=?, diag_at=? WHERE id=?").run(diag, now(), id);
+export const upsertStat = (deviceId: string, day: string, jobs: number) =>
+  db.prepare("INSERT INTO device_stat(device_id, day, jobs) VALUES(?,?,?) ON CONFLICT(device_id, day) DO UPDATE SET jobs=excluded.jobs").run(deviceId, day, jobs);
+export const deviceStats = (deviceId: string, days = 14) =>
+  db.prepare("SELECT day, jobs FROM device_stat WHERE device_id=? ORDER BY day DESC LIMIT ?").all(deviceId, days) as { day: string; jobs: number }[];
+export const orgActivity = (orgId: number, limit = 60) =>
+  db.prepare(`SELECT e.at, e.type, e.data, d.id AS device_id, d.name AS device_name, d.kind
+              FROM event e JOIN device d ON d.id = e.device_id
+              WHERE d.org_id=? ORDER BY e.at DESC LIMIT ?`).all(orgId, limit) as
+    { at: number; type: string; data: string; device_id: string; device_name: string; kind: string }[];
+export const setUserRole = (id: number, role: string) => db.prepare("UPDATE user SET role=? WHERE id=?").run(role, id);
+
+// ── API keys ────────────────────────────────────────────────────────────────
+export type ApiKeyRow = { id: number; org_id: number; name: string; token_hash: string; created: number; last_used: number | null };
+export const createApiKey = (orgId: number, name: string, tokenHash: string) =>
+  db.prepare("INSERT INTO api_key(org_id, name, token_hash, created) VALUES(?,?,?,?)").run(orgId, name, tokenHash, now());
+export const orgApiKeys = (orgId: number) =>
+  db.prepare("SELECT id, name, created, last_used FROM api_key WHERE org_id=? ORDER BY created").all(orgId) as Omit<ApiKeyRow, "org_id" | "token_hash">[];
+export const apiKeyByHash = (hash: string) => {
+  const k = db.prepare("SELECT * FROM api_key WHERE token_hash=?").get(hash) as ApiKeyRow | undefined;
+  if (k) db.prepare("UPDATE api_key SET last_used=? WHERE id=?").run(now(), k.id);
+  return k;
+};
+export const revokeApiKey = (id: number, orgId: number) => db.prepare("DELETE FROM api_key WHERE id=? AND org_id=?").run(id, orgId);
+
+// ── public aggregate (status page) ──────────────────────────────────────────
+export const publicCounts = () =>
+  db.prepare("SELECT COUNT(*) AS devices, COUNT(DISTINCT org_id) AS orgs FROM device WHERE org_id IS NOT NULL").get() as { devices: number; orgs: number };
 export const orgDevices = (orgId: number) => db.prepare("SELECT * FROM device WHERE org_id=? ORDER BY created").all(orgId) as DeviceRow[];
 export const findClaimable = (code: string) =>
   db.prepare("SELECT * FROM device WHERE org_id IS NULL AND claim_code=? ORDER BY last_seen DESC").get(code) as DeviceRow | undefined;

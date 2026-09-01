@@ -23,6 +23,10 @@ const ICON = {
   out: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></svg>`,
   shield: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 5 6v5c0 4.5 3 8.2 7 10 4-1.8 7-5.5 7-10V6z"/><path d="m9.5 12 2 2 3.5-4"/></svg>`,
   camera: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-2.5h6L17 8h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="14" r="3.5"/></svg>`,
+  sheet: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="6" width="17" height="12" rx="2"/><path d="M7 10h6M7 13.5h4"/></svg>`,
+  pulse: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l2.5-6 4 12L16 12h5"/></svg>`,
+  download: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0 4.5-4.5M12 15l-4.5-4.5"/><path d="M4 19h16"/></svg>`,
+  gear: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8V15a1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>`,
   qr: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v1M17 20h4M14 20h1"/></svg>`,
   warn: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>`,
 };
@@ -73,8 +77,10 @@ const LOGO = `<svg class="logo" viewBox="0 0 6629.1 2338.6" role="img" aria-labe
 
 const NAV = [
   { href: "/", key: "fleet", label: "Fleet", icon: "dock" },
+  { href: "/sheets", key: "sheets", label: "Sheets", icon: "sheet" },
+  { href: "/activity", key: "activity", label: "Activity", icon: "pulse" },
   { href: "/team", key: "team", label: "Team", icon: "people" },
-  { href: "/account", key: "account", label: "Account", icon: "user" },
+  { href: "/updates", key: "updates", label: "Updates", icon: "download", tag: "preview" },
   { href: "/billing", key: "billing", label: "Billing", icon: "card", tag: "preview" },
   { href: "/shop", key: "shop", label: "Shop", icon: "bag", tag: "preview" },
 ];
@@ -87,12 +93,23 @@ function renderShell() {
   const active = document.body.dataset.page;
   side.innerHTML = `<a href="/" class="sidelogo">${LOGO}</a>
     <nav class="nav">${NAV.map((n) => `<a href="${n.href}" class="${n.key === active ? "active" : ""}">${ICON[n.icon]}<span>${n.label}</span>${n.tag ? `<span class="tag">${n.tag}</span>` : ""}</a>`).join("")}</nav>
-    <div class="foot"><a class="userchip" href="/account" id="userchip"></a></div>`;
+    <div class="foot"><div class="userchip ${active === "account" ? "active" : ""}" id="userchip"></div></div>`;
   MEP.then(() => { if (!ME) return;
-    el("userchip").innerHTML = `${avatarHtml(ME, 32)}<span class="who3"><b>${esc(ME.name || ME.email)}</b><span>${esc(ME.org)}</span></span>
-      <button class="iconbtn" title="Sign out" aria-label="Sign out" onclick="event.preventDefault();signOut()">${ICON.out}</button>`;
+    el("userchip").innerHTML = `<a class="mrow chiplink" href="/account" title="Account">${avatarHtml(ME, 32)}<span class="who3"><b>${esc(ME.name || ME.email)}</b><span>${esc(ME.org)}</span></span></a>
+      <a class="iconbtn" href="/account" title="Account settings" aria-label="Account settings">${ICON.gear}</a>
+      <button class="iconbtn" title="Sign out" aria-label="Sign out" onclick="signOut()">${ICON.out}</button>`;
     document.dispatchEvent(new CustomEvent("me-ready"));
   });
 }
+/* tiny sparkline: jobs per day, last two weeks */
+function spark(stats, w = 64, h = 18) {
+  if (!stats || stats.length < 2) return "";
+  const max = Math.max(1, ...stats.map((s) => s.jobs));
+  const pt = (s, i) => [(i / (stats.length - 1)) * (w - 4) + 2, h - 3 - (s.jobs / max) * (h - 6)];
+  const pts = stats.map((s, i) => pt(s, i).map((n) => n.toFixed(1)).join(",")).join(" ");
+  const [lx, ly] = pt(stats[stats.length - 1], stats.length - 1);
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="jobs per day, last ${stats.length} days"><polyline points="${pts}"/><circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="2"/></svg>`;
+}
+
 renderShell();
 document.addEventListener("click", (e) => { const d = el("edDlg"); if (d && e.target === d) closeModal(); const t = el("detDlg"); if (t && e.target === t) t.close(); });

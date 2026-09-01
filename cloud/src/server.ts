@@ -33,6 +33,7 @@ const STATIC: Record<string, [string, string]> = {
 const APP_PAGES: Record<string, string> = {
   "/": "index.html", "/team": "team.html", "/account": "account.html",
   "/billing": "billing.html", "/shop": "shop.html",
+  "/sheets": "sheets.html", "/activity": "activity.html", "/updates": "updates.html",
 };
 for (const [path, file] of Object.entries(APP_PAGES)) {
   app.get(path, (req, reply) => {
@@ -56,6 +57,9 @@ for (const p of ["/reset", "/reset/:token"]) {
     reply.header("Cache-Control", "no-store").header("X-Robots-Tag", "noindex").type("text/html; charset=utf-8").send(page("reset.html")));
 }
 app.get("/robots.txt", (_req, reply) => reply.type("text/plain").send("User-agent: *\nDisallow: /\n"));
+/* the one public page: aggregate numbers, no sign-in, no org detail */
+app.get("/status", (_req, reply) =>
+  reply.header("Cache-Control", "no-store").type("text/html; charset=utf-8").send(page("status.html")));
 for (const [path, [file, type]] of Object.entries(STATIC)) {
   app.get(path, (_req, reply) => reply.header("Cache-Control", "no-store").type(type).send(page(file)));
 }

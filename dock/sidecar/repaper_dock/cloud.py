@@ -85,7 +85,9 @@ class CloudAgent(threading.Thread):
                              f"claimed by {self.org}" if self.claimed else f"not claimed yet — code {self.identity['claim_code']}")
                     await ws.send(json.dumps(self._status())); last = time.time()
                     while (self.dock.cfg.get("cloud_url") or "").strip() == url:   # a URL change in Settings drops the link
-                        try: self._handle(json.loads(await asyncio.wait_for(ws.recv(), timeout=5)))
+                        try:
+                            r = self._handle(json.loads(await asyncio.wait_for(ws.recv(), timeout=5)))
+                            if r: await ws.send(json.dumps(r))
                         except asyncio.TimeoutError: pass
                         if time.time() - last >= self.dock.cfg.get("status_refresh_seconds", 60):
                             await ws.send(json.dumps(self._status())); last = time.time()
@@ -96,12 +98,18 @@ class CloudAgent(threading.Thread):
             else:
                 await asyncio.sleep(1)   # clean drop (URL change / server close) → reconnect promptly
 
-    def _handle(self, msg: dict) -> None:
+    def _handle(self, msg: dict) -> dict | None:
         t = msg.get("t")
         if t == "identify":
             log.info("cloud: identify — someone in the console is looking for this Dock (ring lights up once we have one)")
         elif t == "claimed":
             self.claimed, self.org = True, msg.get("org")
             log.info("cloud: claimed by %s", self.org)
+        elif t == "diag":
+            log.info("cloud: diagnostics requested — sending the log tail")
+            try: tail = "".join((HOME / "dock.log").read_text(errors="replace").splitlines(keepends=True)[-200:])
+            except Exception as e: tail = f"could not read the log: {e}"
+            return {"t": "diag", "log": tail}
         elif t == "error":
             raise RuntimeError(msg.get("error") or "server error")
+        return None

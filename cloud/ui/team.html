@@ -32,7 +32,12 @@ function renderTeam() {
   if (!T || !ME) return;
   const admin = ME.role === "admin";
   const btn = el("inviteBtn"); btn.hidden = !admin; btn.innerHTML = ICON.plus + "<span>Invite someone</span>";
-  const rows = T.users.map(u => `<div class="member"><span class="mrow">${avatarHtml(u, 36)}<span class="who2"><b>${esc(u.name || u.email)}${u.you ? " (you)" : ""}</b><span class="mono">${esc(u.email)}</span></span></span><span class="row" style="gap:8px"><span class="pill ${u.role === "admin" ? "" : "setup"}">${esc(u.role)}</span>${admin && !u.you ? `<button class="iconbtn danger" data-uid="${u.id}" data-name="${esc(u.name || u.email)}" data-act="kick" title="Remove">${ICON.trash}</button>` : ""}</span></div>`).join("");
+  const rows = T.users.map(u => {
+    const pill = admin && !u.you
+      ? `<button class="pill ${u.role === "admin" ? "" : "setup"} pillbtn" data-act="role" data-uid="${u.id}" data-name="${esc(u.name || u.email)}" data-role="${esc(u.role)}" title="Change role">${esc(u.role)}</button>`
+      : `<span class="pill ${u.role === "admin" ? "" : "setup"}">${esc(u.role)}</span>`;
+    return `<div class="member"><span class="mrow">${avatarHtml(u, 36)}<span class="who2"><b>${esc(u.name || u.email)}${u.you ? " (you)" : ""}</b><span class="mono">${esc(u.email)}</span></span></span><span class="row" style="gap:8px">${pill}${admin && !u.you ? `<button class="iconbtn danger" data-uid="${u.id}" data-name="${esc(u.name || u.email)}" data-act="kick" title="Remove">${ICON.trash}</button>` : ""}</span></div>`;
+  }).join("");
   const inv = (T.invites || []).map(i => `<div class="member"><span class="mrow"><span class="av" style="width:36px;height:36px;background:var(--surface-2);color:var(--text-3);font-size:14px">✉</span><span class="who2"><b>${esc(i.email)}</b><span class="mono">invited by ${esc(i.invited_by_email)} · expires ${new Date(i.expires * 1000).toLocaleDateString()}</span></span></span><span class="row" style="gap:8px"><span class="pill amber">invited</span><button class="iconbtn danger" data-iid="${i.id}" data-act="revoke" title="Revoke invitation">${ICON.x}</button></span></div>`).join("");
   el("team").innerHTML = rows + inv
     + (admin ? "" : `<div class="hint" style="margin-top:10px;color:var(--text-3);font-size:.8125rem">Admins can invite and remove people.</div>`);
@@ -41,6 +46,12 @@ async function copyInv(link) { try { await navigator.clipboard.writeText(link); 
 el("team").addEventListener("click", async e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
   if (b.dataset.act === "kick") return openKick(b.dataset.uid, b.dataset.name);
+  if (b.dataset.act === "role") {
+    const next = b.dataset.role === "admin" ? "member" : "admin";
+    return setModal("Change role", `<form class="ed" data-ed="role" data-uid="${esc(b.dataset.uid)}" data-role="${next}">
+      <p>Make <b>${esc(b.dataset.name)}</b> ${next === "admin" ? "an <b>admin</b>? They can invite and remove people and manage API keys." : "a <b>member</b>? They keep seeing and operating the fleet, but stop managing the team."}</p>
+      <div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Make ${next}</button></div></form>`);
+  }
   if (b.dataset.act === "revoke") {
     try { await api(`/api/invites/${b.dataset.iid}/revoke`, {}); toast("Invitation revoked."); loadTeam(); }
     catch (x) { toast(x.message, "err"); }
@@ -59,7 +70,7 @@ function openInvite() {
 el("edDlg").addEventListener("click", e => { const b = e.target.closest("[data-act=close]"); if (b) closeModal(); });
 el("edDlg").addEventListener("submit", async e => {
   e.preventDefault(); const f = e.target, kind = f.dataset.ed, sb = f.querySelector("button[type=submit]");
-  const done = busy(sb, {invite: "Inviting…", kick: "Removing…"}[kind]);
+  const done = busy(sb, {invite: "Inviting…", kick: "Removing…", role: "Changing…"}[kind] || "Working…");
   try {
     if (kind === "invite") {
       const email = f.elements.email.value.trim();
@@ -71,6 +82,7 @@ el("edDlg").addEventListener("submit", async e => {
       return;
     }
     if (kind === "kick") { await api(`/api/team/${f.dataset.uid}/remove`, {}); el("edDlg").close(); toast("Removed from the team."); loadTeam(); return; }
+    if (kind === "role") { await api(`/api/team/${f.dataset.uid}/role`, {role: f.dataset.role}); el("edDlg").close(); toast("Role changed."); loadTeam(); return; }
   } catch (x) { done("Failed", true); const i = f.querySelector("input"); if (i) shake(i); toast(x.message, "err"); }
 });
 document.addEventListener("me-ready", renderTeam);

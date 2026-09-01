@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark light"><meta name="theme-color" content="#0C100F">
+<meta name="robots" content="noindex">
+<title>RePaper Cloud · Activity</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,600;62..125,700;62..125,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/tokens.css"><link rel="stylesheet" href="/app.css">
+</head>
+<body data-page="activity">
+<div class="layout">
+  <aside class="side" id="side"></aside>
+  <main class="main">
+    <div class="pagehead"><h1>Activity</h1></div>
+    <div class="card" id="feed"></div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status"><span class="ic"></span><span class="tx"></span></div>
+<script src="/app.js"></script>
+<script>
+const LABEL = {
+  registered: ["reached the cloud for the first time", "info"],
+  online: ["came online", "ok"], offline: ["went offline", "warn"],
+  claimed: ["was claimed", "ok"], renamed: ["was renamed", "info"],
+  identify: ["was pinged from the console", "info"], diagnostics: ["sent a diagnostics bundle", "info"],
+};
+function render(items) {
+  if (!items.length) { el("feed").innerHTML = `<div class="devmeta">Nothing yet — device events land here as they happen.</div>`; return; }
+  let day = "", html = "";
+  for (const e of items) {
+    const d = new Date(e.at * 1000), dayKey = d.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
+    if (dayKey !== day) { day = dayKey; html += `<div class="dayhead">${esc(dayKey)}</div>`; }
+    const [label, kind] = LABEL[e.type] || [e.type, "info"];
+    html += `<div class="feedrow"><span class="fdot ${kind}"></span><span class="ftime mono">${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+      <span class="ftext"><b>${esc(e.device_name || e.device_id)}</b> ${esc(label)}${e.data && e.type !== "registered" ? ` — ${esc(e.data)}` : ""}</span></div>`;
+  }
+  el("feed").innerHTML = html;
+}
+async function load() { render((await api("/api/activity")).activity); }
+load().catch(x => { if (x.message !== "signed out") toast(x.message, "err"); });
+setInterval(() => load().catch(() => {}), 15000);
+</script>
+</body>
+</html>

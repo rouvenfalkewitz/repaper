@@ -1,6 +1,6 @@
 import { randomBytes, scryptSync, timingSafeEqual, createHash } from "node:crypto";
 import type { FastifyRequest, FastifyReply } from "fastify";
-import { createSession, deleteSession, getSession, getUser, type UserRow } from "./db.js";
+import { apiKeyByHash, createSession, deleteSession, getSession, getUser, type UserRow } from "./db.js";
 
 export const hashPassword = (password: string): string => {
   const salt = randomBytes(16).toString("hex");
@@ -38,8 +38,20 @@ export const userFromRequest = (req: FastifyRequest): UserRow | undefined => {
   return s ? getUser(s.user_id) : undefined;
 };
 
-/* preHandler for console API routes */
+/* preHandler for console API routes. Sessions (cookies) get full access per their
+   role; org API keys (Authorization: Bearer rpk_…) get read-only access. */
 export const requireUser = (req: FastifyRequest, reply: FastifyReply, done: (err?: Error) => void) => {
+  const bearer = req.headers.authorization;
+  if (bearer?.startsWith("Bearer ")) {
+    const k = apiKeyByHash(createHash("sha256").update(bearer.slice(7).trim()).digest("hex"));
+    if (!k) { reply.code(401).send({ error: "unknown API key" }); return; }
+    if (req.method !== "GET") { reply.code(403).send({ error: "API keys are read-only for now" }); return; }
+    (req as FastifyRequest & { user: UserRow }).user = {
+      id: -k.id, org_id: k.org_id, email: `key:${k.name}`, name: k.name, role: "api",
+      pass_hash: "", created: k.created, avatar: null, totp_secret: null, totp_pending: null,
+    };
+    done(); return;
+  }
   const user = userFromRequest(req);
   if (!user) { reply.code(401).send({ error: "not signed in" }); return; }
   (req as FastifyRequest & { user: UserRow }).user = user;
