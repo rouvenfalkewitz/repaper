@@ -89,6 +89,13 @@ if (!(db.prepare("PRAGMA table_info(invite)").all() as { name: string }[]).some(
   if (!cols.includes("totp_secret")) db.exec("ALTER TABLE user ADD COLUMN totp_secret TEXT");
   if (!cols.includes("totp_pending")) db.exec("ALTER TABLE user ADD COLUMN totp_pending TEXT");
 }
+// company/billing profile on the org (what invoices will need)
+{
+  const ocols = (db.prepare("PRAGMA table_info(org)").all() as { name: string }[]).map((c) => c.name);
+  for (const col of ["company_name", "contact_name", "billing_email", "phone", "address", "zip", "city", "country", "vat_id"])
+    if (!ocols.includes(col)) db.exec(`ALTER TABLE org ADD COLUMN ${col} TEXT`);
+}
+
 // fleet features: sites, diagnostics, per-day usage, API keys
 {
   const dcols = (db.prepare("PRAGMA table_info(device)").all() as { name: string }[]).map((c) => c.name);
@@ -130,7 +137,17 @@ CREATE TABLE IF NOT EXISTS recovery_code (
 
 const now = () => Date.now() / 1000;
 
-export type OrgRow = { id: number; name: string; created: number };
+export type OrgRow = {
+  id: number; name: string; created: number;
+  company_name: string | null; contact_name: string | null; billing_email: string | null; phone: string | null;
+  address: string | null; zip: string | null; city: string | null; country: string | null; vat_id: string | null;
+};
+export const COMPANY_FIELDS = ["company_name", "contact_name", "billing_email", "phone", "address", "zip", "city", "country", "vat_id"] as const;
+export const updateCompany = (orgId: number, values: Record<string, string | null>) => {
+  const cols = COMPANY_FIELDS.filter((f) => f in values);
+  if (!cols.length) return;
+  db.prepare(`UPDATE org SET ${cols.map((c) => `${c}=?`).join(", ")} WHERE id=?`).run(...cols.map((c) => values[c]), orgId);
+};
 export type UserRow = {
   id: number; org_id: number; email: string; name: string; pass_hash: string; created: number; role: string;
   avatar: string | null; totp_secret: string | null; totp_pending: string | null;

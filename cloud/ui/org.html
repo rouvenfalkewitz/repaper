@@ -24,6 +24,24 @@
       <div class="facts" id="orgFacts"></div>
     </div>
 
+    <h2>Company details</h2>
+    <div class="card">
+      <form class="stack" id="companyForm" oninput="compDirty()" onsubmit="return saveCompany(event)">
+        <div class="grid2">
+          <div class="field"><label for="c_company_name">Company (legal name)</label><input id="c_company_name" maxlength="120" autocomplete="organization"></div>
+          <div class="field"><label for="c_vat_id">VAT ID</label><input id="c_vat_id" maxlength="20" placeholder="DE…" autocomplete="off" style="text-transform:uppercase"></div>
+          <div class="field"><label for="c_contact_name">Contact person</label><input id="c_contact_name" maxlength="120" autocomplete="name"></div>
+          <div class="field"><label for="c_billing_email">Billing email</label><input id="c_billing_email" type="email" maxlength="120" autocomplete="email"></div>
+          <div class="field"><label for="c_phone">Phone</label><input id="c_phone" type="tel" maxlength="30" autocomplete="tel"></div>
+          <div class="field"><label for="c_address">Address</label><input id="c_address" maxlength="120" autocomplete="street-address"></div>
+          <div class="field"><label for="c_zip">ZIP</label><input id="c_zip" maxlength="12" autocomplete="postal-code"></div>
+          <div class="field"><label for="c_city">City</label><input id="c_city" maxlength="80" autocomplete="address-level2"></div>
+          <div class="field"><label for="c_country">Country</label><input id="c_country" maxlength="60" autocomplete="country-name"></div>
+        </div>
+        <div class="row between"><span class="hint" style="color:var(--text-3);font-size:.8125rem">Goes on your invoices once billing is live. Optional until then.</span><button class="btn primary" id="compBtn" type="submit" disabled>Save</button></div>
+      </form>
+    </div>
+
     <h2 class="rowh">Members <button class="btn primary small" id="inviteBtn" onclick="openInvite()" hidden></button></h2>
     <div class="card" id="team"></div>
 
@@ -51,7 +69,7 @@ let T = null, ORG = null;
 
 /* ── organisation card ── */
 async function loadOrg() {
-  try { ORG = await api("/api/org"); renderOrg(); } catch {}
+  try { ORG = await api("/api/org"); renderOrg(); renderCompany(); } catch {}
 }
 function renderOrg() {
   if (!ORG || !ME) return;
@@ -62,6 +80,29 @@ function renderOrg() {
   el("orgFacts").innerHTML = fact("Members", String(ORG.members)) + fact("Devices", String(ORG.devices)) + fact("Created", new Date(ORG.created * 1000).toLocaleDateString());
 }
 function orgDirty() { const b = el("orgBtn"); if (!ORG) return; if (!b.classList.contains("busy") && !b.classList.contains("ok")) b.disabled = el("oname").value.trim() === ORG.name || el("oname").disabled; }
+
+/* company details */
+const CFIELDS = ["company_name", "vat_id", "contact_name", "billing_email", "phone", "address", "zip", "city", "country"];
+function renderCompany() {
+  if (!ORG || !ME) return;
+  const admin = ME.role === "admin";
+  for (const fld of CFIELDS) { const i = el("c_" + fld); i.value = (ORG.company || {})[fld] || ""; i.disabled = !admin; }
+  compDirty();
+}
+function compDirty() {
+  if (!ORG) return;
+  const dirty = CFIELDS.some(fld => el("c_" + fld).value.trim() !== ((ORG.company || {})[fld] || ""));
+  const b = el("compBtn");
+  if (!b.classList.contains("busy") && !b.classList.contains("ok")) b.disabled = !dirty || ME?.role !== "admin";
+}
+async function saveCompany(e) {
+  e.preventDefault(); const done = busy(el("compBtn"), "Saving…");
+  const company = {};
+  for (const fld of CFIELDS) company[fld] = el("c_" + fld).value.trim();
+  try { await api("/api/org", {company}); ORG.company = {...company}; done("Saved"); toast("Company details saved."); }
+  catch (x) { done("Not saved", true); toast(x.message, "err"); }
+  return false;
+}
 async function saveOrg(e) {
   e.preventDefault(); const done = busy(el("orgBtn"), "Saving…");
   try { await api("/api/org", {name: el("oname").value.trim()}); ORG.name = el("oname").value.trim(); done("Saved"); toast("Renamed."); renderShell(); if (ME) ME.org = ORG.name; }
@@ -156,7 +197,7 @@ el("edDlg").addEventListener("submit", async e => {
   } catch (x) { done("Failed", true); const i = f.querySelector("input"); if (i) shake(i); toast(x.message, "err"); }
 });
 function onMe() {
-  renderTeam(); renderOrg();
+  renderTeam(); renderOrg(); renderCompany();
   if (ME && ME.role === "admin") { el("adminSections").hidden = false; el("orgIcon").innerHTML = ICON.people; loadKeys(); }
 }
 document.addEventListener("me-ready", onMe);

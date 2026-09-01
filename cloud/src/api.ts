@@ -11,7 +11,8 @@ import {
   inviteByTokenHash, loginPendingByToken, markInviteUsed, markResetUsed, orgActivity, orgApiKeys,
   orgDevices, orgInvites, orgUsers, pendingInviteFor, publicCounts, recentResetFor, renameDevice, renameOrg,
   resetByTokenHash, revokeApiKey, revokeInvite, setDeviceSite, setTotpPending, setUserAvatar,
-  setUserName, setUserRole, updatePassword, useRecoveryCode, type DeviceRow, type UserRow,
+  setUserName, setUserRole, updateCompany, updatePassword, useRecoveryCode, COMPANY_FIELDS,
+  type DeviceRow, type UserRow,
 } from "./db.js";
 import { COOKIE, endSession, hashPassword, loginAllowed, loginFailed, loginOk, requireUser, startSession, verifyPassword } from "./auth.js";
 import { mailEnabled, sendInviteMail, sendRegisterMail, sendResetMail } from "./mail/index.js";
@@ -282,16 +283,33 @@ export const registerApi = (app: FastifyInstance) => {
     f.get("/api/org", async (req) => {
       const u = (req as Authed).user;
       const org = getOrg(u.org_id)!;
+      const company: Record<string, string | null> = {};
+      for (const fld of COMPANY_FIELDS) company[fld] = org[fld];
       return { name: org.name, created: org.created, members: orgUsers(u.org_id).length,
-               devices: orgDevices(u.org_id).length, personal: isPersonal(u.org_id) };
+               devices: orgDevices(u.org_id).length, personal: isPersonal(u.org_id), company };
     });
 
     f.post("/api/org", async (req, reply) => {
       if (!requireAdmin(req, reply)) return;
       const u = (req as Authed).user;
-      const name = String(((req.body ?? {}) as { name?: string }).name ?? "").trim();
-      if (!name || name.length > 63) return reply.code(400).send({ error: "name must be 1–63 characters" });
-      renameOrg(u.org_id, name);
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      if (body.name !== undefined) {
+        const name = String(body.name).trim();
+        if (!name || name.length > 63) return reply.code(400).send({ error: "name must be 1–63 characters" });
+        renameOrg(u.org_id, name);
+      }
+      if (body.company && typeof body.company === "object") {
+        const values: Record<string, string | null> = {};
+        for (const fld of COMPANY_FIELDS) {
+          const v = (body.company as Record<string, unknown>)[fld];
+          if (v === undefined) continue;
+          const s = String(v ?? "").trim().slice(0, 120);
+          values[fld] = s || null;
+        }
+        if (values.billing_email && !EMAIL_RE.test(values.billing_email))
+          return reply.code(400).send({ error: "the billing email doesn't look like an email address" });
+        updateCompany(u.org_id, values);
+      }
       return { ok: true };
     });
 
