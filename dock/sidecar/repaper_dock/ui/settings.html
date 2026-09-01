@@ -30,6 +30,16 @@
   <h2>Sheets</h2>
   <div class="sheets" id="sheets"></div>
 
+  <h2>RePaper Cloud</h2>
+  <div class="card stack">
+    <div class="facts" id="cloudFacts"></div>
+    <form class="stack" id="cloudForm" oninput="cloudDirty()" onsubmit="return saveCloud(event)">
+      <div class="field"><label for="curl">Cloud address</label><input id="curl" name="cloud_url" placeholder="wss://repaper.schisch.net/ws/device" autocomplete="off">
+        <div class="hint">Fleet view, claiming and remote care. The Dock only ever connects outward — leave this empty and it stays local-only.</div></div>
+      <div class="row end"><button class="btn primary" id="cloudBtn" type="submit" disabled>Save</button></div>
+    </form>
+  </div>
+
   <h2>Network</h2>
   <div class="card">
     <div class="facts" id="net"></div>
@@ -122,7 +132,26 @@ async function load() {
     : `<div class="allgood"><span class="ic">${ICON.check}</span><span>Nothing needs attention.</span></div>`;
   el("net").innerHTML = Object.entries(s.network).map(([k, v]) => fact(k, v)).join("");
   el("about").innerHTML = Object.entries(s.about).map(([k, v]) => fact(k, v)).join("");
+  el("curl").value = (s.cloud || {}).url || ""; renderCloud(s.cloud); cloudDirty();
 }
+/* cloud: facts refresh on their own; the address field is only written on page load */
+function renderCloud(c) {
+  if (!c) return; S.cloud = c;
+  const st = {online: c.claimed ? `Connected · ${c.org}` : "Connected — waiting to be claimed",
+              connecting: "Connecting…", error: `Not reachable${c.detail ? " · " + c.detail : ""}`,
+              off: "Off — this Dock is local-only"}[c.state] || c.state;
+  el("cloudFacts").innerHTML = fact("Status", st)
+    + (c.state === "online" && !c.claimed ? `<div class="fact"><i>Claim code</i><b class="mono serial">${esc(c.claim_code)}</b></div>` : "")
+    + (c.url ? fact("Device id", c.device_id) : "");
+}
+function cloudDirty() { const d = el("curl").value.trim() !== ((S.cloud || {}).url || ""); const b = el("cloudBtn"); if (!b.classList.contains("busy") && !b.classList.contains("ok")) b.disabled = !d; b.dataset.stayDisabled = d ? "0" : "1"; }
+async function saveCloud(e) {
+  e.preventDefault(); const b = el("cloudBtn"), url = el("curl").value.trim(), done = busy(b, "Saving…");
+  try { await api("/api/settings", {cloud_url: url}); S.cloud = {...(S.cloud || {}), url}; b.dataset.stayDisabled = "1"; done("Saved"); toast(url ? "Saved — connecting to the cloud…" : "Saved — cloud is off."); }
+  catch (x) { done("Not saved", true); shake(el("curl")); toast(x.message, "err"); }
+  return false;
+}
+setInterval(async () => { try { renderCloud((await api("/api/settings")).cloud); } catch {} }, 4000);
 /* printer form: Save only lights up when something changed */
 function dirty() { const d = el("pname").value.trim() !== S.printer_name || Number(el("timeout").value) !== S.job_timeout_seconds; const b = el("saveBtn"); if (!b.classList.contains("busy") && !b.classList.contains("ok")) b.disabled = !d; b.dataset.stayDisabled = d ? "0" : "1"; }
 async function savePrinter(e) {

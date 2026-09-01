@@ -1,0 +1,45 @@
+# NOTE: no Traefik here — the Traefik from the EraBeats stack already owns ports 80/443
+# on the box. This app joins the external "web" network and registers via labels,
+# exactly like rally does. The WebSocket device channel passes through Traefik as-is.
+services:
+  repaper-cloud:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: repaper-cloud
+    restart: unless-stopped
+    networks:
+      - web
+    environment:
+      - NODE_ENV=production
+      - DATABASE_PATH=/app/data/cloud.db
+    volumes:
+      - cloud-data:/app/data
+    labels:
+      - "traefik.enable=true"
+
+      # HTTP router (redirects to HTTPS)
+      - "traefik.http.routers.repaper.entrypoints=http"
+      - "traefik.http.routers.repaper.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.middlewares.repaper-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.repaper.middlewares=repaper-https-redirect"
+
+      # No basic auth on purpose: humans sign in in the app (closed pilot, no signup),
+      # and the Docks' device channel must reach /ws/device on this same host.
+
+      # Main HTTPS router
+      - "traefik.http.routers.repaper-secure.entrypoints=https"
+      - "traefik.http.routers.repaper-secure.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.repaper-secure.tls=true"
+      - "traefik.http.routers.repaper-secure.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.repaper-secure.service=repaper"
+
+      - "traefik.http.services.repaper.loadbalancer.server.port=3000"
+      - "traefik.docker.network=web"
+
+networks:
+  web:
+    external: true
+
+volumes:
+  cloud-data:

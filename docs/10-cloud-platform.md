@@ -59,7 +59,7 @@ Things deliberately *not* metered in v1: per-page or per-sheet fees — they fig
 
 ## Build order
 
-1. Accounts + claiming + fleet list + device channel (the heartbeat) — enough for the pilot.
+1. Accounts + claiming + fleet list + device channel (the heartbeat) — enough for the pilot. **Built Sep 2026: `cloud/` in this repo** (Fastify + SQLite + WebSocket, console in the Dock UI's design language; Dock side: `cloud.py` agent + a Cloud card in Settings).
 2. Config push + OTA.
 3. Billing + entitlements.
 4. Alerts, reports, SSO, on-prem.

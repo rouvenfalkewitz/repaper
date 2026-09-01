@@ -1,0 +1,27 @@
+{
+  "name": "repaper-cloud",
+  "version": "0.0.1",
+  "description": "RePaper Cloud: fleet console + device channel (Docks and Go installs claim in, report status, get managed)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "seed": "tsx src/seed.ts",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/websocket": "^11.0.2",
+    "better-sqlite3": "^12.2.0",
+    "fastify": "^5.3.2"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.15.0",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

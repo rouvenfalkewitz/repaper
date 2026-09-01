@@ -1,0 +1,102 @@
+/* RePaper Cloud console — same component idiom as the Dock's local UI, built on brand/tokens.css */
+* { box-sizing: border-box }
+html { background: var(--bg) }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important } }
+[hidden] { display: none !important }
+.wrap { max-width: 860px; margin: 0 auto; padding: var(--s-5) var(--s-4) var(--s-9) }
+header { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); padding: var(--s-2) 0 var(--s-5) }
+.logo { display: block; height: 28px; width: auto } .logo .ring { fill: var(--accent) } .logo .letters { fill: var(--text) }
+.who { text-align: right } .who b { display: block; font-family: var(--font-display); font-weight: 600; font-size: 1rem; letter-spacing: -.01em } .who span { font-family: var(--font-mono); font-size: .75rem; color: var(--text-3) }
+.actions { display: flex; align-items: center; gap: var(--s-4) }
+.gear { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: var(--r-control); border: 1px solid var(--border); background: var(--surface); color: var(--text-2); cursor: pointer }
+.gear:hover { color: var(--text); border-color: var(--border-strong) } .gear svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round }
+h2 { font-family: var(--font-display); font-stretch: 112%; font-weight: 700; font-size: .75rem; text-transform: uppercase; letter-spacing: .12em; color: var(--text-3); margin: var(--s-6) 0 var(--s-3) }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--s-5) }
+.mono { font-family: var(--font-mono); font-size: .8125rem; color: var(--text-3) }
+
+/* buttons, forms, facts, modals, toast — the shared vocabulary */
+.row { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center } .row.end { justify-content: flex-end } .row.between { justify-content: space-between }
+.stack { display: grid; gap: var(--s-4) }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 600 .9375rem var(--font-body); padding: 11px 18px; border-radius: var(--r-control); border: 1px solid transparent; cursor: pointer; line-height: 1.2; transition: background var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out) }
+.btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round }
+.btn:active { transform: translateY(1px) } .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.btn.primary { background: var(--accent); color: var(--on-accent); box-shadow: var(--glow) } .btn.primary:hover { background: var(--accent-hover) }
+.btn.outline { background: transparent; color: var(--text-2); border-color: var(--border-strong) } .btn.outline:hover { color: var(--text); background: var(--surface-2) }
+.btn.danger { background: transparent; color: var(--red); border-color: var(--red) }
+.btn.small { padding: 6px 10px; font-size: .8125rem }
+.btn[disabled] { opacity: .45; cursor: not-allowed; box-shadow: none }
+.btn.ok, .btn.ok[disabled] { background: var(--accent-tint); color: var(--accent-text); border-color: transparent; opacity: 1 } .btn.primary.ok, .btn.primary.ok[disabled] { background: var(--accent); color: var(--on-accent) }
+.btn.fail, .btn.fail[disabled] { background: var(--red-tint); color: var(--red); border-color: transparent; opacity: 1 }
+.btn.busy[disabled] { opacity: .8 } .btn .spin { animation: spin .9s linear infinite }
+.field { display: grid; gap: 6px } .field label { font-size: .875rem; font-weight: 600 }
+.field input { font: inherit; font-size: .9375rem; padding: 10px 12px; border-radius: var(--r-control); border: 1px solid var(--border-strong); background: var(--bg); color: var(--text) }
+.field input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint) } .field .hint { font-size: .8125rem; color: var(--text-3) }
+.field input.shake { border-color: var(--red) }
+.facts { display: flex; flex-wrap: wrap; gap: 10px 28px }
+.facts.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px 20px }
+.fact { display: grid; gap: 2px; min-width: 0 } .fact i { font-style: normal; font-family: var(--font-display); font-stretch: 112%; font-weight: 700; font-size: .625rem; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3) }
+.fact b { font-weight: 500; font-size: .875rem; overflow-wrap: anywhere }
+.iconrow { display: inline-flex; gap: 2px }
+.iconbtn { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: var(--text-3); cursor: pointer; transition: color var(--dur-fast), background var(--dur-fast) }
+.iconbtn:hover { color: var(--text); background: var(--surface-2) } .iconbtn.danger:hover { color: var(--red); background: var(--red-tint) }
+.iconbtn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round }
+dialog.modal { border: 1px solid var(--border); border-radius: var(--r-card); background: var(--surface); color: var(--text); padding: 0; width: min(540px, calc(100vw - 32px)); box-shadow: var(--shadow-float) }
+dialog.modal::backdrop { background: rgba(12,16,15,.72); backdrop-filter: blur(4px) } dialog.modal[open] { animation: rise var(--dur-base) var(--ease-out) both }
+.modal-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 0 } .modal-head b { font-family: var(--font-display); font-weight: 600; font-size: 1.125rem; letter-spacing: -.01em }
+.modal-body { padding: 16px 20px 20px; display: grid; gap: 16px }
+.ed { display: grid; gap: 14px } .ed label { font-size: .875rem; font-weight: 600 }
+.ed p { margin: 0; font-size: .9375rem; color: var(--text-2) } .ed p b { font-weight: 600; color: var(--text) }
+.ed input { font: inherit; font-size: .9375rem; padding: 10px 12px; border-radius: var(--r-control); border: 1px solid var(--border-strong); background: var(--bg); color: var(--text); width: 100% }
+.ed input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint) }
+.toast { position: fixed; left: 50%; bottom: 24px; display: flex; align-items: center; gap: 10px; transform: translate(-50%, 12px); background: #0C100F; color: #EFF1EE; border: 1px solid #273029; border-radius: var(--r-card); padding: 12px 16px; box-shadow: var(--shadow-float); font-size: .9375rem; opacity: 0; transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out); pointer-events: none }
+.toast.show { opacity: 1; transform: translate(-50%, 0) }
+.toast .ic { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--re-900); color: var(--re-400); flex: none } .toast .ic svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round } .toast.err .ic { background: var(--red-900); color: var(--red-500) }
+@keyframes rise { from { opacity: 0; transform: translateY(6px) } to { opacity: 1; transform: none } }
+@keyframes collapse { to { opacity: 0; transform: scale(.97) } }
+@keyframes shake { 0%, 100% { transform: none } 20%, 60% { transform: translateX(-4px) } 40%, 80% { transform: translateX(4px) } }
+@keyframes spin { to { transform: rotate(360deg) } }
+@keyframes hi { 0% { box-shadow: 0 0 0 0 rgba(30,227,165,.55) } 100% { box-shadow: 0 0 0 14px rgba(30,227,165,0) } }
+.enter { animation: rise var(--dur-slow) var(--ease-out) both } .leave { animation: collapse var(--dur-base) var(--ease-out) forwards; pointer-events: none }
+.shake { animation: shake .35s var(--ease-out) } .hi { animation: hi 1.2s var(--ease-out) 2; border-color: var(--accent) !important }
+
+/* fleet: device cards */
+.fleet { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: var(--s-3) }
+.dev { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--s-4); display: grid; gap: 6px; min-width: 0 }
+.dev > b { font-family: var(--font-display); font-weight: 600; font-size: 1.0625rem; letter-spacing: -.01em }
+.dev-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px }
+.kind { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-display); font-stretch: 112%; font-weight: 700; font-size: .8125rem; letter-spacing: .08em; color: var(--text-2); text-transform: uppercase }
+.kind svg { width: 15px; height: 15px; fill: none; stroke: var(--accent-text); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round }
+.dev-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px; font-family: var(--font-mono); font-size: .75rem; color: var(--text-3) }
+.presence { display: inline-flex; align-items: center; gap: 7px }
+.presence .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: var(--glow); animation: var(--ring-breathe); flex: none }
+.presence.off .dot { background: var(--text-3); box-shadow: none; animation: none }
+.presence b { font-weight: 500; color: var(--text-2) } .presence.off b { color: var(--text-3) }
+.dev.off > b, .dev.off .devmeta { opacity: .7 }
+.devmeta { color: var(--text-2); font-size: .875rem }
+.dev .tools { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 8px; padding-top: 12px; border-top: 1px solid var(--border) }
+.dev .tools .btn { width: 100%; padding: 8px 10px; background: transparent; color: var(--text-2); border-color: var(--border) }
+.dev .tools .btn:hover { color: var(--text); border-color: var(--border-strong); background: var(--surface-2) }
+.dev .tools .btn svg { width: 15px; height: 15px }
+.addcard { display: grid; place-items: center; align-content: center; gap: 10px; min-height: 170px; border: 1px dashed var(--border-strong); border-radius: var(--r-card); background: transparent; color: var(--text-3); cursor: pointer; font: 600 .875rem var(--font-body); transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out) }
+.addcard:hover { border-color: var(--accent); color: var(--accent-text) }
+.addcard .plus { width: 40px; height: 40px; border-radius: 50%; border: 1px solid currentColor; display: grid; place-items: center }
+.addcard svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round }
+
+/* details: the device's sheets, lean */
+.dsheets { display: grid; gap: 6px }
+.dsheet { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: var(--r-control); background: var(--bg); border: 1px solid var(--border); font-size: .875rem }
+.dsheet b { font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.dsheet .mono { flex: none } .dsheet.away { opacity: .6 }
+.evt { display: flex; align-items: baseline; gap: 10px; font-size: .8125rem; padding: 4px 0 }
+.evt .mono { flex: none; min-width: 118px }
+.serial { letter-spacing: .06em }
+.empty-hint { color: var(--text-2); font-size: .9375rem; max-width: 52ch }
+
+/* login */
+.login-wrap { min-height: 100svh; display: grid; place-items: center; padding: var(--s-4) }
+.login { width: min(400px, 100%); display: grid; gap: var(--s-5) }
+.login .logo { height: 32px; margin: 0 auto }
+.login .card { display: grid; gap: var(--s-4) }
+.login h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; letter-spacing: -.01em }
+.login .sub { margin: -10px 0 0; color: var(--text-2); font-size: .9375rem }

@@ -17,6 +17,8 @@ DEFAULT_CONFIG = {
     "web_bind": "0.0.0.0",                           # the Dock's page is reachable on the network (phones on the same Wi-Fi)
     "status_refresh_seconds": 60,                    # how often sheet battery/online is re-read while idle
     "mock_output_dir": str(HOME / "mock-out"),
+    "cloud_url": "",                                 # RePaper Cloud device channel (wss://…/ws/device); empty = local-only
+
 }
 
 def load_config() -> dict:

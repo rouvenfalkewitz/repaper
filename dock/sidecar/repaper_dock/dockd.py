@@ -38,6 +38,8 @@ class Dock:
                 try: self.sheet_status[sid] = {**json.loads(sp.read_text()), "online": None, "at": 0}
                 except Exception: pass
         self.hw_lock = threading.Lock()                 # one BLE/hardware operation at a time (print, status, add, test page)
+        from .cloud import CloudAgent
+        self.cloud = CloudAgent(self); self.cloud.start()
         threading.Thread(target=self._status_loop, daemon=True).start()
 
     # ── sheet status (battery/online) refreshed in the background while idle ──
@@ -132,7 +134,7 @@ class Dock:
                       "hw": e.get("keys", {}).get("hw", {})}
                   for k, e in self.registry.all().items()}
         return {"printer_name": self.cfg["printer_name"], "job_timeout_seconds": self.cfg["job_timeout_seconds"], "notifications": self.notifications(self.snapshot()["sheets"]),
-                "address": f"http://{socket.gethostname()}:{self.cfg['web_port']}/", "sheets": sheets,
+                "address": f"http://{socket.gethostname()}:{self.cfg['web_port']}/", "sheets": sheets, "cloud": self.cloud.info(),
                 "network": {"hostname": socket.gethostname(), "addresses": ", ".join(sorted(set(ips))) or "—", "dock page": f"http://{socket.gethostname()}:{self.cfg['web_port']}/",
                             "printer": "advertised via DNS-SD (AirPrint, IPP Everywhere)"},
                 "about": {"software": f"RePaper Dock {__version__}", "system": f"{platform.system()} {platform.machine()}",
@@ -160,8 +162,12 @@ class Dock:
                 v = typ(data[k])
                 if k != "printer_name" and v < 30: raise ValueError(f"{k} must be at least 30")
                 self.cfg[k] = v.strip() if isinstance(v, str) else v
+        if "cloud_url" in data:
+            u = str(data["cloud_url"] or "").strip()
+            if u and not u.startswith(("ws://", "wss://")): raise ValueError("the cloud address must start with wss:// (or ws:// for testing)")
+            self.cfg["cloud_url"] = u
         cur = json.loads(CONFIG.read_text()) if CONFIG.exists() else {}
-        cur.update({k: self.cfg[k] for k in allowed if k in self.cfg}); CONFIG.write_text(json.dumps(cur, indent=2) + "\n")
+        cur.update({k: self.cfg[k] for k in (*allowed, "cloud_url") if k in self.cfg}); CONFIG.write_text(json.dumps(cur, indent=2) + "\n")
 
     def add_sheet(self, text: str, name: str = "", serial: str = "") -> dict:
         """text = QR landing URL, OD name, BLE address, or 'WxH' for the mock transport. Reads size/colours from the sheet."""
