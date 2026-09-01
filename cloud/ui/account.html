@@ -14,7 +14,13 @@
   <aside class="side" id="side"></aside>
   <main class="main">
     <div class="pagehead"><h1>Account</h1></div>
+    <nav class="tabs" id="tabs">
+      <a href="#profile" data-tab="profile">Profile</a>
+      <a href="#security" data-tab="security">Security</a>
+      <a href="#keys" data-tab="keys">API keys</a>
+    </nav>
 
+    <section data-sec="profile">
     <h2>Profile</h2>
     <div class="card">
       <div class="profile">
@@ -27,7 +33,9 @@
         </form>
       </div>
     </div>
+    </section>
 
+    <section data-sec="security" hidden>
     <h2>Password</h2>
     <div class="card">
       <form class="stack" onsubmit="return savePassword(event)">
@@ -39,6 +47,12 @@
 
     <h2>Two-factor authentication</h2>
     <div class="card" id="twofaCard"></div>
+    </section>
+
+    <section data-sec="keys" hidden>
+    <h2>API keys <span class="mono" style="font-weight:400;text-transform:none;letter-spacing:0">— read-only access to your fleet, acting as you</span></h2>
+    <div class="card" id="keysCard"></div>
+    </section>
   </main>
 </div>
 
@@ -50,12 +64,41 @@
 
 <script src="/app.js"></script>
 <script>
+/* tabs: hash-routed sections */
+function showTab(name) {
+  if (!document.querySelector(`[data-sec="${name}"]`)) name = "profile";
+  document.querySelectorAll("[data-sec]").forEach(s => s.hidden = s.dataset.sec !== name);
+  document.querySelectorAll("#tabs a").forEach(a => a.classList.toggle("active", a.dataset.tab === name));
+}
+window.addEventListener("hashchange", () => showTab(location.hash.slice(1) || "profile"));
+showTab(location.hash.slice(1) || "profile");
+
 function renderProfile() {
   if (!ME) return;
   el("pname").value = ME.name || ""; el("pmail").value = ME.email;
   el("avBtn").innerHTML = avatarHtml(ME, 72) + `<span class="avhint">${ICON.camera}</span>`;
   el("avRemove").hidden = !ME.avatar;
-  renderTwofa(); profDirty();
+  renderTwofa(); profDirty(); loadKeys();
+}
+
+/* ── API keys (personal) ── */
+async function loadKeys() {
+  try {
+    const { keys } = await api("/api/keys");
+    el("keysCard").innerHTML = keys.map(k => `<div class="member"><span class="who2"><b>${esc(k.name)}</b><span class="mono">created ${new Date(k.created * 1000).toLocaleDateString()} · ${k.last_used ? "last used " + ago(k.last_used) : "never used"}</span></span><button class="iconbtn danger" data-kid="${k.id}" title="Revoke">${ICON.trash}</button></div>`).join("")
+      + `<div class="row between" style="margin-top:${keys.length ? 14 : 0}px"><span class="hint" style="color:var(--text-3);font-size:.8125rem">Send <span class="mono">Authorization: Bearer rpk_…</span> to read <span class="mono">/api/fleet</span> and friends. A key sees what you see, and dies with your account.</span><button class="btn outline small" onclick="openNewKey()">${ICON.plus}New key</button></div>`;
+  } catch {}
+}
+el("keysCard").addEventListener("click", async e => {
+  const b = e.target.closest("[data-kid]"); if (!b) return;
+  try { await api(`/api/keys/${b.dataset.kid}/revoke`, {}); toast("Key revoked — whatever used it is locked out."); loadKeys(); }
+  catch (x) { toast(x.message, "err"); }
+});
+function openNewKey() {
+  setModal("New API key", `<form class="ed" data-ed="newkey">
+    <p>Read-only access to your fleet for scripts and integrations, acting as you. The key is shown once.</p>
+    <label for="edKn">What will use it?</label><input id="edKn" name="name" maxlength="40" required placeholder="e.g. Grafana dashboard" autocomplete="off">
+    <div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Create key</button></div></form>`);
 }
 function profDirty() { if (!ME) return; el("profBtn").disabled = el("pname").value.trim() === (ME.name || ""); }
 async function saveProfile(e) {
@@ -122,8 +165,17 @@ function openDisable() {
 el("edDlg").addEventListener("click", e => { const b = e.target.closest("[data-act=close]"); if (b) closeModal(); });
 el("edDlg").addEventListener("submit", async e => {
   e.preventDefault(); const f = e.target, kind = f.dataset.ed, sb = f.querySelector("button[type=submit]");
-  const done = busy(sb, {enable: "Checking…", disable: "Turning off…"}[kind] || "Working…");
+  const done = busy(sb, {enable: "Checking…", disable: "Turning off…", newkey: "Creating…"}[kind] || "Working…");
   try {
+    if (kind === "newkey") {
+      const r = await api("/api/keys", {name: f.elements.name.value.trim()});
+      loadKeys();
+      el("edTitle").textContent = "Copy your key";
+      el("edBody").innerHTML = `<div class="ed"><p><b>This is shown exactly once.</b> Store it where the integration lives — we only keep a fingerprint.</p>
+        <div class="linkbox mono">${esc(r.token)}</div>
+        <div class="row end"><button class="btn outline" type="button" onclick="navigator.clipboard.writeText('${esc(r.token)}').then(()=>toast('Copied.'))">Copy</button><button class="btn primary" type="button" data-act="close">Done</button></div></div>`;
+      return;
+    }
     if (kind === "enable") {
       const r = await api("/api/2fa/enable", {code: f.elements.code.value});
       ME.twofa = true; renderTwofa();

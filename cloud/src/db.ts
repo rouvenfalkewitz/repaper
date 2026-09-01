@@ -89,6 +89,15 @@ if (!(db.prepare("PRAGMA table_info(invite)").all() as { name: string }[]).some(
   if (!cols.includes("totp_secret")) db.exec("ALTER TABLE user ADD COLUMN totp_secret TEXT");
   if (!cols.includes("totp_pending")) db.exec("ALTER TABLE user ADD COLUMN totp_pending TEXT");
 }
+// API keys became personal (they act as their owner, read-only)
+{
+  const kcols = (db.prepare("PRAGMA table_info(api_key)").all() as { name: string }[]).map((c) => c.name);
+  if (kcols.length && !kcols.includes("user_id")) {
+    db.exec("ALTER TABLE api_key ADD COLUMN user_id INTEGER REFERENCES user(id)");
+    db.exec("UPDATE api_key SET user_id = (SELECT MIN(id) FROM user WHERE user.org_id = api_key.org_id) WHERE user_id IS NULL");
+  }
+}
+
 // company/billing profile on the org (what invoices will need)
 {
   const ocols = (db.prepare("PRAGMA table_info(org)").all() as { name: string }[]).map((c) => c.name);
@@ -279,17 +288,17 @@ export const orgActivity = (orgId: number, limit = 60) =>
 export const setUserRole = (id: number, role: string) => db.prepare("UPDATE user SET role=? WHERE id=?").run(role, id);
 
 // ── API keys ────────────────────────────────────────────────────────────────
-export type ApiKeyRow = { id: number; org_id: number; name: string; token_hash: string; created: number; last_used: number | null };
-export const createApiKey = (orgId: number, name: string, tokenHash: string) =>
-  db.prepare("INSERT INTO api_key(org_id, name, token_hash, created) VALUES(?,?,?,?)").run(orgId, name, tokenHash, now());
-export const orgApiKeys = (orgId: number) =>
-  db.prepare("SELECT id, name, created, last_used FROM api_key WHERE org_id=? ORDER BY created").all(orgId) as Omit<ApiKeyRow, "org_id" | "token_hash">[];
+export type ApiKeyRow = { id: number; org_id: number; user_id: number | null; name: string; token_hash: string; created: number; last_used: number | null };
+export const createApiKey = (orgId: number, userId: number, name: string, tokenHash: string) =>
+  db.prepare("INSERT INTO api_key(org_id, user_id, name, token_hash, created) VALUES(?,?,?,?,?)").run(orgId, userId, name, tokenHash, now());
+export const userApiKeys = (userId: number) =>
+  db.prepare("SELECT id, name, created, last_used FROM api_key WHERE user_id=? ORDER BY created").all(userId) as Omit<ApiKeyRow, "org_id" | "user_id" | "token_hash">[];
 export const apiKeyByHash = (hash: string) => {
   const k = db.prepare("SELECT * FROM api_key WHERE token_hash=?").get(hash) as ApiKeyRow | undefined;
   if (k) db.prepare("UPDATE api_key SET last_used=? WHERE id=?").run(now(), k.id);
   return k;
 };
-export const revokeApiKey = (id: number, orgId: number) => db.prepare("DELETE FROM api_key WHERE id=? AND org_id=?").run(id, orgId);
+export const revokeApiKey = (id: number, userId: number) => db.prepare("DELETE FROM api_key WHERE id=? AND user_id=?").run(id, userId);
 
 // ── public aggregate (status page) ──────────────────────────────────────────
 export const publicCounts = () =>

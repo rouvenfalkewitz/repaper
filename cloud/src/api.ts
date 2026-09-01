@@ -8,11 +8,11 @@ import {
   createInvite, createLoginPending, createOrg, createReset, createUser, deleteDevice, deleteLoginPending,
   deleteOtherSessions, deleteSessionsFor, deleteUser, deviceEvents, deviceStats, disableTotp,
   enableTotp, findClaimable, firstAdmin, getDevice, getOrg, getOrgByName, getUser, getUserByEmail,
-  inviteByTokenHash, loginPendingByToken, markInviteUsed, markResetUsed, orgActivity, orgApiKeys,
+  inviteByTokenHash, loginPendingByToken, markInviteUsed, markResetUsed, orgActivity,
   orgDevices, orgInvites, orgUsers, pendingInviteFor, publicCounts, recentResetFor, renameDevice, renameOrg,
   resetByTokenHash, revokeApiKey, revokeInvite, setDeviceSite, setTotpPending, setUserAvatar,
-  setOrgLogo, setUserName, setUserRole, updateCompany, updatePassword, useRecoveryCode, COMPANY_FIELDS,
-  type DeviceRow, type UserRow,
+  setOrgLogo, setUserName, setUserRole, updateCompany, updatePassword, useRecoveryCode, userApiKeys,
+  COMPANY_FIELDS, type DeviceRow, type UserRow,
 } from "./db.js";
 import { COOKIE, endSession, hashPassword, loginAllowed, loginFailed, loginOk, requireUser, startSession, verifyPassword } from "./auth.js";
 import { mailEnabled, sendInviteMail, sendRegisterMail, sendResetMail } from "./mail/index.js";
@@ -376,25 +376,21 @@ export const registerApi = (app: FastifyInstance) => {
       return { ok: true };
     });
 
-    // ── API keys (org-scoped, read-only bearer access) ─────────────────────
-    f.get("/api/keys", async (req, reply) => {
-      if (!requireAdmin(req, reply)) return;
-      return { keys: orgApiKeys((req as Authed).user.org_id) };
-    });
+    // ── API keys (personal: a key acts as its owner, read-only) ────────────
+    f.get("/api/keys", async (req) => ({ keys: userApiKeys((req as Authed).user.id) }));
 
     f.post("/api/keys", async (req, reply) => {
-      if (!requireAdmin(req, reply)) return;
       const u = (req as Authed).user;
+      if (u.role === "api") return reply.code(403).send({ error: "a key can't mint keys" });
       const name = String(((req.body ?? {}) as { name?: string }).name ?? "").trim();
       if (!name || name.length > 40) return reply.code(400).send({ error: "give the key a short name (what will use it?)" });
       const token = "rpk_" + randomBytes(24).toString("hex");
-      createApiKey(u.org_id, name, sha256(token));
+      createApiKey(u.org_id, u.id, name, sha256(token));
       return { ok: true, token };   // shown exactly once — only the hash is stored
     });
 
     f.post("/api/keys/:id/revoke", async (req, reply) => {
-      if (!requireAdmin(req, reply)) return;
-      const r = revokeApiKey(Number((req.params as { id: string }).id), (req as Authed).user.org_id);
+      const r = revokeApiKey(Number((req.params as { id: string }).id), (req as Authed).user.id);
       if (!r.changes) return reply.code(404).send({ error: "no such key" });
       return { ok: true };
     });
