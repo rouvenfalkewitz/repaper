@@ -20,7 +20,6 @@ services:
       - SMTP_PASS=${SMTP_PASS:-}
       - MAIL_FROM=${MAIL_FROM:-}
       - REGISTER_WHITELIST=${REGISTER_WHITELIST:-}
-      - REGISTER_ORG=${REGISTER_ORG:-RePaper}
     volumes:
       - cloud-data:/app/data
     labels:

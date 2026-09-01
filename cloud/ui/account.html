@@ -39,16 +39,6 @@
 
     <h2>Two-factor authentication</h2>
     <div class="card" id="twofaCard"></div>
-
-    <div id="adminSections" hidden>
-      <h2>API keys <span class="mono" style="font-weight:400;text-transform:none;letter-spacing:0">— read-only fleet access for your own tools</span></h2>
-      <div class="card" id="keysCard"></div>
-
-      <h2>Organisation</h2>
-      <div class="card">
-        <div class="twofa"><span class="okic off" id="orgIcon"></span><div style="flex:1"><b>Branding</b><span>Put your organisation's logo on this console for your team. Coming with the first customer orgs.</span></div><button class="btn outline small" disabled>Upload logo</button></div>
-      </div>
-    </div>
   </main>
 </div>
 
@@ -66,27 +56,6 @@ function renderProfile() {
   el("avBtn").innerHTML = avatarHtml(ME, 72) + `<span class="avhint">${ICON.camera}</span>`;
   el("avRemove").hidden = !ME.avatar;
   renderTwofa(); profDirty();
-  if (ME.role === "admin") { el("adminSections").hidden = false; el("orgIcon").innerHTML = ICON.people; loadKeys(); }
-}
-
-/* ── API keys (org, admins) ── */
-async function loadKeys() {
-  try {
-    const { keys } = await api("/api/keys");
-    el("keysCard").innerHTML = keys.map(k => `<div class="member"><span class="who2"><b>${esc(k.name)}</b><span class="mono">created ${new Date(k.created * 1000).toLocaleDateString()} · ${k.last_used ? "last used " + ago(k.last_used) : "never used"}</span></span><button class="iconbtn danger" data-kid="${k.id}" title="Revoke">${ICON.trash}</button></div>`).join("")
-      + `<div class="row between" style="margin-top:${keys.length ? 14 : 0}px"><span class="hint" style="color:var(--text-3);font-size:.8125rem">Send <span class="mono">Authorization: Bearer rpk_…</span> to read <span class="mono">/api/fleet</span> and friends.</span><button class="btn outline small" onclick="openNewKey()">${ICON.plus}New key</button></div>`;
-  } catch {}
-}
-el("keysCard")?.addEventListener("click", async e => {
-  const b = e.target.closest("[data-kid]"); if (!b) return;
-  try { await api(`/api/keys/${b.dataset.kid}/revoke`, {}); toast("Key revoked — whatever used it is locked out."); loadKeys(); }
-  catch (x) { toast(x.message, "err"); }
-});
-function openNewKey() {
-  setModal("New API key", `<form class="ed" data-ed="newkey">
-    <p>Read-only access to your fleet for scripts and integrations. The key is shown once.</p>
-    <label for="edKn">What will use it?</label><input id="edKn" name="name" maxlength="40" required placeholder="e.g. Grafana dashboard" autocomplete="off">
-    <div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Create key</button></div></form>`);
 }
 function profDirty() { if (!ME) return; el("profBtn").disabled = el("pname").value.trim() === (ME.name || ""); }
 async function saveProfile(e) {
@@ -153,17 +122,8 @@ function openDisable() {
 el("edDlg").addEventListener("click", e => { const b = e.target.closest("[data-act=close]"); if (b) closeModal(); });
 el("edDlg").addEventListener("submit", async e => {
   e.preventDefault(); const f = e.target, kind = f.dataset.ed, sb = f.querySelector("button[type=submit]");
-  const done = busy(sb, {enable: "Checking…", disable: "Turning off…", newkey: "Creating…"}[kind] || "Working…");
+  const done = busy(sb, {enable: "Checking…", disable: "Turning off…"}[kind] || "Working…");
   try {
-    if (kind === "newkey") {
-      const r = await api("/api/keys", {name: f.elements.name.value.trim()});
-      loadKeys();
-      el("edTitle").textContent = "Copy your key";
-      el("edBody").innerHTML = `<div class="ed"><p><b>This is shown exactly once.</b> Store it where the integration lives — we only keep a fingerprint.</p>
-        <div class="linkbox mono">${esc(r.token)}</div>
-        <div class="row end"><button class="btn outline" type="button" onclick="navigator.clipboard.writeText('${esc(r.token)}').then(()=>toast('Copied.'))">Copy</button><button class="btn primary" type="button" data-act="close">Done</button></div></div>`;
-      return;
-    }
     if (kind === "enable") {
       const r = await api("/api/2fa/enable", {code: f.elements.code.value});
       ME.twofa = true; renderTwofa();

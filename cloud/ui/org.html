@@ -3,18 +3,39 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark light"><meta name="theme-color" content="#0C100F">
 <meta name="robots" content="noindex">
-<title>RePaper Cloud · Team</title>
+<title>RePaper Cloud · Organisation</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,600;62..125,700;62..125,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="/tokens.css"><link rel="stylesheet" href="/app.css">
 </head>
-<body data-page="team">
+<body data-page="org">
 <div class="layout">
   <aside class="side" id="side"></aside>
   <main class="main">
-    <div class="pagehead"><h1>Team</h1><button class="btn primary small" id="inviteBtn" onclick="openInvite()" hidden></button></div>
+    <div class="pagehead"><h1 id="pageTitle">Organisation</h1></div>
+
+    <div class="card stack" id="orgCard" style="margin-bottom:var(--s-3)">
+      <div class="notice info" id="personalNote" hidden></div>
+      <form class="row" style="align-items:flex-end" onsubmit="return saveOrg(event)">
+        <div class="field" style="flex:1;min-width:220px"><label for="oname">Name</label><input id="oname" maxlength="63" required autocomplete="off" oninput="orgDirty()"></div>
+        <button class="btn primary" id="orgBtn" type="submit" disabled>Save</button>
+      </form>
+      <div class="facts" id="orgFacts"></div>
+    </div>
+
+    <h2 class="rowh">Members <button class="btn primary small" id="inviteBtn" onclick="openInvite()" hidden></button></h2>
     <div class="card" id="team"></div>
+
+    <div id="adminSections" hidden>
+      <h2>API keys <span class="mono" style="font-weight:400;text-transform:none;letter-spacing:0">— read-only fleet access for your own tools</span></h2>
+      <div class="card" id="keysCard"></div>
+
+      <h2>Branding</h2>
+      <div class="card">
+        <div class="twofa"><span class="okic off" id="orgIcon"></span><div style="flex:1"><b>Your logo on this console</b><span>Show your organisation's mark to your team. Coming with the first customer orgs.</span></div><button class="btn outline small" disabled>Upload logo</button></div>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -26,7 +47,47 @@
 
 <script src="/app.js"></script>
 <script>
-let T = null;
+let T = null, ORG = null;
+
+/* ── organisation card ── */
+async function loadOrg() {
+  try { ORG = await api("/api/org"); renderOrg(); } catch {}
+}
+function renderOrg() {
+  if (!ORG || !ME) return;
+  const admin = ME.role === "admin";
+  el("oname").value = ORG.name; el("oname").disabled = !admin; orgDirty();
+  el("personalNote").hidden = !ORG.personal;
+  if (ORG.personal) el("personalNote").innerHTML = `${ICON.info}<div><b>This is your personal space.</b><span>Give it a name and invite people below — the moment someone joins, it works like an organisation: shared fleet, roles, the lot.</span></div>`;
+  el("orgFacts").innerHTML = fact("Members", String(ORG.members)) + fact("Devices", String(ORG.devices)) + fact("Created", new Date(ORG.created * 1000).toLocaleDateString());
+}
+function orgDirty() { const b = el("orgBtn"); if (!ORG) return; if (!b.classList.contains("busy") && !b.classList.contains("ok")) b.disabled = el("oname").value.trim() === ORG.name || el("oname").disabled; }
+async function saveOrg(e) {
+  e.preventDefault(); const done = busy(el("orgBtn"), "Saving…");
+  try { await api("/api/org", {name: el("oname").value.trim()}); ORG.name = el("oname").value.trim(); done("Saved"); toast("Renamed."); renderShell(); if (ME) ME.org = ORG.name; }
+  catch (x) { done("Not saved", true); toast(x.message, "err"); }
+  return false;
+}
+
+/* ── API keys ── */
+async function loadKeys() {
+  try {
+    const { keys } = await api("/api/keys");
+    el("keysCard").innerHTML = keys.map(k => `<div class="member"><span class="who2"><b>${esc(k.name)}</b><span class="mono">created ${new Date(k.created * 1000).toLocaleDateString()} · ${k.last_used ? "last used " + ago(k.last_used) : "never used"}</span></span><button class="iconbtn danger" data-kid="${k.id}" title="Revoke">${ICON.trash}</button></div>`).join("")
+      + `<div class="row between" style="margin-top:${keys.length ? 14 : 0}px"><span class="hint" style="color:var(--text-3);font-size:.8125rem">Send <span class="mono">Authorization: Bearer rpk_…</span> to read <span class="mono">/api/fleet</span> and friends.</span><button class="btn outline small" onclick="openNewKey()">${ICON.plus}New key</button></div>`;
+  } catch {}
+}
+el("keysCard").addEventListener("click", async e => {
+  const b = e.target.closest("[data-kid]"); if (!b) return;
+  try { await api(`/api/keys/${b.dataset.kid}/revoke`, {}); toast("Key revoked — whatever used it is locked out."); loadKeys(); }
+  catch (x) { toast(x.message, "err"); }
+});
+function openNewKey() {
+  setModal("New API key", `<form class="ed" data-ed="newkey">
+    <p>Read-only access to your fleet for scripts and integrations. The key is shown once.</p>
+    <label for="edKn">What will use it?</label><input id="edKn" name="name" maxlength="40" required placeholder="e.g. Grafana dashboard" autocomplete="off">
+    <div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Create key</button></div></form>`);
+}
 async function loadTeam() { try { T = await api("/api/team"); renderTeam(); } catch {} }
 function renderTeam() {
   if (!T || !ME) return;
@@ -70,12 +131,21 @@ function openInvite() {
 el("edDlg").addEventListener("click", e => { const b = e.target.closest("[data-act=close]"); if (b) closeModal(); });
 el("edDlg").addEventListener("submit", async e => {
   e.preventDefault(); const f = e.target, kind = f.dataset.ed, sb = f.querySelector("button[type=submit]");
-  const done = busy(sb, {invite: "Inviting…", kick: "Removing…", role: "Changing…"}[kind] || "Working…");
+  const done = busy(sb, {invite: "Inviting…", kick: "Removing…", role: "Changing…", newkey: "Creating…"}[kind] || "Working…");
   try {
+    if (kind === "newkey") {
+      const r = await api("/api/keys", {name: f.elements.name.value.trim()});
+      loadKeys();
+      el("edTitle").textContent = "Copy your key";
+      el("edBody").innerHTML = `<div class="ed"><p><b>This is shown exactly once.</b> Store it where the integration lives — we only keep a fingerprint.</p>
+        <div class="linkbox mono">${esc(r.token)}</div>
+        <div class="row end"><button class="btn outline" type="button" onclick="navigator.clipboard.writeText('${esc(r.token)}').then(()=>toast('Copied.'))">Copy</button><button class="btn primary" type="button" data-act="close">Done</button></div></div>`;
+      return;
+    }
     if (kind === "invite") {
       const email = f.elements.email.value.trim();
       const r = await api("/api/invites", {email, role: f.elements.admin.checked ? "admin" : "member"});
-      loadTeam();
+      loadTeam(); loadOrg();
       el("edBody").innerHTML = `<div class="ed"><p><b>Invitation created for ${esc(email)}.</b> ${r.mailed ? "An email with the link is on its way." : "Mail sending is off for now — pass them the link yourself:"}</p>
         <div class="linkbox mono">${esc(r.link)}</div>
         <div class="row end"><button class="btn outline" type="button" onclick="copyInv('${esc(r.link)}')">Copy link</button><button class="btn primary" type="button" data-act="close">Done</button></div></div>`;
@@ -85,8 +155,13 @@ el("edDlg").addEventListener("submit", async e => {
     if (kind === "role") { await api(`/api/team/${f.dataset.uid}/role`, {role: f.dataset.role}); el("edDlg").close(); toast("Role changed."); loadTeam(); return; }
   } catch (x) { done("Failed", true); const i = f.querySelector("input"); if (i) shake(i); toast(x.message, "err"); }
 });
-document.addEventListener("me-ready", renderTeam);
-loadTeam();
+function onMe() {
+  renderTeam(); renderOrg();
+  if (ME && ME.role === "admin") { el("adminSections").hidden = false; el("orgIcon").innerHTML = ICON.people; loadKeys(); }
+}
+document.addEventListener("me-ready", onMe);
+if (ME) onMe();
+loadTeam(); loadOrg();
 </script>
 </body>
 </html>

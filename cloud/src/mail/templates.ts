@@ -75,10 +75,10 @@ export const inviteMail = (link: string, orgName: string, inviterName: string): 
   }),
 });
 
-export const registerMail = (link: string, orgName: string): RenderedMail => ({
+export const registerMail = (link: string): RenderedMail => ({
   subject: "Confirm your RePaper Cloud registration",
   text:
-    `You (or someone using your address) registered for "${orgName}" on RePaper Cloud —\n` +
+    `You (or someone using your address) registered on RePaper Cloud —\n` +
     `the console for RePaper printers and e-paper sheets.\n\n` +
     `Confirm your email and pick a password here (the link is valid for 14 days):\n\n  ${link}\n\n` +
     `If this wasn't you, ignore this mail; no account was created.\n\n` +
@@ -87,7 +87,7 @@ export const registerMail = (link: string, orgName: string): RenderedMail => ({
     preheader: "One click to confirm your email, then pick a password.",
     heading: "Confirm your registration",
     paragraphs: [
-      `You registered for <b>${esc(orgName)}</b> on RePaper Cloud. Confirm your email and pick a password — that's all:`,
+      `You registered on RePaper Cloud — your own space for RePaper printers and their sheets. Confirm your email and pick a password, that's all:`,
     ],
     button: { label: "Confirm & choose a password", url: link },
     note: "The link is valid for 14 days and works once. Wasn't you? Ignore this mail — no account was created.",

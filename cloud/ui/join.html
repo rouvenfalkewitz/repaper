@@ -38,7 +38,9 @@ async function lookup() {
   const r = await fetch(`/api/invites/lookup?token=${encodeURIComponent(token)}`, {cache: "no-store"});
   const j = await r.json();
   if (!r.ok || j.error) { el("who").textContent = j.error || "This invitation is no longer valid."; return; }
-  el("who").innerHTML = `You're invited to <b>${esc(j.org)}</b> on RePaper Cloud, as <b>${esc(j.email)}</b>. Pick a password and you're in.`;
+  el("who").innerHTML = j.org
+    ? `You're invited to <b>${esc(j.org)}</b> on RePaper Cloud, as <b>${esc(j.email)}</b>. Pick a password and you're in.`
+    : `Welcome! This creates <b>your own workspace</b> on RePaper Cloud for <b>${esc(j.email)}</b>. Pick a password and you're in.`;
   el("joinForm").hidden = false; el("name").focus();
 }
 async function join(e) {

@@ -4,12 +4,12 @@ import QRCode from "qrcode";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { generateSecret, otpauthUrl, totpCheck } from "./totp.js";
 import {
-  addEvent, addRecoveryCodes, bumpLoginPending, claimDevice, createApiKey, createInvite,
-  createLoginPending, createReset, createUser, deleteDevice, deleteLoginPending,
+  addEvent, addRecoveryCodes, anyOrgAdmin, bumpLoginPending, claimDevice, createApiKey,
+  createInvite, createLoginPending, createOrg, createReset, createUser, deleteDevice, deleteLoginPending,
   deleteOtherSessions, deleteSessionsFor, deleteUser, deviceEvents, deviceStats, disableTotp,
   enableTotp, findClaimable, firstAdmin, getDevice, getOrg, getOrgByName, getUser, getUserByEmail,
   inviteByTokenHash, loginPendingByToken, markInviteUsed, markResetUsed, orgActivity, orgApiKeys,
-  orgDevices, orgInvites, orgUsers, pendingInviteFor, publicCounts, recentResetFor, renameDevice,
+  orgDevices, orgInvites, orgUsers, pendingInviteFor, publicCounts, recentResetFor, renameDevice, renameOrg,
   resetByTokenHash, revokeApiKey, revokeInvite, setDeviceSite, setTotpPending, setUserAvatar,
   setUserName, setUserRole, updatePassword, useRecoveryCode, type DeviceRow, type UserRow,
 } from "./db.js";
@@ -122,13 +122,15 @@ export const registerApi = (app: FastifyInstance) => {
     if (!EMAIL_RE.test(email)) return reply.code(400).send({ error: "that doesn't look like an email address" });
     const neutral = { ok: true };
     if (!whitelisted(email) || getUserByEmail(email)) return neutral;
-    const org = getOrgByName(process.env.REGISTER_ORG || "RePaper");
-    const admin = org && firstAdmin(org.id);
-    if (!org || !admin) { req.log.warn("register: no org or admin to attach self-registrations to"); return neutral; }
-    if (pendingInviteFor(org.id, email)) return neutral;
+    // registration starts a personal workspace of one's own; joining someone
+    // else's org is what invitations are for. The placeholder org/inviter only
+    // satisfy the FKs — the real org is created when the link is used.
+    const anchor = anyOrgAdmin();
+    if (!anchor) { req.log.warn("register: no admin exists to anchor self-registrations"); return neutral; }
+    if (pendingInviteFor(anchor.org_id, email)) return neutral;
     const token = randomBytes(32).toString("hex");
-    createInvite(org.id, email, "member", sha256(token), admin.id);
-    try { await sendRegisterMail(email, `${req.protocol}://${req.host}/join/${token}`, org.name); }
+    createInvite(anchor.org_id, email, "admin", sha256(token), anchor.id, 14, true);
+    try { await sendRegisterMail(email, `${req.protocol}://${req.host}/join/${token}`); }
     catch (e) { req.log.warn({ err: e }, "register mail failed"); }
     return neutral;
   });
@@ -175,7 +177,7 @@ export const registerApi = (app: FastifyInstance) => {
     const token = String((req.query as { token?: string }).token ?? "");
     const inv = /^[a-f0-9]{64}$/.test(token) ? inviteByTokenHash(sha256(token)) : undefined;
     if (!inv) return reply.code(404).send({ error: "this invitation is no longer valid — ask for a fresh one" });
-    return { email: inv.email, org: getOrg(inv.org_id)!.name };
+    return { email: inv.email, org: inv.personal ? null : getOrg(inv.org_id)!.name };
   });
 
   app.post("/api/join", async (req, reply) => {
@@ -184,7 +186,9 @@ export const registerApi = (app: FastifyInstance) => {
     if (!inv) return reply.code(404).send({ error: "this invitation is no longer valid — ask for a fresh one" });
     if (!password || password.length < 10) return reply.code(400).send({ error: "pick a password of at least 10 characters" });
     if (getUserByEmail(inv.email)) return reply.code(409).send({ error: "an account for this email already exists — sign in instead" });
-    const r = createUser(inv.org_id, inv.email, String(name ?? "").trim().slice(0, 63), hashPassword(password), inv.role);
+    // a personal registration gets its own fresh workspace, and its owner is its admin
+    const orgId = inv.personal ? createOrg(String(name ?? "").trim() || inv.email.split("@")[0]).id : inv.org_id;
+    const r = createUser(orgId, inv.email, String(name ?? "").trim().slice(0, 63), hashPassword(password), inv.personal ? "admin" : inv.role);
     markInviteUsed(inv.id);
     reply.setCookie(COOKIE, startSession(Number(r.lastInsertRowid)), {
       path: "/", httpOnly: true, sameSite: "lax", secure: req.protocol === "https", maxAge: 30 * 86400,
@@ -203,8 +207,10 @@ export const registerApi = (app: FastifyInstance) => {
     });
 
     // ── account ────────────────────────────────────────────────────────────
+    const isPersonal = (orgId: number) => orgUsers(orgId).length === 1 && orgInvites(orgId).length === 0;
     const me = (u: UserRow) => ({
       email: u.email, name: u.name, role: u.role, org: getOrg(u.org_id)!.name,
+      personal: isPersonal(u.org_id),
       avatar: u.avatar, twofa: !!u.totp_secret, mail: mailEnabled,
     });
 
@@ -269,6 +275,23 @@ export const registerApi = (app: FastifyInstance) => {
       if (!password || !verifyPassword(password, u.pass_hash)) return reply.code(401).send({ error: "the password is wrong" });
       if (!code || !totpCheck(u.totp_secret, code)) return reply.code(401).send({ error: "that code didn't match" });
       disableTotp(u.id);
+      return { ok: true };
+    });
+
+    // ── organisation ───────────────────────────────────────────────────────
+    f.get("/api/org", async (req) => {
+      const u = (req as Authed).user;
+      const org = getOrg(u.org_id)!;
+      return { name: org.name, created: org.created, members: orgUsers(u.org_id).length,
+               devices: orgDevices(u.org_id).length, personal: isPersonal(u.org_id) };
+    });
+
+    f.post("/api/org", async (req, reply) => {
+      if (!requireAdmin(req, reply)) return;
+      const u = (req as Authed).user;
+      const name = String(((req.body ?? {}) as { name?: string }).name ?? "").trim();
+      if (!name || name.length > 63) return reply.code(400).send({ error: "name must be 1–63 characters" });
+      renameOrg(u.org_id, name);
       return { ok: true };
     });
 

@@ -21,7 +21,7 @@ export const mailEnabled = provider.id !== "console";
 
 export const sendInviteMail = (to: string, link: string, orgName: string, inviterName: string) =>
   provider.send({ to, ...inviteMail(link, orgName, inviterName), inline: [wordmark] });
-export const sendRegisterMail = (to: string, link: string, orgName: string) =>
-  provider.send({ to, ...registerMail(link, orgName), inline: [wordmark] });
+export const sendRegisterMail = (to: string, link: string) =>
+  provider.send({ to, ...registerMail(link), inline: [wordmark] });
 export const sendResetMail = (to: string, link: string) =>
   provider.send({ to, ...resetMail(link), inline: [wordmark] });

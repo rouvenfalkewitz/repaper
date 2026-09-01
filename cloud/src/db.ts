@@ -77,6 +77,11 @@ if (!(db.prepare("PRAGMA table_info(user)").all() as { name: string }[]).some((c
   db.exec("ALTER TABLE user ADD COLUMN role TEXT NOT NULL DEFAULT 'member'");
   db.exec("UPDATE user SET role='admin' WHERE id IN (SELECT MIN(id) FROM user GROUP BY org_id)");
 }
+// self-registration creates a personal org at join time (invite rows carry a flag;
+// their org_id/invited_by are placeholders to satisfy the FKs)
+if (!(db.prepare("PRAGMA table_info(invite)").all() as { name: string }[]).some((c) => c.name === "personal"))
+  db.exec("ALTER TABLE invite ADD COLUMN personal INTEGER NOT NULL DEFAULT 0");
+
 // account features: avatar + TOTP 2FA
 {
   const cols = (db.prepare("PRAGMA table_info(user)").all() as { name: string }[]).map((c) => c.name);
@@ -130,7 +135,7 @@ export type UserRow = {
   id: number; org_id: number; email: string; name: string; pass_hash: string; created: number; role: string;
   avatar: string | null; totp_secret: string | null; totp_pending: string | null;
 };
-export type InviteRow = { id: number; org_id: number; email: string; role: string; token_hash: string; invited_by: number; created: number; expires: number; used_at: number | null };
+export type InviteRow = { id: number; org_id: number; email: string; role: string; token_hash: string; invited_by: number; created: number; expires: number; used_at: number | null; personal: number };
 export type DeviceRow = {
   id: string; org_id: number | null; kind: string; name: string; secret_hash: string;
   claim_code: string; version: string; status: string; created: number; claimed_at: number | null; last_seen: number | null;
@@ -199,9 +204,12 @@ export const updatePassword = (userId: number, passHash: string) => db.prepare("
 export const deleteSessionsFor = (userId: number) => db.prepare("DELETE FROM session WHERE user_id=?").run(userId);
 
 // ── invites ─────────────────────────────────────────────────────────────────
-export const createInvite = (orgId: number, email: string, role: string, tokenHash: string, invitedBy: number, days = 14) =>
-  db.prepare("INSERT INTO invite(org_id, email, role, token_hash, invited_by, created, expires) VALUES(?,?,?,?,?,?,?)")
-    .run(orgId, email.toLowerCase(), role, tokenHash, invitedBy, now(), now() + days * 86400);
+export const createInvite = (orgId: number, email: string, role: string, tokenHash: string, invitedBy: number, days = 14, personal = false) =>
+  db.prepare("INSERT INTO invite(org_id, email, role, token_hash, invited_by, created, expires, personal) VALUES(?,?,?,?,?,?,?,?)")
+    .run(orgId, email.toLowerCase(), role, tokenHash, invitedBy, now(), now() + days * 86400, personal ? 1 : 0);
+export const renameOrg = (id: number, name: string) => db.prepare("UPDATE org SET name=? WHERE id=?").run(name, id);
+export const anyOrgAdmin = () =>
+  db.prepare("SELECT * FROM user WHERE role='admin' ORDER BY org_id, id LIMIT 1").get() as UserRow | undefined;
 export const inviteByTokenHash = (tokenHash: string) => {
   const i = db.prepare("SELECT * FROM invite WHERE token_hash=?").get(tokenHash) as InviteRow | undefined;
   return i && !i.used_at && i.expires > now() ? i : undefined;

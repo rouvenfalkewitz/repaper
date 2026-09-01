@@ -79,7 +79,7 @@ const NAV = [
   { href: "/", key: "fleet", label: "Fleet", icon: "dock" },
   { href: "/sheets", key: "sheets", label: "Sheets", icon: "sheet" },
   { href: "/activity", key: "activity", label: "Activity", icon: "pulse" },
-  { href: "/team", key: "team", label: "Team", icon: "people" },
+  { href: "/org", key: "org", label: "Organisation", icon: "people" },
   { href: "/updates", key: "updates", label: "Updates", icon: "download", tag: "preview" },
   { href: "/billing", key: "billing", label: "Billing", icon: "card", tag: "preview" },
   { href: "/shop", key: "shop", label: "Shop", icon: "bag", tag: "preview" },
@@ -95,7 +95,8 @@ function renderShell() {
     <nav class="nav">${NAV.map((n) => `<a href="${n.href}" class="${n.key === active ? "active" : ""}">${ICON[n.icon]}<span>${n.label}</span>${n.tag ? `<span class="tag">${n.tag}</span>` : ""}</a>`).join("")}</nav>
     <div class="foot"><div class="userchip ${active === "account" ? "active" : ""}" id="userchip"></div></div>`;
   MEP.then(() => { if (!ME) return;
-    el("userchip").innerHTML = `<a class="mrow chiplink" href="/account" title="Account">${avatarHtml(ME, 32)}<span class="who3"><b>${esc(ME.name || ME.email)}</b><span>${esc(ME.org)}</span></span></a>
+    const defaultName = ME.org === (ME.name || "") || ME.org === ME.email.split("@")[0];
+    el("userchip").innerHTML = `<a class="mrow chiplink" href="/account" title="Account">${avatarHtml(ME, 32)}<span class="who3"><b>${esc(ME.name || ME.email)}</b><span>${ME.personal && defaultName ? "Personal" : esc(ME.org)}</span></span></a>
       <a class="iconbtn" href="/account" title="Account settings" aria-label="Account settings">${ICON.gear}</a>
       <button class="iconbtn" title="Sign out" aria-label="Sign out" onclick="signOut()">${ICON.out}</button>`;
     document.dispatchEvent(new CustomEvent("me-ready"));
