@@ -11,7 +11,7 @@ const provider = createMailProvider();
 const wordmark: InlineImage = {
   cid: "repaper-wordmark",
   filename: "repaper.png",
-  content: readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "..", "assets", "wordmark-light.png")),
+  content: readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "..", "assets", "lockup-light.png")),
   contentType: "image/png",
 };
 

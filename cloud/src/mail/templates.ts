@@ -37,7 +37,7 @@ const layout = (l: Layout): string => `<!doctype html>
 <tr><td align="center" style="padding:40px 16px;">
   <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:460px;">
     <tr><td align="left" style="padding:0 6px 18px;">
-      <img src="cid:repaper-wordmark" width="187" height="22" alt="REPAPER" style="display:block;border:0;outline:none;font:800 17px ${FONT};color:${C.ink};">
+      <img src="cid:repaper-wordmark" width="85" height="30" alt="REPAPER" style="display:block;border:0;outline:none;font:800 17px ${FONT};color:${C.ink};">
     </td></tr>
     <tr><td style="background:${C.sheet};border:1px solid ${C.line};border-radius:16px;padding:32px;">
       <h1 style="margin:0 0 14px;font:700 20px/26px ${FONT};letter-spacing:-0.3px;color:${C.ink};">${esc(l.heading)}</h1>
