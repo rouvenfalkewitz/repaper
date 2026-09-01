@@ -3,12 +3,12 @@ import { createHash, randomBytes } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import {
   addEvent, claimDevice, createInvite, createUser, deleteDevice, deleteUser, deviceEvents,
-  findClaimable, getDevice, getOrg, getUser, getUserByEmail, inviteByTokenHash, markInviteUsed,
-  orgDevices, orgInvites, orgUsers, pendingInviteFor, renameDevice, revokeInvite,
-  type DeviceRow, type UserRow,
+  findClaimable, firstAdmin, getDevice, getOrg, getOrgByName, getUser, getUserByEmail,
+  inviteByTokenHash, markInviteUsed, orgDevices, orgInvites, orgUsers, pendingInviteFor,
+  renameDevice, revokeInvite, type DeviceRow, type UserRow,
 } from "./db.js";
 import { COOKIE, endSession, hashPassword, loginAllowed, loginFailed, loginOk, requireUser, startSession, verifyPassword } from "./auth.js";
-import { mailEnabled, sendInviteMail } from "./mail.js";
+import { mailEnabled, sendInviteMail, sendRegisterMail } from "./mail.js";
 import { dropDevice, isOnline, sendToDevice } from "./devices.js";
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
@@ -51,6 +51,31 @@ export const registerApi = (app: FastifyInstance) => {
     if (token) endSession(token);
     reply.clearCookie(COOKIE, { path: "/" });
     return { ok: true };
+  });
+
+  // ── self-registration, whitelist-gated. The reply never reveals whether an
+  //    address is on the list; non-listed addresses simply produce nothing. ──
+  const WHITELIST = (process.env.REGISTER_WHITELIST || "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+  const whitelisted = (email: string) => WHITELIST.some((w) => (w.startsWith("@") ? email.endsWith(w) : email === w));
+  const regHits = new Map<string, { n: number; t: number }>();
+
+  app.post("/api/register", async (req, reply) => {
+    const hit = regHits.get(req.ip);
+    if (hit && Date.now() - hit.t < 15 * 60_000 && hit.n >= 5) return reply.code(429).send({ error: "too many attempts — try again in a few minutes" });
+    regHits.set(req.ip, !hit || Date.now() - hit.t > 15 * 60_000 ? { n: 1, t: Date.now() } : { n: hit.n + 1, t: hit.t });
+    const email = String(((req.body ?? {}) as { email?: string }).email ?? "").trim().toLowerCase();
+    if (!EMAIL_RE.test(email)) return reply.code(400).send({ error: "that doesn't look like an email address" });
+    const neutral = { ok: true };
+    if (!whitelisted(email) || getUserByEmail(email)) return neutral;
+    const org = getOrgByName(process.env.REGISTER_ORG || "RePaper");
+    const admin = org && firstAdmin(org.id);
+    if (!org || !admin) { req.log.warn("register: no org or admin to attach self-registrations to"); return neutral; }
+    if (pendingInviteFor(org.id, email)) return neutral;
+    const token = randomBytes(32).toString("hex");
+    createInvite(org.id, email, "member", sha256(token), admin.id);
+    try { await sendRegisterMail(email, `${req.protocol}://${req.host}/join/${token}`, org.name); }
+    catch (e) { req.log.warn({ err: e }, "register mail failed"); }
+    return neutral;
   });
 
   // ── joining by invite (the only way in — there is no open signup) ────────

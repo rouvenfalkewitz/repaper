@@ -108,3 +108,4 @@ dialog.modal::backdrop { background: rgba(12,16,15,.72); backdrop-filter: blur(4
 .login .card { display: grid; gap: var(--s-4) }
 .login h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; letter-spacing: -.01em }
 .login .sub { margin: -10px 0 0; color: var(--text-2); font-size: .9375rem }
+.alink { color: var(--accent-text); text-decoration: none; font-weight: 600 } .alink:hover { text-decoration: underline }

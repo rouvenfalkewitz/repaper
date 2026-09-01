@@ -27,6 +27,17 @@ export const sendMail = async (to: string, subject: string, text: string): Promi
   await smtp.sendMail({ from: FROM, to, subject, text });
 };
 
+export const sendRegisterMail = (to: string, link: string, orgName: string) =>
+  sendMail(
+    to,
+    "Confirm your RePaper Cloud registration",
+    `You (or someone using your address) registered for "${orgName}" on RePaper Cloud —\n` +
+      `the console for RePaper printers and e-paper sheets.\n\n` +
+      `Confirm your email and pick a password here (the link is valid for 14 days):\n\n  ${link}\n\n` +
+      `If this wasn't you, ignore this mail; no account was created.\n\n` +
+      `— RePaper Cloud`
+  );
+
 export const sendInviteMail = (to: string, link: string, orgName: string, inviterName: string) =>
   sendMail(
     to,

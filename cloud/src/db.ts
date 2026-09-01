@@ -91,6 +91,8 @@ export const getUserByEmail = (email: string) => db.prepare("SELECT * FROM user 
 export const getUser = (id: number) => db.prepare("SELECT * FROM user WHERE id=?").get(id) as UserRow | undefined;
 export const createUser = (orgId: number, email: string, name: string, passHash: string, role = "member") =>
   db.prepare("INSERT INTO user(org_id, email, name, pass_hash, created, role) VALUES(?,?,?,?,?,?)").run(orgId, email.toLowerCase(), name, passHash, now(), role);
+export const firstAdmin = (orgId: number) =>
+  db.prepare("SELECT * FROM user WHERE org_id=? AND role='admin' ORDER BY id LIMIT 1").get(orgId) as UserRow | undefined;
 export const orgUsers = (orgId: number) =>
   db.prepare("SELECT id, email, name, role, created FROM user WHERE org_id=? ORDER BY created").all(orgId) as Pick<UserRow, "id" | "email" | "name" | "role" | "created">[];
 export const deleteUser = (id: number) => {
