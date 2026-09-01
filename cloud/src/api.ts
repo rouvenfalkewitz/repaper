@@ -9,7 +9,7 @@ import {
   updatePassword, type DeviceRow, type UserRow,
 } from "./db.js";
 import { COOKIE, endSession, hashPassword, loginAllowed, loginFailed, loginOk, requireUser, startSession, verifyPassword } from "./auth.js";
-import { mailEnabled, sendInviteMail, sendRegisterMail, sendResetMail } from "./mail.js";
+import { mailEnabled, sendInviteMail, sendRegisterMail, sendResetMail } from "./mail/index.js";
 import { dropDevice, isOnline, sendToDevice } from "./devices.js";
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
