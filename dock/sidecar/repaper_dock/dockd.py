@@ -190,7 +190,7 @@ class Dock:
                 with self.hw_lock: model = tr.describe(ref)
             except Exception as e:
                 if "encryption key" in str(e) or type(e).__name__ == "AuthenticationRequiredError":
-                    raise ValueError("this sheet is encrypted — add it with the full link from its QR code; the link carries the key, the name alone does not") from e
+                    raise ValueError(f"{address} is locked. Its key travels only in the QR code printed on the label — scan that QR and paste the whole link; the name alone can't unlock it.") from e
                 if "timed out" in str(e).lower() or "not found" in str(e).lower():
                     raise ValueError("could not reach the sheet — wake it up (press its button or open its page once) and keep it within a metre") from e
                 raise ValueError(f"could not read the sheet: {e}") from e

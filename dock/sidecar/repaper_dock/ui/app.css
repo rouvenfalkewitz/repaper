@@ -178,6 +178,10 @@
   .sheet .tools .btn[disabled]:not(.ok):not(.fail):not(.busy) { opacity: .35 }
 
   [hidden] { display: none !important }
+  .linkstate { display: flex; align-items: center; gap: 6px; font-size: .75rem }
+  .linkstate svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none }
+  .linkstate.ok { color: var(--accent-text) } .linkstate.warn { color: var(--amber) }
+  .modal .notice { margin: 0 }
   .stack { display: grid; gap: var(--s-4) } .row.end { justify-content: flex-end }
   .sheet .tools { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; padding-top: 12px; border-top: 1px solid var(--border) }
   .sheet .tools .btn { background: transparent; color: var(--text-2); border-color: var(--border) } .sheet .tools .btn:hover { color: var(--text); border-color: var(--border-strong); background: var(--surface-2) }

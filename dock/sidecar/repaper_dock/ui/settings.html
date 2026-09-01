@@ -53,15 +53,17 @@
   <div class="modal-head"><b>Add a sheet</b><button class="iconbtn" type="button" onclick="closeAdd()" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
   <div class="modal-body">
     <form class="field" id="addForm" onsubmit="return addSheet(event)">
-      <label for="qr">Sheet</label>
-      <input id="qr" placeholder="Paste the QR link, the OD name, or a Bluetooth address" required autocomplete="off">
+      <label for="qr">Sheet link</label>
+      <input id="qr" placeholder="Paste the link from the QR on the label" required autocomplete="off" oninput="linkCheck()">
+      <div class="linkstate mono" id="linkState" hidden></div>
       <input id="qrname" placeholder="Name (e.g. Cart 12)" autocomplete="off">
-      <div class="hint">Size and colours are read from the sheet — keep it awake and nearby.</div>
+      <div class="hint" id="addHint">The QR printed on the label carries the sheet's key — the link is what unlocks it. Size and colours are read from the sheet; keep it awake and nearby.</div>
+      <div class="notice err" id="addErr" hidden></div>
       <div class="row end"><button class="btn primary" id="addBtn" type="submit"></button></div>
     </form>
-    <div class="or">or pick one nearby</div>
+    <div class="or">nearby sheets</div>
     <div class="field">
-      <div class="hint">Nearby sheets show up by name. Encrypted ones (most OpenDisplay labels) still need their QR link — the key is in it.</div>
+      <div class="hint">Scanning shows who is in range — to add one, you still paste its QR link. Pick a sheet to prepare it.</div>
       <div class="row"><button class="btn outline" id="scanBtn" type="button" onclick="scan()"></button><span id="scanState"></span></div>
       <div id="found" class="list"></div>
     </div>
@@ -162,23 +164,62 @@ async function savePrinter(e) {
   catch (x) { done("Not saved", true); toast(x.message, "err"); }
   return false;
 }
-/* add + scan */
+/* add + scan.
+   The scan can only see names — whether a sheet is locked isn't in the advertisement. So the
+   dialog treats the QR link as the way in: picking a nearby sheet arms the form for its link,
+   and the pasted link is decoded client-side for instant feedback (never showing the key). */
+let expectOD = null;
+function parseLanding(url) {
+  try {
+    const m = url.trim().match(/opendisplay\.org\/l\/\?([A-Za-z0-9_-]+)/); if (!m) return null;
+    const tok = m[1], raw = atob(tok.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - tok.length % 4) % 4));
+    if (raw.length !== 23) return null;
+    const id = [...raw.slice(2, 5)].map(c => c.charCodeAt(0).toString(16).padStart(2, "0")).join("").toUpperCase();
+    return {name: "OD" + id, hasKey: [...raw.slice(5, 21)].some(c => c.charCodeAt(0) !== 0)};
+  } catch { return null; }
+}
+function linkCheck() {
+  el("addErr").hidden = true;
+  const v = el("qr").value.trim(), s = el("linkState"), p = v.startsWith("http") ? parseLanding(v) : null;
+  if (!v || !v.startsWith("http")) { s.hidden = true; return; }
+  s.hidden = false;
+  if (!p) { s.className = "linkstate mono warn"; s.innerHTML = `${ICON.warn}<span>not an OpenDisplay link</span>`; return; }
+  if (expectOD && p.name !== expectOD) { s.className = "linkstate mono warn"; s.innerHTML = `${ICON.warn}<span>this link belongs to ${esc(p.name)}, not ${esc(expectOD)}</span>`; return; }
+  s.className = "linkstate mono ok";
+  s.innerHTML = `${ICON.check}<span>${esc(p.name)}${p.hasKey ? " · key included" : " · no key in this link"}</span>`;
+}
+function addFailed(msg) {
+  const e = el("addErr");
+  e.hidden = false; e.innerHTML = `${ICON.err}<div><b>Could not add</b><span>${esc(msg)}</span></div>`;
+  shake(el("qr"));
+}
 async function addSheet(e) {
-  e.preventDefault(); const b = el("addBtn"), done = busy(b, "Reading the sheet…");
+  e.preventDefault(); const b = el("addBtn"), done = busy(b, "Reading the sheet…"); el("addErr").hidden = true;
   try { const r = await api("/api/sheets/add", {input: el("qr").value.trim(), name: el("qrname").value.trim()});
     done("Added"); toast(`Added ${el("qrname").value.trim() || r.id} · ${r.size}`); await wait(400); closeAdd(); await load();
     const c = el("sheets").querySelector(`[data-id="${CSS.escape(r.id)}"]`); if (c) { c.classList.add("enter", "hi"); c.scrollIntoView({behavior: "smooth", block: "center"}); }
-  } catch (x) { done("Could not add", true); shake(el("qr")); toast(x.message, "err"); }
+  } catch (x) { done("Could not add", true); addFailed(x.message); }
   return false;
 }
 async function scan() {
   const b = el("scanBtn"), done = busy(b, "Scanning…"); el("scanState").innerHTML = `<span class="scanning"><span class="dot"></span>listening for sheets…</span>`; el("found").innerHTML = "";
   try { const r = await api("/api/discover"); done(r.found.length ? `${r.found.length} found` : "Nothing nearby", !r.found.length); el("scanState").innerHTML = "";
-    el("found").innerHTML = r.found.map((f, i) => `<div class="found" style="animation-delay:${i * 50}ms"><span>${esc(f.name || f.address)}<span class="mono">${esc(f.transport)} · ${esc(f.address)}${f.registered ? " · already added as " + esc(f.registered) : ""}</span></span>${f.registered ? `<span class="chip">${ICON.check}<span>added</span></span>` : `<button class="btn ghost small" onclick="useFound(this)" data-v="${esc(f.name || f.address)}">${ICON.plus}Use</button>`}</div>`).join("");
+    el("found").innerHTML = r.found.map((f, i) => `<div class="found" style="animation-delay:${i * 50}ms"><span>${esc(f.name || f.address)}<span class="mono">${esc(f.transport)} · ${esc(f.address)}${f.registered ? " · already added as " + esc(f.registered) : ""}</span></span>${f.registered ? `<span class="chip">${ICON.check}<span>added</span></span>` : `<button class="btn ghost small" onclick="useFound(this)" data-v="${esc(f.name || f.address)}">${ICON.qr}Add…</button>`}</div>`).join("");
   } catch (x) { done("Scan failed", true); el("scanState").innerHTML = ""; toast(x.message, "err"); }
 }
-function useFound(b) { el("qr").value = b.dataset.v; el("qrname").focus(); }
-function openAdd() { const d = el("addDlg"); el("addForm").reset(); el("found").innerHTML = ""; el("scanState").innerHTML = ""; d.showModal(); el("qr").focus(); }
+function useFound(b) {
+  expectOD = b.dataset.v;
+  el("addHint").innerHTML = `<b>${esc(expectOD)} is nearby.</b> Now scan the QR printed on that label (phone camera works) and paste its link above — the link carries the key; the name alone can't unlock a locked sheet.`;
+  el("addBtn").innerHTML = ICON.plus + `<span>Add ${esc(expectOD)}</span>`; el("addBtn").dataset.html = el("addBtn").innerHTML;
+  linkCheck(); el("qr").focus(); el("addDlg").scrollTop = 0;
+}
+function openAdd() {
+  const d = el("addDlg"); el("addForm").reset(); el("found").innerHTML = ""; el("scanState").innerHTML = "";
+  expectOD = null; el("linkState").hidden = true; el("addErr").hidden = true;
+  el("addHint").textContent = "The QR printed on the label carries the sheet's key — the link is what unlocks it. Size and colours are read from the sheet; keep it awake and nearby.";
+  el("addBtn").innerHTML = ICON.plus + "<span>Add sheet</span>"; delete el("addBtn").dataset.html;
+  d.showModal(); el("qr").focus();
+}
 function closeAdd() { el("addDlg").close(); }
 el("addDlg").addEventListener("click", e => { if (e.target === el("addDlg")) closeAdd(); });
 el("detDlg").addEventListener("click", e => { if (e.target === el("detDlg")) el("detDlg").close(); });
