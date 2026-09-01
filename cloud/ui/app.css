@@ -31,7 +31,9 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .main h2:first-of-type { margin-top: 0 }
 h2.rowh { display: flex; justify-content: space-between; align-items: center; gap: 12px } h2.rowh .btn { text-transform: none; letter-spacing: 0 }
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: var(--s-5); overflow-x: auto }
-.tabs a { padding: 9px 14px 11px; color: var(--text-2); text-decoration: none; font: 600 .9375rem var(--font-body); border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap }
+.tabs a { display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px 11px; color: var(--text-2); text-decoration: none; font: 600 .9375rem var(--font-body); border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap }
+.tabic { display: inline-grid } .tabic svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; color: var(--text-3) }
+.tabs a.active .tabic svg { color: var(--accent-text) }
 .tabs a:hover { color: var(--text) }
 .tabs a.active { color: var(--accent-text); border-bottom-color: var(--accent) }
 section[data-sec] > h2:first-child { margin-top: 0 }

@@ -15,9 +15,9 @@
   <main class="main">
     <div class="pagehead"><h1>Account</h1></div>
     <nav class="tabs" id="tabs">
-      <a href="#profile" data-tab="profile">Profile</a>
-      <a href="#security" data-tab="security">Security</a>
-      <a href="#keys" data-tab="keys">API keys</a>
+      <a href="#profile" data-tab="profile"><span class="tabic" data-ic="user"></span>Profile</a>
+      <a href="#security" data-tab="security"><span class="tabic" data-ic="shield"></span>Security</a>
+      <a href="#keys" data-tab="keys"><span class="tabic" data-ic="key"></span>API keys</a>
     </nav>
 
     <section data-sec="profile">
@@ -70,6 +70,7 @@ function showTab(name) {
   document.querySelectorAll("[data-sec]").forEach(s => s.hidden = s.dataset.sec !== name);
   document.querySelectorAll("#tabs a").forEach(a => a.classList.toggle("active", a.dataset.tab === name));
 }
+document.querySelectorAll(".tabic").forEach(s => s.innerHTML = ICON[s.dataset.ic] || "");
 window.addEventListener("hashchange", () => showTab(location.hash.slice(1) || "profile"));
 showTab(location.hash.slice(1) || "profile");
 
