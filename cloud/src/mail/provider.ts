@@ -5,7 +5,8 @@
    nothing above this file changes. */
 import { createTransport, type Transporter } from "nodemailer";
 
-export type MailMessage = { to: string; subject: string; text: string; html?: string };
+export type InlineImage = { cid: string; filename: string; content: Buffer; contentType: string };
+export type MailMessage = { to: string; subject: string; text: string; html?: string; inline?: InlineImage[] };
 
 export interface MailProvider {
   readonly id: string;
@@ -35,7 +36,10 @@ export class SmtpMailProvider implements MailProvider {
     this.from = process.env.MAIL_FROM || "RePaper Cloud <repaper@schisch.net>";
   }
   async send(m: MailMessage): Promise<void> {
-    await this.transporter.sendMail({ from: this.from, to: m.to, subject: m.subject, text: m.text, html: m.html });
+    await this.transporter.sendMail({
+      from: this.from, to: m.to, subject: m.subject, text: m.text, html: m.html,
+      attachments: m.inline?.map((i) => ({ cid: i.cid, filename: i.filename, content: i.content, contentType: i.contentType, contentDisposition: "inline" as const })),
+    });
   }
 }
 
