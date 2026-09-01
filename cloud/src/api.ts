@@ -1,11 +1,18 @@
 /* Console API: everything a signed-in user does. Device-facing traffic lives in devices.ts. */
-import type { FastifyInstance, FastifyRequest } from "fastify";
+import { createHash, randomBytes } from "node:crypto";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import {
-  addEvent, claimDevice, deleteDevice, deviceEvents, findClaimable, getDevice, getOrg,
-  getUserByEmail, orgDevices, renameDevice, type DeviceRow, type UserRow,
+  addEvent, claimDevice, createInvite, createUser, deleteDevice, deleteUser, deviceEvents,
+  findClaimable, getDevice, getOrg, getUser, getUserByEmail, inviteByTokenHash, markInviteUsed,
+  orgDevices, orgInvites, orgUsers, pendingInviteFor, renameDevice, revokeInvite,
+  type DeviceRow, type UserRow,
 } from "./db.js";
-import { COOKIE, endSession, loginAllowed, loginFailed, loginOk, requireUser, startSession, verifyPassword } from "./auth.js";
+import { COOKIE, endSession, hashPassword, loginAllowed, loginFailed, loginOk, requireUser, startSession, verifyPassword } from "./auth.js";
+import { mailEnabled, sendInviteMail } from "./mail.js";
 import { dropDevice, isOnline, sendToDevice } from "./devices.js";
+
+const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 type Authed = FastifyRequest & { user: UserRow };
 
@@ -46,6 +53,28 @@ export const registerApi = (app: FastifyInstance) => {
     return { ok: true };
   });
 
+  // ── joining by invite (the only way in — there is no open signup) ────────
+  app.get("/api/invites/lookup", async (req, reply) => {
+    const token = String((req.query as { token?: string }).token ?? "");
+    const inv = /^[a-f0-9]{64}$/.test(token) ? inviteByTokenHash(sha256(token)) : undefined;
+    if (!inv) return reply.code(404).send({ error: "this invitation is no longer valid — ask for a fresh one" });
+    return { email: inv.email, org: getOrg(inv.org_id)!.name };
+  });
+
+  app.post("/api/join", async (req, reply) => {
+    const { token, name, password } = (req.body ?? {}) as { token?: string; name?: string; password?: string };
+    const inv = token && /^[a-f0-9]{64}$/.test(token) ? inviteByTokenHash(sha256(token)) : undefined;
+    if (!inv) return reply.code(404).send({ error: "this invitation is no longer valid — ask for a fresh one" });
+    if (!password || password.length < 10) return reply.code(400).send({ error: "pick a password of at least 10 characters" });
+    if (getUserByEmail(inv.email)) return reply.code(409).send({ error: "an account for this email already exists — sign in instead" });
+    const r = createUser(inv.org_id, inv.email, String(name ?? "").trim().slice(0, 63), hashPassword(password), inv.role);
+    markInviteUsed(inv.id);
+    reply.setCookie(COOKIE, startSession(Number(r.lastInsertRowid)), {
+      path: "/", httpOnly: true, sameSite: "lax", secure: req.protocol === "https", maxAge: 30 * 86400,
+    });
+    return { ok: true };
+  });
+
   // everything below requires a session
   app.register(async (f) => {
     f.addHook("preHandler", requireUser);
@@ -53,7 +82,59 @@ export const registerApi = (app: FastifyInstance) => {
     f.get("/api/fleet", async (req) => {
       const u = (req as Authed).user;
       const org = getOrg(u.org_id)!;
-      return { org: org.name, user: { email: u.email, name: u.name }, devices: orgDevices(u.org_id).map(publicDevice) };
+      return { org: org.name, user: { email: u.email, name: u.name, role: u.role }, devices: orgDevices(u.org_id).map(publicDevice) };
+    });
+
+    // ── team ───────────────────────────────────────────────────────────────
+    const requireAdmin = (req: FastifyRequest, reply: FastifyReply): boolean => {
+      if ((req as Authed).user.role === "admin") return true;
+      reply.code(403).send({ error: "only admins can manage the team" });
+      return false;
+    };
+
+    f.get("/api/team", async (req) => {
+      const u = (req as Authed).user;
+      return {
+        users: orgUsers(u.org_id).map((x) => ({ ...x, you: x.id === u.id })),
+        invites: u.role === "admin" ? orgInvites(u.org_id) : [],
+        mail: mailEnabled,
+      };
+    });
+
+    f.post("/api/invites", async (req, reply) => {
+      if (!requireAdmin(req, reply)) return;
+      const u = (req as Authed).user;
+      const email = String(((req.body ?? {}) as { email?: string }).email ?? "").trim().toLowerCase();
+      const role = ((req.body ?? {}) as { role?: string }).role === "admin" ? "admin" : "member";
+      if (!EMAIL_RE.test(email)) return reply.code(400).send({ error: "that doesn't look like an email address" });
+      if (getUserByEmail(email)) return reply.code(409).send({ error: "this person already has an account" });
+      if (pendingInviteFor(u.org_id, email)) return reply.code(409).send({ error: "an invitation for this email is already pending — revoke it first for a fresh link" });
+      const token = randomBytes(32).toString("hex");
+      createInvite(u.org_id, email, role, sha256(token), u.id);
+      const link = `${req.protocol}://${req.host}/join/${token}`;
+      const org = getOrg(u.org_id)!;
+      let mailed = false;
+      try { await sendInviteMail(email, link, org.name, u.name || u.email); mailed = mailEnabled; }
+      catch (e) { req.log.warn({ err: e }, "invite mail failed"); }
+      return { ok: true, link, mailed };   // the link is shown once — only its hash is stored
+    });
+
+    f.post("/api/invites/:id/revoke", async (req, reply) => {
+      if (!requireAdmin(req, reply)) return;
+      const u = (req as Authed).user;
+      const r = revokeInvite(Number((req.params as { id: string }).id), u.org_id);
+      if (!r.changes) return reply.code(404).send({ error: "no such pending invitation" });
+      return { ok: true };
+    });
+
+    f.post("/api/team/:id/remove", async (req, reply) => {
+      if (!requireAdmin(req, reply)) return;
+      const u = (req as Authed).user;
+      const target = getUser(Number((req.params as { id: string }).id));
+      if (!target || target.org_id !== u.org_id) return reply.code(404).send({ error: "no such member" });
+      if (target.id === u.id) return reply.code(400).send({ error: "you can't remove yourself" });
+      deleteUser(target.id);
+      return { ok: true };
     });
 
     f.get("/api/devices/:id", async (req, reply) => {

@@ -51,12 +51,30 @@ CREATE TABLE IF NOT EXISTS event (
   data TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS event_device ON event(device_id, at);
+CREATE TABLE IF NOT EXISTS invite (
+  id INTEGER PRIMARY KEY,
+  org_id INTEGER NOT NULL REFERENCES org(id),
+  email TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'member',
+  token_hash TEXT NOT NULL UNIQUE,   -- sha256 of the one-time token; the raw token exists only in the sent link
+  invited_by INTEGER NOT NULL REFERENCES user(id),
+  created REAL NOT NULL,
+  expires REAL NOT NULL,
+  used_at REAL
+);
 `);
+
+// users grew a role; the first user of each existing org becomes its admin
+if (!(db.prepare("PRAGMA table_info(user)").all() as { name: string }[]).some((c) => c.name === "role")) {
+  db.exec("ALTER TABLE user ADD COLUMN role TEXT NOT NULL DEFAULT 'member'");
+  db.exec("UPDATE user SET role='admin' WHERE id IN (SELECT MIN(id) FROM user GROUP BY org_id)");
+}
 
 const now = () => Date.now() / 1000;
 
 export type OrgRow = { id: number; name: string; created: number };
-export type UserRow = { id: number; org_id: number; email: string; name: string; pass_hash: string; created: number };
+export type UserRow = { id: number; org_id: number; email: string; name: string; pass_hash: string; created: number; role: string };
+export type InviteRow = { id: number; org_id: number; email: string; role: string; token_hash: string; invited_by: number; created: number; expires: number; used_at: number | null };
 export type DeviceRow = {
   id: string; org_id: number | null; kind: string; name: string; secret_hash: string;
   claim_code: string; version: string; status: string; created: number; claimed_at: number | null; last_seen: number | null;
@@ -71,8 +89,33 @@ export const createOrg = (name: string): OrgRow => {
 };
 export const getUserByEmail = (email: string) => db.prepare("SELECT * FROM user WHERE email=?").get(email.toLowerCase()) as UserRow | undefined;
 export const getUser = (id: number) => db.prepare("SELECT * FROM user WHERE id=?").get(id) as UserRow | undefined;
-export const createUser = (orgId: number, email: string, name: string, passHash: string) =>
-  db.prepare("INSERT INTO user(org_id, email, name, pass_hash, created) VALUES(?,?,?,?,?)").run(orgId, email.toLowerCase(), name, passHash, now());
+export const createUser = (orgId: number, email: string, name: string, passHash: string, role = "member") =>
+  db.prepare("INSERT INTO user(org_id, email, name, pass_hash, created, role) VALUES(?,?,?,?,?,?)").run(orgId, email.toLowerCase(), name, passHash, now(), role);
+export const orgUsers = (orgId: number) =>
+  db.prepare("SELECT id, email, name, role, created FROM user WHERE org_id=? ORDER BY created").all(orgId) as Pick<UserRow, "id" | "email" | "name" | "role" | "created">[];
+export const deleteUser = (id: number) => {
+  db.prepare("DELETE FROM session WHERE user_id=?").run(id);
+  db.prepare("DELETE FROM invite WHERE invited_by=? AND used_at IS NULL").run(id);
+  return db.prepare("DELETE FROM user WHERE id=?").run(id);
+};
+
+// ── invites ─────────────────────────────────────────────────────────────────
+export const createInvite = (orgId: number, email: string, role: string, tokenHash: string, invitedBy: number, days = 14) =>
+  db.prepare("INSERT INTO invite(org_id, email, role, token_hash, invited_by, created, expires) VALUES(?,?,?,?,?,?,?)")
+    .run(orgId, email.toLowerCase(), role, tokenHash, invitedBy, now(), now() + days * 86400);
+export const inviteByTokenHash = (tokenHash: string) => {
+  const i = db.prepare("SELECT * FROM invite WHERE token_hash=?").get(tokenHash) as InviteRow | undefined;
+  return i && !i.used_at && i.expires > now() ? i : undefined;
+};
+export const pendingInviteFor = (orgId: number, email: string) =>
+  db.prepare("SELECT * FROM invite WHERE org_id=? AND email=? AND used_at IS NULL AND expires>?").get(orgId, email.toLowerCase(), now()) as InviteRow | undefined;
+export const orgInvites = (orgId: number) =>
+  db.prepare(`SELECT i.id, i.email, i.role, i.created, i.expires, u.email AS invited_by_email
+              FROM invite i JOIN user u ON u.id = i.invited_by
+              WHERE i.org_id=? AND i.used_at IS NULL AND i.expires>? ORDER BY i.created`).all(orgId, now()) as
+    { id: number; email: string; role: string; created: number; expires: number; invited_by_email: string }[];
+export const markInviteUsed = (id: number) => db.prepare("UPDATE invite SET used_at=? WHERE id=?").run(now(), id);
+export const revokeInvite = (id: number, orgId: number) => db.prepare("DELETE FROM invite WHERE id=? AND org_id=? AND used_at IS NULL").run(id, orgId);
 
 // ── sessions ────────────────────────────────────────────────────────────────
 export const createSession = (token: string, userId: number, days = 30) =>

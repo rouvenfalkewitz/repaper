@@ -93,6 +93,14 @@ dialog.modal::backdrop { background: rgba(12,16,15,.72); backdrop-filter: blur(4
 .serial { letter-spacing: .06em }
 .empty-hint { color: var(--text-2); font-size: .9375rem; max-width: 52ch }
 
+/* team */
+.member { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border) }
+.member:last-of-type { border-bottom: 0 }
+.who2 { display: grid; gap: 2px; min-width: 0 } .who2 b { font-weight: 500; font-size: .9375rem } .who2 .mono { overflow-wrap: anywhere }
+.pill.amber { background: var(--amber-tint); color: var(--amber) }
+.checkline { display: flex; gap: 8px; align-items: center; font-size: .875rem; cursor: pointer } .checkline input { width: auto; accent-color: var(--accent) }
+.linkbox { padding: 10px 12px; border-radius: var(--r-control); background: var(--code-bg); border: 1px solid var(--border); overflow-wrap: anywhere; user-select: all; font-size: .75rem }
+
 /* login */
 .login-wrap { min-height: 100svh; display: grid; place-items: center; padding: var(--s-4) }
 .login { width: min(400px, 100%); display: grid; gap: var(--s-5) }

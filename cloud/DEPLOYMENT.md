@@ -45,8 +45,28 @@ docker compose exec repaper-cloud node dist/seed.js --org "RePaper" \
   --email you@example.com --password "..." --name "Rouven"
 ```
 
-Run it again for anyone you want to demo to (same `--org` puts them in the
-same fleet).
+The seeded user is an org admin. Everyone else joins by **invitation**: an
+admin invites an email in the console's Team section; the invitee gets a
+one-time link (valid 14 days) and picks their own password. There is no open
+signup — no invitation, no account.
+
+## 3b. Invitation emails (IONOS mailbox)
+
+Without configuration, invites are created with `MAIL_TRANSPORT=console`: no
+mail is sent, but the console shows the join link to copy. To send real mail,
+create the mailbox (e.g. `repaper@schisch.net` in the IONOS panel) and set in
+`.env`:
+
+```env
+MAIL_TRANSPORT=smtp
+SMTP_HOST=smtp.ionos.de
+SMTP_PORT=587
+SMTP_USER=repaper@schisch.net
+SMTP_PASS=<mailbox password>
+MAIL_FROM=RePaper Cloud <repaper@schisch.net>
+```
+
+then `docker compose up -d` to restart with the new env.
 
 ## 4. Point a Dock at it
 

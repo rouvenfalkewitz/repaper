@@ -21,6 +21,9 @@
 
   <h2>Fleet</h2>
   <div class="fleet" id="fleet"></div>
+
+  <h2>Team</h2>
+  <div class="card" id="team"></div>
 </div>
 
 <dialog class="modal" id="edDlg">
@@ -117,8 +120,38 @@ function openDetails(id) {
   }).catch(x => toast(x.message, "err"));
 }
 
-/* modals: claim, rename, remove */
+/* team */
+let T = null;
+async function loadTeam() { try { T = await api("/api/team"); renderTeam(); } catch {} }
+function renderTeam() {
+  if (!T) return;
+  const admin = (S.user || {}).role === "admin";
+  const rows = T.users.map(u => `<div class="member"><span class="who2"><b>${esc(u.name || u.email)}${u.you ? " (you)" : ""}</b><span class="mono">${esc(u.email)}</span></span><span class="row" style="gap:8px"><span class="pill ${u.role === "admin" ? "" : "setup"}">${esc(u.role)}</span>${admin && !u.you ? `<button class="iconbtn danger" data-uid="${u.id}" data-name="${esc(u.name || u.email)}" data-act="kick" title="Remove">${ICON.trash}</button>` : ""}</span></div>`).join("");
+  const inv = (T.invites || []).map(i => `<div class="member"><span class="who2"><b>${esc(i.email)}</b><span class="mono">invited by ${esc(i.invited_by_email)} · expires ${new Date(i.expires * 1000).toLocaleDateString()}</span></span><span class="row" style="gap:8px"><span class="pill amber">invited</span><button class="iconbtn danger" data-iid="${i.id}" data-act="revoke" title="Revoke invitation">${ICON.x}</button></span></div>`).join("");
+  el("team").innerHTML = rows + inv
+    + (admin ? `<div class="row" style="margin-top:14px"><button class="btn outline small" onclick="openModal('invite')">${ICON.plus}Invite someone</button></div>`
+             : `<div class="hint" style="margin-top:10px;color:var(--text-3);font-size:.8125rem">Admins can invite and remove people.</div>`);
+}
+async function copyInv(link) { try { await navigator.clipboard.writeText(link); toast("Link copied."); } catch { toast("Copy failed — select it by hand.", "err"); } }
+el("team").addEventListener("click", async e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  if (b.dataset.act === "kick") return openKick(b.dataset.uid, b.dataset.name);
+  if (b.dataset.act === "revoke") {
+    try { await api(`/api/invites/${b.dataset.iid}/revoke`, {}); toast("Invitation revoked."); loadTeam(); }
+    catch (x) { toast(x.message, "err"); }
+  }
+});
+function openKick(uid, name) {
+  setModal("Remove from team", `<form class="ed" data-ed="kick" data-uid="${esc(uid)}"><p>Remove <b>${esc(name)}</b> from this organisation? Their account is deleted; devices stay in the fleet. You can invite them again any time.</p><div class="row end"><button class="btn outline" type="button" data-act="close">Keep</button><button class="btn danger" type="submit">${ICON.trash}Remove</button></div></form>`);
+}
+
+/* modals: claim, rename, remove, invite */
 const modals = {
+  invite: () => ["Invite someone", `<form class="ed" data-ed="invite">
+    <p>They get a one-time link (valid 14 days) and pick their own password. No invitation, no account — that's the whole door.</p>
+    <label for="edMail">Email</label><input id="edMail" name="email" type="email" required autocomplete="off" placeholder="name@company.com">
+    <label class="checkline"><input type="checkbox" name="admin"> Can manage the team (admin)</label>
+    <div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Invite</button></div></form>`],
   claim: () => ["Claim a device", `<form class="ed" data-ed="claim">
     <p>On the Dock, open <b>Settings → RePaper Cloud</b> and point it at this cloud. Its claim code appears there.</p>
     <label for="edCode">Claim code</label><input id="edCode" name="value" class="serial" placeholder="3F9A-B2C1" maxlength="9" required autocomplete="off" style="font-family:var(--font-mono);text-transform:uppercase">
@@ -126,19 +159,35 @@ const modals = {
   name: (d) => ["Rename", `<form class="ed" data-ed="name" data-id="${esc(d.id)}"><label for="edName">Name</label><input id="edName" name="value" value="${esc(d.name || (d.status || {}).printer || "")}" maxlength="63" required autocomplete="off"><div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Save</button></div></form>`],
   remove: (d) => ["Remove device", `<form class="ed" data-ed="remove" data-id="${esc(d.id)}"><p>Remove <b>${esc(d.name || (d.status || {}).printer || d.id)}</b> from this fleet? The device keeps working on its own and can be claimed again with a fresh code.</p><div class="row end"><button class="btn outline" type="button" data-act="close">Keep</button><button class="btn danger" type="submit">${ICON.trash}Remove</button></div></form>`],
 };
+function setModal(title, html) {
+  el("edTitle").textContent = title; el("edBody").innerHTML = html; el("edDlg").showModal();
+  const i = el("edBody").querySelector("input"); if (i) { i.focus(); i.select && i.select(); }
+}
 function openModal(kind, id) {
   const d = S.devices.find(x => x.id === id) || {};
   const [title, html] = modals[kind](d);
-  el("edTitle").textContent = title; el("edBody").innerHTML = html; el("edDlg").showModal();
-  const i = el("edBody").querySelector("input"); if (i) { i.focus(); i.select && i.select(); }
+  setModal(title, html);
 }
 function closeModal() { el("edDlg").close(); render(); }
 el("edDlg").addEventListener("click", e => { if (e.target === el("edDlg")) return closeModal(); const b = e.target.closest("[data-act=close]"); if (b) closeModal(); });
 el("detDlg").addEventListener("click", e => { if (e.target === el("detDlg")) el("detDlg").close(); });
 el("edDlg").addEventListener("submit", async e => {
   e.preventDefault(); const f = e.target, kind = f.dataset.ed, id = f.dataset.id, sb = f.querySelector("button[type=submit]");
-  const done = busy(sb, {claim: "Claiming…", name: "Saving…", remove: "Removing…"}[kind]);
+  const done = busy(sb, {claim: "Claiming…", name: "Saving…", remove: "Removing…", invite: "Inviting…", kick: "Removing…"}[kind]);
   try {
+    if (kind === "invite") {
+      const email = f.elements.email.value.trim();
+      const r = await api("/api/invites", {email, role: f.elements.admin.checked ? "admin" : "member"});
+      loadTeam();
+      el("edBody").innerHTML = `<div class="ed"><p><b>Invitation created for ${esc(email)}.</b> ${r.mailed ? "An email with the link is on its way." : "Mail sending is off for now — pass them the link yourself:"}</p>
+        <div class="linkbox mono">${esc(r.link)}</div>
+        <div class="row end"><button class="btn outline" type="button" onclick="copyInv('${esc(r.link)}')">Copy link</button><button class="btn primary" type="button" data-act="close">Done</button></div></div>`;
+      return;
+    }
+    if (kind === "kick") {
+      await api(`/api/team/${f.dataset.uid}/remove`, {});
+      el("edDlg").close(); toast("Removed from the team."); loadTeam(); return;
+    }
     if (kind === "claim") {
       const r = await api("/api/claim", {code: f.elements.value.value});
       done("Claimed"); await load(); toast(`${r.device.name || "Device"} joined the fleet.`); await wait(400); closeModal();
@@ -162,7 +211,7 @@ el("fleet").addEventListener("click", async e => {
 });
 async function signOut() { try { await api("/api/logout", {}); } catch {} location.href = "/login"; }
 
-load().catch(x => { if (x.message !== "signed out") toast(x.message, "err"); });
+load().then(loadTeam).catch(x => { if (x.message !== "signed out") toast(x.message, "err"); });
 setInterval(() => load().catch(() => {}), 5000);
 </script>
 </body>

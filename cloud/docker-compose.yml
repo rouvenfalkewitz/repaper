@@ -13,6 +13,12 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_PATH=/app/data/cloud.db
+      - MAIL_TRANSPORT=${MAIL_TRANSPORT:-console}
+      - SMTP_HOST=${SMTP_HOST:-smtp.ionos.de}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - MAIL_FROM=${MAIL_FROM:-}
     volumes:
       - cloud-data:/app/data
     labels:

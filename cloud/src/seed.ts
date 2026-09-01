@@ -15,5 +15,5 @@ if (password.length < 10) { console.error("pick a password of at least 10 charac
 if (getUserByEmail(email)) { console.error(`${email} already exists`); process.exit(1); }
 
 const org = getOrgByName(orgName) ?? createOrg(orgName);
-createUser(org.id, email, args.get("name") ?? "", hashPassword(password));
-console.log(`created ${email} in org "${org.name}"`);
+createUser(org.id, email, args.get("name") ?? "", hashPassword(password), "admin");
+console.log(`created admin ${email} in org "${org.name}"`);
