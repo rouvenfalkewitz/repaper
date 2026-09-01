@@ -14,13 +14,14 @@
   <div class="login">
     <svg class="logo" viewBox="0 0 6629.1 2338.6" role="img" aria-label="RePaper"><path class="ring" fill-rule="evenodd" d="M0 1169.3a1169.3 1169.3 0 1 0 2338.6 0a1169.3 1169.3 0 1 0 -2338.6 0ZM203.6 1169.3a965.7 965.7 0 1 0 1931.3 0a965.7 965.7 0 1 0 -1931.3 0Z"/><path class="letters" d="M355.9 1512.3V824.7H928.2Q1003.3 824.7 1052.6 855.6Q1101.8 886.5 1126.4 936.9Q1151 987.3 1151 1046.8Q1151 1112.2 1120.1 1165.7Q1089.1 1219.2 1026.9 1250.2L1167.5 1512.3H937.8L823.8 1283.6H559.5V1512.3ZM559.5 1133.1H861.7Q898.4 1133.1 920.4 1111.1Q942.3 1089 942.3 1052.5Q942.3 1027.9 932.4 1010.6Q922.5 993.4 904.6 984.5Q886.7 975.7 861.7 975.7H559.5Z M1257.9 1512.3V824.7H1974.7V975.7H1462.1V1091.1H1910.8V1237.2H1462.1V1361.4H1982.7V1512.3Z"/><path class="letters" d="M2489.5 1512.3V824.7H3020.1Q3087.7 824.7 3138.5 854.6Q3189.4 884.4 3217.7 937Q3246 989.7 3246 1058.4Q3246 1127.8 3217.2 1181.2Q3188.4 1234.6 3137.1 1264.1Q3085.7 1293.7 3018.3 1293.7H2693.1V1512.3ZM2693.1 1142.8H2961.6Q3006.8 1142.8 3030.2 1121Q3053.5 1099.3 3053.5 1059.4Q3053.5 1032.2 3042.9 1013.7Q3032.3 995.2 3012 985.4Q2991.6 975.7 2961.6 975.7H2693.1Z M3181.3 1512.3 3519.3 824.7H3745.7L4083.7 1512.3H3863.4L3811.5 1402.1H3442.5L3391.1 1512.3ZM3510.7 1253H3743.3L3680.7 1113.3Q3676.8 1103.9 3669.7 1086.8Q3662.7 1069.6 3655.1 1050.1Q3647.5 1030.6 3641.1 1013.8Q3634.7 997 3631.5 989H3624Q3616.7 1007.3 3607.1 1031.2Q3597.5 1055 3588.6 1077.4Q3579.7 1099.7 3573.3 1113.7Z M4153.5 1512.3V824.7H4684.1Q4751.7 824.7 4802.5 854.6Q4853.4 884.4 4881.7 937Q4910 989.7 4910 1058.4Q4910 1127.8 4881.2 1181.2Q4852.4 1234.6 4801.1 1264.1Q4749.7 1293.7 4682.3 1293.7H4357.1V1512.3ZM4357.1 1142.8H4625.6Q4670.8 1142.8 4694.2 1121Q4717.5 1099.3 4717.5 1059.4Q4717.5 1032.2 4706.9 1013.7Q4696.3 995.2 4676 985.4Q4655.6 975.7 4625.6 975.7H4357.1Z M4984.5 1512.3V824.7H5701.2V975.7H5188.7V1091.1H5637.4V1237.2H5188.7V1361.4H5709.2V1512.3Z M5817.5 1512.3V824.7H6389.7Q6464.9 824.7 6514.1 855.6Q6563.4 886.5 6588 936.9Q6612.6 987.3 6612.6 1046.8Q6612.6 1112.2 6581.7 1165.7Q6550.7 1219.2 6488.5 1250.2L6629.1 1512.3H6399.4L6285.3 1283.6H6021.1V1512.3ZM6021.1 1133.1H6323.3Q6360 1133.1 6381.9 1111.1Q6403.9 1089 6403.9 1052.5Q6403.9 1027.9 6394 1010.6Q6384.1 993.4 6366.1 984.5Q6348.2 975.7 6323.3 975.7H6021.1Z"/></svg>
     <div class="card" id="card">
-      <h1>Register</h1>
-      <p class="sub">Registration is limited while RePaper Cloud is in its pilot. Enter your email — if it can register, you'll get a confirmation mail with your join link.</p>
+      <h1>Create your account</h1>
+      <p class="sub">Enter your email — we'll send you a link to finish setting up.</p>
       <form class="stack" id="regForm" onsubmit="return register(event)">
         <div class="field"><label for="email">Email</label><input id="email" type="email" autocomplete="email" required></div>
-        <button class="btn primary" id="regBtn" type="submit">Register</button>
+        <button class="btn primary" id="regBtn" type="submit">Continue</button>
       </form>
-      <p class="sub" style="margin:0">Have an account? <a class="alink" href="/login">Sign in</a></p>
+      <div class="or">Have an account?</div>
+      <a class="btn outline" href="/login">Sign in</a>
     </div>
   </div>
 </div>
@@ -41,8 +42,8 @@ async function register(e) {
     const j = await r.json();
     if (!r.ok || j.error) throw new Error(j.error || r.statusText);
     el("card").innerHTML = `<h1>Check your mail</h1>
-      <p class="sub">If <b>${esc(el("email").value.trim())}</b> can register, a confirmation mail with your join link is on its way — the link is valid for 14 days. Nothing arrived after a few minutes? Check spam, or ask the person who told you about RePaper for an invitation.</p>
-      <p class="sub" style="margin:0"><a class="alink" href="/login">Back to sign-in</a></p>`;
+      <p class="sub">If <b>${esc(el("email").value.trim())}</b> can register, a mail with your personal link is on its way — it's valid for 14 days. Nothing after a few minutes? Check spam, or ask your team for an invitation.</p>
+      <p class="backline"><a class="alink" href="/login">Back to sign-in</a></p>`;
   } catch (x) {
     b.classList.remove("busy"); b.disabled = false; b.innerHTML = "Register";
     toast(x.message, "err");

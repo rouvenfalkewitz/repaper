@@ -24,7 +24,7 @@
         <div class="field"><label for="password">New password</label><input id="password" type="password" minlength="10" required autocomplete="new-password"><div class="hint">At least 10 characters. Everywhere you were signed in gets signed out.</div></div>
         <button class="btn primary" id="setBtn" type="submit">Set password</button>
       </form>
-      <p class="sub" style="margin:0"><a class="alink" href="/login">Back to sign-in</a></p>
+      <p class="backline"><a class="alink" href="/login">Back to sign-in</a></p>
     </div>
   </div>
 </div>
@@ -60,7 +60,7 @@ async function ask(e) {
     const j = await r.json(); if (!r.ok || j.error) throw new Error(j.error || r.statusText);
     el("card").innerHTML = `<h1>Check your mail</h1>
       <p class="sub">If <b>${esc(el("email").value.trim())}</b> has an account, a reset link is on its way — it works once and expires in 2 hours.</p>
-      <p class="sub" style="margin:0"><a class="alink" href="/login">Back to sign-in</a></p>`;
+      <p class="backline"><a class="alink" href="/login">Back to sign-in</a></p>`;
   } catch (x) { unspin(b); toast(x.message, "err"); }
   return false;
 }
