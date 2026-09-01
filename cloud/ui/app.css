@@ -131,6 +131,19 @@ dialog.modal { max-height: calc(100svh - 48px); overflow-y: auto }
 .inv { display: grid; grid-template-columns: 90px 1fr auto auto; gap: 14px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: .9375rem } .inv:last-of-type { border-bottom: 0 }
 .inv.sample { opacity: .55 }
 
+/* ── plan grid ── */
+.plangrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--s-3); align-items: stretch }
+.planbox { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--s-5); display: grid; gap: 12px; align-content: start }
+.planbox.hot { border-color: var(--accent); position: relative }
+.planhead { display: flex; align-items: center; justify-content: space-between; gap: 10px }
+.planhead b { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; letter-spacing: -.01em }
+.price.big { text-align: left } .price.big b { font: 700 2rem/1 var(--font-display); letter-spacing: -.02em } .price.big span { color: var(--text-3); font-size: .8125rem; margin-left: 6px }
+.feat { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px }
+.feat li { position: relative; padding-left: 24px; font-size: .9375rem; color: var(--text-2) }
+.feat li b { color: var(--text) }
+.feat li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--accent-text); font-weight: 700 }
+.planbox .btn { width: 100%; margin-top: 4px }
+
 /* ── shop ── */
 .shopgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--s-3) }
 .prod { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--s-4); display: grid; gap: 6px; align-content: start }
