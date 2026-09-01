@@ -119,6 +119,15 @@ CREATE TABLE IF NOT EXISTS device_stat (
   jobs INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (device_id, day)
 );
+CREATE TABLE IF NOT EXISTS org_event (
+  id INTEGER PRIMARY KEY,
+  org_id INTEGER NOT NULL REFERENCES org(id),
+  at REAL NOT NULL,
+  type TEXT NOT NULL,
+  actor TEXT NOT NULL DEFAULT '',
+  data TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS org_event_org ON org_event(org_id, at);
 CREATE TABLE IF NOT EXISTS api_key (
   id INTEGER PRIMARY KEY,
   org_id INTEGER NOT NULL REFERENCES org(id),
@@ -286,6 +295,11 @@ export const orgActivity = (orgId: number, limit = 60) =>
               WHERE d.org_id=? ORDER BY e.at DESC LIMIT ?`).all(orgId, limit) as
     { at: number; type: string; data: string; device_id: string; device_name: string; kind: string }[];
 export const setUserRole = (id: number, role: string) => db.prepare("UPDATE user SET role=? WHERE id=?").run(role, id);
+export const addOrgEvent = (orgId: number, type: string, actor = "", data = "") =>
+  db.prepare("INSERT INTO org_event(org_id, at, type, actor, data) VALUES(?,?,?,?,?)").run(orgId, now(), type, actor, data);
+export const orgEvents = (orgId: number, limit = 60) =>
+  db.prepare("SELECT at, type, actor, data FROM org_event WHERE org_id=? ORDER BY at DESC LIMIT ?").all(orgId, limit) as
+    { at: number; type: string; actor: string; data: string }[];
 
 // ── API keys ────────────────────────────────────────────────────────────────
 export type ApiKeyRow = { id: number; org_id: number; user_id: number | null; name: string; token_hash: string; created: number; last_used: number | null };

@@ -98,7 +98,9 @@ function renderShell() {
     <div class="foot"><div class="userchip ${active === "account" ? "active" : ""}" id="userchip"></div></div>`;
   MEP.then(() => { if (!ME) return;
     const defaultName = ME.org === (ME.name || "") || ME.org === ME.email.split("@")[0];
-    el("userchip").innerHTML = `<a class="mrow chiplink" href="/account" title="Account">${avatarHtml(ME, 32)}<span class="who3"><b>${esc(ME.name || ME.email)}</b><span>${ME.personal && defaultName ? "Personal" : esc(ME.org)}</span></span></a>
+    const orgLine = ME.personal && defaultName ? "Personal"
+      : `${ME.org_logo ? `<img class="orgmini" src="${esc(ME.org_logo)}" alt="">` : ""}${esc(ME.org)}`;
+    el("userchip").innerHTML = `<a class="mrow chiplink" href="/account" title="Account">${avatarHtml(ME, 32)}<span class="who3"><b>${esc(ME.name || ME.email)}</b><span>${orgLine}</span></span></a>
       <a class="iconbtn" href="/account" title="Account settings" aria-label="Account settings">${ICON.gear}</a>
       <button class="iconbtn" title="Sign out" aria-label="Sign out" onclick="signOut()">${ICON.out}</button>`;
     document.dispatchEvent(new CustomEvent("me-ready"));

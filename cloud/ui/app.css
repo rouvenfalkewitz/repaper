@@ -24,6 +24,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .userchip .who3 { min-width: 0; flex: 1 }
 .userchip b { display: block; font-size: .8125rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .userchip .who3 span { display: block; font-family: var(--font-mono); font-size: .6875rem; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.orgmini { width: 13px; height: 13px; border-radius: 4px; object-fit: cover; vertical-align: -2px; margin-right: 5px }
 .av { border-radius: 50%; flex: none; object-fit: cover; display: inline-grid; place-items: center; font-family: var(--font-display); font-weight: 700 }
 .main { flex: 1; min-width: 0; padding: var(--s-6) var(--s-6) var(--s-9); max-width: 940px }
 .pagehead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: var(--s-5); flex-wrap: wrap }

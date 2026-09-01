@@ -4,11 +4,11 @@ import QRCode from "qrcode";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { generateSecret, otpauthUrl, totpCheck } from "./totp.js";
 import {
-  addEvent, addRecoveryCodes, anyOrgAdmin, bumpLoginPending, claimDevice, createApiKey,
+  addEvent, addOrgEvent, addRecoveryCodes, anyOrgAdmin, bumpLoginPending, claimDevice, createApiKey,
   createInvite, createLoginPending, createOrg, createReset, createUser, deleteDevice, deleteLoginPending,
   deleteOtherSessions, deleteSessionsFor, deleteUser, deviceEvents, deviceStats, disableTotp,
   enableTotp, findClaimable, firstAdmin, getDevice, getOrg, getOrgByName, getUser, getUserByEmail,
-  inviteByTokenHash, loginPendingByToken, markInviteUsed, markResetUsed, orgActivity,
+  inviteByTokenHash, loginPendingByToken, markInviteUsed, markResetUsed, orgActivity, orgEvents,
   orgDevices, orgInvites, orgUsers, pendingInviteFor, publicCounts, recentResetFor, renameDevice, renameOrg,
   resetByTokenHash, revokeApiKey, revokeInvite, setDeviceSite, setTotpPending, setUserAvatar,
   setOrgLogo, setUserName, setUserRole, updateCompany, updatePassword, useRecoveryCode, userApiKeys,
@@ -191,6 +191,7 @@ export const registerApi = (app: FastifyInstance) => {
     const orgId = inv.personal ? createOrg(String(name ?? "").trim() || inv.email.split("@")[0]).id : inv.org_id;
     const r = createUser(orgId, inv.email, String(name ?? "").trim().slice(0, 63), hashPassword(password), inv.personal ? "admin" : inv.role);
     markInviteUsed(inv.id);
+    if (!inv.personal) addOrgEvent(orgId, "joined", "", inv.email);
     reply.setCookie(COOKIE, startSession(Number(r.lastInsertRowid)), {
       path: "/", httpOnly: true, sameSite: "lax", secure: req.protocol === "https", maxAge: 30 * 86400,
     });
@@ -209,11 +210,14 @@ export const registerApi = (app: FastifyInstance) => {
 
     // ── account ────────────────────────────────────────────────────────────
     const isPersonal = (orgId: number) => orgUsers(orgId).length === 1 && orgInvites(orgId).length === 0;
-    const me = (u: UserRow) => ({
-      email: u.email, name: u.name, role: u.role, org: getOrg(u.org_id)!.name,
-      personal: isPersonal(u.org_id),
-      avatar: u.avatar, twofa: !!u.totp_secret, mail: mailEnabled,
-    });
+    const me = (u: UserRow) => {
+      const org = getOrg(u.org_id)!;
+      return {
+        email: u.email, name: u.name, role: u.role, org: org.name, org_logo: org.logo,
+        personal: isPersonal(u.org_id),
+        avatar: u.avatar, twofa: !!u.totp_secret, mail: mailEnabled,
+      };
+    };
 
     f.get("/api/me", async (req) => me((req as Authed).user));
 
@@ -296,6 +300,7 @@ export const registerApi = (app: FastifyInstance) => {
       if (body.name !== undefined) {
         const name = String(body.name).trim();
         if (!name || name.length > 63) return reply.code(400).send({ error: "name must be 1–63 characters" });
+        if (name !== getOrg(u.org_id)!.name) addOrgEvent(u.org_id, "org_renamed", u.name || u.email, name);
         renameOrg(u.org_id, name);
       }
       if (body.logo !== undefined) {
@@ -350,6 +355,7 @@ export const registerApi = (app: FastifyInstance) => {
       createInvite(u.org_id, email, role, sha256(token), u.id);
       const link = `${req.protocol}://${req.host}/join/${token}`;
       const org = getOrg(u.org_id)!;
+      addOrgEvent(u.org_id, "invited", u.name || u.email, email);
       let mailed = false;
       try { await sendInviteMail(email, link, org.name, u.name || u.email); mailed = mailEnabled; }
       catch (e) { req.log.warn({ err: e }, "invite mail failed"); }
@@ -373,6 +379,7 @@ export const registerApi = (app: FastifyInstance) => {
       if (target.id === u.id) return reply.code(400).send({ error: "you can't change your own role" });
       if (role !== "admin" && role !== "member") return reply.code(400).send({ error: "role must be admin or member" });
       setUserRole(target.id, role);
+      addOrgEvent(u.org_id, "role_changed", u.name || u.email, `${target.email} is now ${role}`);
       return { ok: true };
     });
 
@@ -402,6 +409,7 @@ export const registerApi = (app: FastifyInstance) => {
       if (!target || target.org_id !== u.org_id) return reply.code(404).send({ error: "no such member" });
       if (target.id === u.id) return reply.code(400).send({ error: "you can't remove yourself" });
       deleteUser(target.id);
+      addOrgEvent(u.org_id, "member_removed", u.name || u.email, target.email);
       return { ok: true };
     });
 
@@ -448,7 +456,12 @@ export const registerApi = (app: FastifyInstance) => {
       return { sheets: out };
     });
 
-    f.get("/api/activity", async (req) => ({ activity: orgActivity((req as Authed).user.org_id) }));
+    f.get("/api/activity", async (req) => {
+      const orgId = (req as Authed).user.org_id;
+      const dev = orgActivity(orgId).map((e) => ({ ...e, kind: "device" as const }));
+      const org = orgEvents(orgId).map((e) => ({ ...e, kind: "org" as const }));
+      return { activity: [...dev, ...org].sort((a, b) => b.at - a.at).slice(0, 60) };
+    });
 
     f.post("/api/devices/:id/identify", async (req, reply) => {
       const d = ownDevice(req as Authed);
