@@ -204,18 +204,20 @@ async function addSheet(e) {
 async function scan() {
   const b = el("scanBtn"), done = busy(b, "Scanning…"); el("scanState").innerHTML = `<span class="scanning"><span class="dot"></span>listening for sheets…</span>`; el("found").innerHTML = "";
   try { const r = await api("/api/discover"); done(r.found.length ? `${r.found.length} found` : "Nothing nearby", !r.found.length); el("scanState").innerHTML = "";
-    el("found").innerHTML = r.found.map((f, i) => `<div class="found" style="animation-delay:${i * 50}ms"><span>${esc(f.name || f.address)}<span class="mono">${esc(f.transport)} · ${esc(f.address)}${f.registered ? " · already added as " + esc(f.registered) : ""}</span></span>${f.registered ? `<span class="chip">${ICON.check}<span>added</span></span>` : `<button class="btn ghost small" onclick="useFound(this)" data-v="${esc(f.name || f.address)}">${ICON.qr}Add…</button>`}</div>`).join("");
+    el("found").innerHTML = r.found.map((f, i) => `<div class="found" style="animation-delay:${i * 50}ms"><span>${esc(f.name || f.address)}<span class="mono">${f.registered ? "already added as " + esc(f.registered) : "in range — adding needs the QR link on its label"}</span></span>${f.registered ? `<span class="chip">${ICON.check}<span>added</span></span>` : `<button class="btn ghost small" onclick="useFound(this)" data-v="${esc(f.name || f.address)}">${ICON.qr}Add…</button>`}</div>`).join("");
   } catch (x) { done("Scan failed", true); el("scanState").innerHTML = ""; toast(x.message, "err"); }
 }
 function useFound(b) {
   expectOD = b.dataset.v;
-  el("addHint").innerHTML = `<b>${esc(expectOD)} is nearby.</b> Now scan the QR printed on that label (phone camera works) and paste its link above — the link carries the key; the name alone can't unlock a locked sheet.`;
+  el("addHint").className = "notice info";
+  el("addHint").innerHTML = `${ICON.qr}<div><b>One step left: scan the QR on ${esc(expectOD)}.</b><span>Point your phone camera at the QR printed on that label and paste the link it opens into the field above. The link carries the sheet's key — without it, the sheet stays locked.</span></div>`;
   el("addBtn").innerHTML = ICON.plus + `<span>Add ${esc(expectOD)}</span>`; el("addBtn").dataset.html = el("addBtn").innerHTML;
   linkCheck(); el("qr").focus(); el("addDlg").scrollTop = 0;
 }
 function openAdd() {
   const d = el("addDlg"); el("addForm").reset(); el("found").innerHTML = ""; el("scanState").innerHTML = "";
   expectOD = null; el("linkState").hidden = true; el("addErr").hidden = true;
+  el("addHint").className = "hint";
   el("addHint").textContent = "The QR printed on the label carries the sheet's key — the link is what unlocks it. Size and colours are read from the sheet; keep it awake and nearby.";
   el("addBtn").innerHTML = ICON.plus + "<span>Add sheet</span>"; delete el("addBtn").dataset.html;
   d.showModal(); el("qr").focus();
