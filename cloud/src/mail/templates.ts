@@ -37,8 +37,7 @@ const layout = (l: Layout): string => `<!doctype html>
 <tr><td align="center" style="padding:40px 16px;">
   <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:460px;">
     <tr><td align="left" style="padding:0 6px 18px;">
-      <span style="display:inline-block;width:13px;height:13px;border:3px solid ${C.green};border-radius:12px;vertical-align:-2px;"></span>
-      <span style="font:800 19px ${FONT};letter-spacing:-0.4px;color:${C.green};">&nbsp;Re</span><span style="font:800 19px ${FONT};letter-spacing:-0.4px;color:${C.ink};">Paper</span>
+      <span style="display:inline-block;border:3px solid ${C.green};border-radius:999px;padding:3px 8px;font:800 15px/15px ${FONT};letter-spacing:0.5px;color:${C.ink};">RE</span><span style="display:inline-block;margin-left:6px;font:800 17px/21px ${FONT};letter-spacing:0.5px;color:${C.ink};vertical-align:middle;">PAPER</span>
     </td></tr>
     <tr><td style="background:${C.sheet};border:1px solid ${C.line};border-radius:16px;padding:32px;">
       <h1 style="margin:0 0 14px;font:700 20px/26px ${FONT};letter-spacing:-0.3px;color:${C.ink};">${esc(l.heading)}</h1>
