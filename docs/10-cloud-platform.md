@@ -32,8 +32,9 @@ Refined Sep 2026 into a three-tier sketch (draft numbers — deliberately anchor
 - **Free — €0 forever**: one device per account, up to 10 sheets, unlimited prints, fleet view & claiming, manual updates, personal workspace. The honest entry that keeps the "it's just a printer" promise.
 - **Team — ~€12 / device / month**: unlimited devices and sheets (devices priced each, sheets never — BLE range meters big fleets into more Docks by itself); organisations (members, roles, invitations), sites, alerts with email digest, automatic signed updates, read API keys.
 - **Pro — ~€29 / device / month**: everything in Team plus write API & webhooks, staged rollouts & maintenance windows, 12-month history, remote diagnostics & priority support, org branding in the console.
+- **Industry modules** (per site): the value-capture for high-value / low-device cases like production Laufzettel — two Docks can digitalize a whole process, so the money is in the process layer, not the radio: workflow rules, ERP/MES connectors, audit trails, compliance exports. Cheap per-device infra is the land; modules are the expand.
 - **Premium SLA**: separate add-on, flat per month, priced by the customer's organisation (response times, named contact, extended hours) — SLA effort scales with the customer, not their device count, so it never inflates the per-device price.
-- **Enterprise**: a conversation — on-prem, SSO, purchase orders, custom terms.
+- **Enterprise**: a conversation — SSO, purchase orders, custom terms. On-prem is deliberately **not** offered for now: it's an ops and support trap at this team size; revisit when there's a team to carry it.
 - **Sheets & accessories**: hardware margin, sold in the console's Shop.
 - **Go app**: free tier maps to Free (the phone is the one device); paid tiers per device like Docks.
 
