@@ -27,12 +27,13 @@ Every RePaper printer — a Dock or a phone running Go — is a device that can 
 ## Monetisation — a first model
 
 Keep it simple to start; make it explainable in one sentence per product.
-Refined Sep 2026 into a three-tier sketch (draft numbers, shown as a preview on the console's Billing page):
+Refined Sep 2026 into a three-tier sketch (draft numbers — deliberately anchored high: B2B buyers read cheap as toy, support must be funded by the subscription, and lowering prices is easy while raising them is not; shown as a preview on the console's Billing page):
 
 - **Free — €0 forever**: one device per account, up to 10 sheets, unlimited prints, fleet view & claiming, manual updates, personal workspace. The honest entry that keeps the "it's just a printer" promise.
-- **Team — ~€4 / device / month**: unlimited devices and sheets (devices priced each, sheets never — BLE range meters big fleets into more Docks by itself); organisations (members, roles, invitations), sites, alerts with email digest, automatic signed updates, read API keys.
-- **Pro — ~€9 / device / month**: everything in Team plus write API & webhooks, staged rollouts & maintenance windows, 12-month history, remote diagnostics & priority support, org branding in the console.
-- **Enterprise**: a conversation — on-prem, SSO, purchase orders, SLAs.
+- **Team — ~€12 / device / month**: unlimited devices and sheets (devices priced each, sheets never — BLE range meters big fleets into more Docks by itself); organisations (members, roles, invitations), sites, alerts with email digest, automatic signed updates, read API keys.
+- **Pro — ~€29 / device / month**: everything in Team plus write API & webhooks, staged rollouts & maintenance windows, 12-month history, remote diagnostics & priority support, org branding in the console.
+- **Premium SLA**: separate add-on, flat per month, priced by the customer's organisation (response times, named contact, extended hours) — SLA effort scales with the customer, not their device count, so it never inflates the per-device price.
+- **Enterprise**: a conversation — on-prem, SSO, purchase orders, custom terms.
 - **Sheets & accessories**: hardware margin, sold in the console's Shop.
 - **Go app**: free tier maps to Free (the phone is the one device); paid tiers per device like Docks.
 
