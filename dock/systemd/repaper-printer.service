@@ -1,0 +1,14 @@
+[Unit]
+Description=RePaper printer (ippeveprinter, AirPrint / IPP Everywhere)
+After=avahi-daemon.service repaper-dockd.service network-online.target
+Wants=avahi-daemon.service
+
+[Service]
+Type=simple
+User=@USER@
+ExecStart=@REPO@/dock/printer-pi.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

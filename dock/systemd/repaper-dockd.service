@@ -1,0 +1,14 @@
+[Unit]
+Description=RePaper Dock sidecar (spool, render, sheets, web UI, cloud)
+After=network-online.target bluetooth.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=@USER@
+ExecStart=@REPO@/dock/sidecar/.venv/bin/repaper-dockd run
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
