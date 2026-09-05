@@ -308,6 +308,15 @@ def make_handler(dock: Dock):
                 try:
                     data = json.loads(raw or b"{}")
                     if u.path == "/api/settings": dock.save_settings(data); return self._json({"ok": True})
+                    if u.path == "/api/system/reboot":
+                        from . import system
+                        try: system.reboot(); return self._json({"ok": True})
+                        except ValueError as e: return self._json({"error": str(e)}, 400)
+                    if u.path == "/api/system/factory-reset":
+                        from . import system
+                        if data.get("confirm") != "RESET": return self._json({"error": "confirmation missing"}, 400)
+                        try: system.factory_reset(); return self._json({"ok": True})
+                        except ValueError as e: return self._json({"error": str(e)}, 400)
                     if u.path == "/api/wifi/scan":
                         if not dock.wifi.supported: return self._json({"error": "not available on this host"}, 400)
                         if dock.wifi.mode != "normal": return self._json({"error": "busy with Wi-Fi setup right now"}, 409)

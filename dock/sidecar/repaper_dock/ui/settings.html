@@ -48,7 +48,12 @@
   </div>
 
   <h2>About</h2>
-  <div class="card"><div class="facts" id="about"></div></div>
+  <div class="card"><div class="facts" id="about"></div>
+    <div class="row" style="margin-top:16px" id="maintRow" hidden>
+      <button class="btn outline small" id="rebootBtn" onclick="doReboot(this)"></button>
+      <button class="btn danger small" id="resetBtn" onclick="openFactoryReset()"></button>
+    </div>
+  </div>
 </div>
 <dialog class="modal" id="addDlg">
   <div class="modal-head"><b>Add a sheet</b><button class="iconbtn" type="button" onclick="closeAdd()" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
@@ -161,7 +166,36 @@ async function initWifi() {
   try { W = await api("/api/wifi"); if (W.supported) { el("hotspotRow").hidden = false;
     el("hotspotBtn").innerHTML = ICON.scan + "<span>Test the setup hotspot</span>";
     el("netBtn").innerHTML = ICON.info + "<span>Network configuration</span>";
-    el("wifiBtn").innerHTML = ICON.scan + "<span>Change Wi-Fi</span>"; } } catch {}
+    el("wifiBtn").innerHTML = ICON.scan + "<span>Change Wi-Fi</span>";
+    el("maintRow").hidden = false;
+    el("rebootBtn").innerHTML = ICON.spin.replace(' class="spin"', '') + "<span>Restart the Dock</span>";
+    el("resetBtn").innerHTML = ICON.trash + "<span>Factory reset</span>"; } } catch {}
+}
+async function doReboot(b) {
+  const done = busy(b, "Restarting…");
+  try { await api("/api/system/reboot", {}); done("Restarting");
+    toast("The Dock restarts — back in about a minute, this page reconnects by itself."); }
+  catch (x) { done("Failed", true); toast(x.message, "err"); }
+}
+function openFactoryReset() {
+  el("edTitle").textContent = "Factory reset";
+  el("edBody").innerHTML = `<form class="ed" data-ed="freset" onsubmit="return doFactoryReset(event)">
+    <p><b>This erases everything personal on the Dock:</b></p>
+    <p style="font-size:.9375rem">— all sheets <b>including their keys</b> (re-add them with their QR links)<br>— the cloud claim (remove the old entry from your fleet afterwards)<br>— Wi-Fi credentials and network settings<br>— jobs and history</p>
+    <p>The software stays at its current version. After the restart the Dock opens its <b>setup hotspot</b> and shows a fresh claim code — like on day one.</p>
+    <label for="frConfirm">Type <b>RESET</b> to confirm</label>
+    <input id="frConfirm" name="confirm" autocomplete="off" style="text-transform:uppercase;font-family:var(--font-mono)">
+    <div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn danger" type="submit">Erase and start over</button></div></form>`;
+  el("edDlg").showModal(); el("frConfirm").focus();
+}
+async function doFactoryReset(e) {
+  e.preventDefault(); const f = e.target, sb = f.querySelector("button[type=submit]");
+  if (f.elements.confirm.value.trim().toUpperCase() !== "RESET") { shake(el("frConfirm")); return false; }
+  const done = busy(sb, "Erasing…");
+  try { await api("/api/system/factory-reset", {confirm: "RESET"}); done("Bye");
+    el("edBody").innerHTML = `<div class="ed"><p><b>The Dock is starting over.</b> In about a minute it opens a Wi-Fi network called “<b>RePaper Dock …</b>” — connect to it with your phone to set it up again. This page won't reconnect.</p></div>`; }
+  catch (x) { done("Failed", true); toast(x.message, "err"); }
+  return false;
 }
 async function openWifiChange() {
   el("edTitle").textContent = "Change Wi-Fi";

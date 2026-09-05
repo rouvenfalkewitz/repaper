@@ -92,9 +92,14 @@ function openDetails(id) {
     }</div>${sheets.length ? `<div><h2 style="margin-top:0">Sheets</h2><div class="dsheets">${rows}</div></div>` : ""}
     ${evts ? `<div><h2 style="margin-top:0">Activity</h2><div>${evts}</div></div>` : ""}
     <div><h2 style="margin-top:0">Diagnostics</h2>${full.diag ? `<pre class="diaglog mono">${esc(full.diag.log)}</pre><div class="hint" style="color:var(--text-3);font-size:.75rem">captured ${ago(full.diag.at)}</div>` : `<div class="devmeta">No bundle yet — ask the device for its recent log.</div>`}
-    <div class="row" style="margin-top:10px"><button class="btn outline small" onclick="requestDiag('${esc(d.id)}', this)" ${d.online ? "" : "disabled"}>Request diagnostics</button></div></div>`;
+    <div class="row" style="margin-top:10px"><button class="btn outline small" onclick="requestDiag('${esc(d.id)}', this)" ${d.online ? "" : "disabled"}>Request diagnostics</button><button class="btn outline small" onclick="remoteReboot('${esc(d.id)}', this)" ${d.online ? "" : "disabled"}>Restart device</button></div></div>`;
     el("detDlg").showModal();
   }).catch(x => toast(x.message, "err"));
+}
+async function remoteReboot(id, b) {
+  const done = busy(b, "Restarting…");
+  try { await api(`/api/devices/${id}/reboot`, {}); done("Sent"); toast("The device restarts and reports back in about a minute."); }
+  catch (x) { done("Failed", true); toast(x.message, "err"); }
 }
 async function requestDiag(id, b) {
   const done = busy(b, "Asking…");

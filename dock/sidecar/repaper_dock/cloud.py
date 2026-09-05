@@ -114,6 +114,11 @@ class CloudAgent(threading.Thread):
         elif t == "claimed":
             self.claimed, self.org = True, msg.get("org")
             log.info("cloud: claimed by %s", self.org)
+        elif t == "reboot":
+            log.info("cloud: reboot requested from the console")
+            from . import system
+            try: system.reboot(delay=2.0)
+            except Exception as e: log.warning("cloud: reboot failed: %s", e)
         elif t == "diag":
             log.info("cloud: diagnostics requested — sending the log tail")
             try: tail = "".join((HOME / "dock.log").read_text(errors="replace").splitlines(keepends=True)[-200:])

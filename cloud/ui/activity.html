@@ -27,7 +27,7 @@ const LABEL = {
   claimed: ["was claimed", "ok"], renamed: ["was renamed", "info"],
   identify: ["was pinged from the console", "info"], diagnostics: ["sent a diagnostics bundle", "info"],
   update_started: ["started installing an update", "info"], updated: ["updated", "ok"],
-  update_failed: ["failed to update", "warn"],
+  update_failed: ["failed to update", "warn"], reboot: ["was restarted from the console", "info"],
 };
 function orgLine(e) {
   const a = esc(e.actor), d = esc(e.data);

@@ -511,6 +511,14 @@ export const registerApi = (app: FastifyInstance) => {
       return { ok: true };
     });
 
+    f.post("/api/devices/:id/reboot", async (req, reply) => {
+      const d = ownDevice(req as Authed);
+      if (!d) return reply.code(404).send({ error: "unknown device" });
+      if (!sendToDevice(d.id, { t: "reboot" })) return reply.code(409).send({ error: "the device is offline right now" });
+      addEvent(d.id, "reboot");
+      return { ok: true };
+    });
+
     f.post("/api/devices/:id/diag", async (req, reply) => {
       const d = ownDevice(req as Authed);
       if (!d) return reply.code(404).send({ error: "unknown device" });

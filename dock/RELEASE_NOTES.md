@@ -1,1 +1,1 @@
-0.0.6 — Change Wi-Fi from the Dock's settings page, with the setup hotspot as automatic safety net.
+0.0.7 — Restart and factory reset from Settings, remote restart from the cloud, and the Dock page refreshes itself after updates.

@@ -158,10 +158,13 @@ function render(s) {
 let tickFails = 0;
 function sysbanner(html) { const b = el("sysbanner"); if (b.innerHTML !== (html || "")) b.innerHTML = html || ""; }
 const SPINSVG = `<svg class="spin" viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round"><path d="M12 3a9 9 0 1 0 9 9"/></svg>`;
+let bootVersion = null;
 async function tick() {
   try {
     const s = await (await fetch("/api/status", {cache: "no-store"})).json();
     tickFails = 0;
+    if (bootVersion === null) bootVersion = s.version;
+    else if (s.version !== bootVersion) { location.reload(); return; }   // updated Dock → fresh page
     if (s.updating) sysbanner(`<div class="notice info">${SPINSVG}<div><b>Updating to ${esc(s.updating)}</b><span>The Dock downloads, installs and restarts on its own — this page reconnects by itself. Printing resumes right after.</span></div></div>`);
     else sysbanner("");
     const sig = JSON.stringify([s.state, s.job && s.job.id, s.job && s.job.next_page, s.message, Object.keys(s.sheets).length, s.recent && s.recent.length, Object.values(s.sheets).map(v => [v.battery_volts, v.online, v.last && v.last.at, v.hw && v.hw.firmware])]);
