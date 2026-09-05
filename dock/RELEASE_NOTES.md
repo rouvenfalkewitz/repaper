@@ -1,1 +1,1 @@
-0.0.3 — Pull-based updates over HTTPS (socket-independent), resilient cloud link, honest unreachable-sheet message.
+0.0.4 — Wi-Fi onboarding: no known network opens a setup hotspot with a captive portal; test button in Settings.

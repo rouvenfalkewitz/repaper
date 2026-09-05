@@ -43,6 +43,7 @@
   <h2>Network</h2>
   <div class="card">
     <div class="facts" id="net"></div>
+    <div class="row" style="margin-top:14px" id="hotspotRow" hidden><button class="btn outline small" id="hotspotBtn" onclick="testHotspot()"></button><span class="hint" style="color:var(--text-3);font-size:.8125rem">Opens the Wi-Fi setup hotspot for 5 minutes — the Dock leaves this network meanwhile, then returns on its own.</span></div>
     <div class="hint" style="margin-top:14px;color:var(--text-3);font-size:.8125rem">Addressing, DHCP/static IP and DNS are configured in the device's system for now; they move here with the device build.</div>
   </div>
 
@@ -154,6 +155,17 @@ async function saveCloud(e) {
   return false;
 }
 setInterval(async () => { try { renderCloud((await api("/api/settings")).cloud); } catch {} }, 4000);
+/* wifi onboarding test (Pi Docks only) */
+async function initWifi() {
+  try { const w = await api("/api/wifi"); if (w.supported) { el("hotspotRow").hidden = false; el("hotspotBtn").innerHTML = ICON.scan + "<span>Test the setup hotspot</span>"; } } catch {}
+}
+async function testHotspot() {
+  const done = busy(el("hotspotBtn"), "Opening…");
+  try { const r = await api("/api/wifi/hotspot", {minutes: 5}); done("Hotspot up");
+    toast(`Look for the Wi-Fi network “${r.ssid}” on your phone — this page goes quiet until the Dock returns.`); }
+  catch (x) { done("Failed", true); toast(x.message, "err"); }
+}
+initWifi();
 /* printer form: Save only lights up when something changed */
 function dirty() { const d = el("pname").value.trim() !== S.printer_name || Number(el("timeout").value) !== S.job_timeout_seconds; const b = el("saveBtn"); if (!b.classList.contains("busy") && !b.classList.contains("ok")) b.disabled = !d; b.dataset.stayDisabled = d ? "0" : "1"; }
 async function savePrinter(e) {

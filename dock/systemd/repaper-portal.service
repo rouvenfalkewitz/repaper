@@ -1,0 +1,11 @@
+[Unit]
+Description=RePaper captive portal redirect (setup hotspot only)
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 @REPO@/dock/portal-redirect.py
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

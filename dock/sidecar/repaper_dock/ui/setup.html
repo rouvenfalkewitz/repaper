@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark light"><meta name="theme-color" content="#0C100F">
+<title>RePaper Dock · Wi-Fi setup</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/tokens.css"><link rel="stylesheet" href="/app.css">
+<style>
+  /* captive mini-browsers get no web fonts — the system stacks carry it */
+  .setupwrap { max-width: 480px; margin: 0 auto; padding: 24px 16px 64px }
+  .sethead { display: flex; align-items: center; gap: 12px; padding: 8px 0 20px }
+  .sethead .logo { height: 26px }
+  .net { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 13px 14px; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: var(--r-control); cursor: pointer; font: inherit; margin-bottom: 8px }
+  .net:hover { border-color: var(--accent) }
+  .net b { flex: 1; font-weight: 600; overflow-wrap: anywhere }
+  .bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px }
+  .bars i { width: 3.5px; border-radius: 1px; background: var(--border-strong) }
+  .bars i:nth-child(1){height:5px} .bars i:nth-child(2){height:8px} .bars i:nth-child(3){height:11px} .bars i:nth-child(4){height:14px}
+  .bars.s1 i:nth-child(-n+1), .bars.s2 i:nth-child(-n+2), .bars.s3 i:nth-child(-n+3), .bars.s4 i { background: var(--accent) }
+  .lock { width: 14px; height: 14px; fill: none; stroke: var(--text-3); stroke-width: 1.8; flex: none }
+  .pwbox { padding: 4px 0 12px; display: grid; gap: 10px }
+  .joinmsg { display: grid; gap: 12px; justify-items: center; text-align: center; padding: 24px 0 }
+  .joinmsg .okic { width: 56px; height: 56px }
+</style>
+</head>
+<body>
+<div class="setupwrap">
+  <div class="sethead">
+    <svg class="logo" viewBox="0 0 6629.1 2338.6" role="img" aria-label="RePaper"><path class="ring" fill="var(--accent)" fill-rule="evenodd" d="M0 1169.3a1169.3 1169.3 0 1 0 2338.6 0a1169.3 1169.3 0 1 0 -2338.6 0ZM203.6 1169.3a965.7 965.7 0 1 0 1931.3 0a965.7 965.7 0 1 0 -1931.3 0Z"/><path fill="var(--text)" d="M355.9 1512.3V824.7H928.2Q1003.3 824.7 1052.6 855.6Q1101.8 886.5 1126.4 936.9Q1151 987.3 1151 1046.8Q1151 1112.2 1120.1 1165.7Q1089.1 1219.2 1026.9 1250.2L1167.5 1512.3H937.8L823.8 1283.6H559.5V1512.3ZM559.5 1133.1H861.7Q898.4 1133.1 920.4 1111.1Q942.3 1089 942.3 1052.5Q942.3 1027.9 932.4 1010.6Q922.5 993.4 904.6 984.5Q886.7 975.7 861.7 975.7H559.5Z M1257.9 1512.3V824.7H1974.7V975.7H1462.1V1091.1H1910.8V1237.2H1462.1V1361.4H1982.7V1512.3Z"/><path fill="var(--text)" d="M2489.5 1512.3V824.7H3020.1Q3087.7 824.7 3138.5 854.6Q3189.4 884.4 3217.7 937Q3246 989.7 3246 1058.4Q3246 1127.8 3217.2 1181.2Q3188.4 1234.6 3137.1 1264.1Q3085.7 1293.7 3018.3 1293.7H2693.1V1512.3ZM2693.1 1142.8H2961.6Q3006.8 1142.8 3030.2 1121Q3053.5 1099.3 3053.5 1059.4Q3053.5 1032.2 3042.9 1013.7Q3032.3 995.2 3012 985.4Q2991.6 975.7 2961.6 975.7H2693.1Z M3181.3 1512.3 3519.3 824.7H3745.7L4083.7 1512.3H3863.4L3811.5 1402.1H3442.5L3391.1 1512.3ZM3510.7 1253H3743.3L3680.7 1113.3Q3676.8 1103.9 3669.7 1086.8Q3662.7 1069.6 3655.1 1050.1Q3647.5 1030.6 3641.1 1013.8Q3634.7 997 3631.5 989H3624Q3616.7 1007.3 3607.1 1031.2Q3597.5 1055 3588.6 1077.4Q3579.7 1099.7 3573.3 1113.7Z M4153.5 1512.3V824.7H4684.1Q4751.7 824.7 4802.5 854.6Q4853.4 884.4 4881.7 937Q4910 989.7 4910 1058.4Q4910 1127.8 4881.2 1181.2Q4852.4 1234.6 4801.1 1264.1Q4749.7 1293.7 4682.3 1293.7H4357.1V1512.3ZM4357.1 1142.8H4625.6Q4670.8 1142.8 4694.2 1121Q4717.5 1099.3 4717.5 1059.4Q4717.5 1032.2 4706.9 1013.7Q4696.3 995.2 4676 985.4Q4655.6 975.7 4625.6 975.7H4357.1Z M4984.5 1512.3V824.7H5701.2V975.7H5188.7V1091.1H5637.4V1237.2H5188.7V1361.4H5709.2V1512.3Z M5817.5 1512.3V824.7H6389.7Q6464.9 824.7 6514.1 855.6Q6563.4 886.5 6588 936.9Q6612.6 987.3 6612.6 1046.8Q6612.6 1112.2 6581.7 1165.7Q6550.7 1219.2 6488.5 1250.2L6629.1 1512.3H6399.4L6285.3 1283.6H6021.1V1512.3ZM6021.1 1133.1H6323.3Q6360 1133.1 6381.9 1111.1Q6403.9 1089 6403.9 1052.5Q6403.9 1027.9 6394 1010.6Q6384.1 993.4 6366.1 984.5Q6348.2 975.7 6323.3 975.7H6021.1Z"/></svg>
+  </div>
+  <h1 style="font-family:var(--font-display);font-weight:700;font-size:1.375rem;letter-spacing:-.02em;margin:0 0 6px">Connect this Dock to Wi-Fi</h1>
+  <p style="color:var(--text-2);margin:0 0 20px;font-size:.9375rem" id="intro">Pick your network. The Dock joins it and this setup hotspot disappears.</p>
+  <div id="nets"></div>
+  <div id="msg"></div>
+</div>
+<script>
+const el = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const LOCK = `<svg class="lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`;
+let NETS = [], open = null;
+
+function bars(sig) { return `<span class="bars s${Math.max(1, Math.ceil(sig / 25))}"><i></i><i></i><i></i><i></i></span>`; }
+
+function render() {
+  el("nets").innerHTML = NETS.length ? NETS.map((n, i) => `
+    <button class="net" onclick="pick(${i})">${bars(n.signal)}<b>${esc(n.ssid)}</b>${n.secured ? LOCK : ""}</button>
+    ${open === i ? `<form class="pwbox" onsubmit="return join(${i})">
+      ${n.secured ? `<div class="field"><label for="pw">Password for ${esc(n.ssid)}</label><input id="pw" type="password" autocomplete="off" required autofocus></div>` : `<p style="margin:0;color:var(--text-2);font-size:.875rem">Open network — no password needed.</p>`}
+      <button class="btn primary" type="submit">Join this network</button>
+    </form>` : ""}`).join("")
+    : `<p style="color:var(--text-2)">No networks in the list — the Dock scanned just before opening this hotspot. Move it closer to your router and power-cycle it to rescan.</p>`;
+}
+function pick(i) { open = open === i ? null : i; render(); if (open !== null) setTimeout(() => el("pw")?.focus(), 50); }
+function join(i) {
+  const n = NETS[i], pw = el("pw") ? el("pw").value : "";
+  fetch("/api/wifi/join", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ ssid: n.ssid, password: pw }) }).catch(() => {});
+  el("nets").innerHTML = "";
+  el("intro").hidden = true;
+  el("msg").innerHTML = `<div class="joinmsg"><span class="okic" style="display:grid;place-items:center;border-radius:50%;background:var(--accent-tint);color:var(--accent-text)"><svg style="width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg></span>
+    <b style="font-family:var(--font-display);font-size:1.125rem">Joining ${esc(n.ssid)}…</b>
+    <p style="margin:0;color:var(--text-2);font-size:.9375rem">This hotspot disappears now — that's the plan. Reconnect your phone to <b>${esc(n.ssid)}</b>.<br><br>If the hotspot comes back after a minute, the password was probably wrong — just try again.</p></div>`;
+  return false;
+}
+async function load() {
+  try { const j = await (await fetch("/api/wifi", {cache: "no-store"})).json(); NETS = j.networks || []; render(); }
+  catch { setTimeout(load, 2000); }
+}
+load();
+</script>
+</body>
+</html>

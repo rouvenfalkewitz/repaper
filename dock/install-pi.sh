@@ -16,12 +16,15 @@ cd "$REPO/dock/sidecar"
 .venv/bin/pip install -q -e .
 .venv/bin/repaper-dockd --help >/dev/null 2>&1 || true
 
+echo "== captive portal bits =="
+echo 'address=/#/10.42.0.1' | sudo tee /etc/NetworkManager/dnsmasq-shared.d/repaper-captive.conf >/dev/null
+
 echo "== systemd units =="
-for unit in repaper-dockd repaper-printer; do
+for unit in repaper-dockd repaper-printer repaper-portal; do
   sed -e "s|@REPO@|$REPO|g" -e "s|@USER@|$USER_NAME|g" \
     "$REPO/dock/systemd/$unit.service" | sudo tee "/etc/systemd/system/$unit.service" >/dev/null
 done
 sudo systemctl daemon-reload
-sudo systemctl enable repaper-dockd repaper-printer >/dev/null 2>&1
+sudo systemctl enable repaper-dockd repaper-printer >/dev/null 2>&1   # the portal unit stays disabled — started on demand by the hotspot
 
 echo "== done — start with: sudo systemctl start repaper-dockd repaper-printer =="

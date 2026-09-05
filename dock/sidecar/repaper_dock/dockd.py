@@ -40,6 +40,8 @@ class Dock:
         self.hw_lock = threading.Lock()                 # one BLE/hardware operation at a time (print, status, add, test page)
         from .cloud import CloudAgent
         self.cloud = CloudAgent(self); self.cloud.start()
+        from .wifi import WifiOnboarding
+        self.wifi = WifiOnboarding(self); self.wifi.start()
         threading.Thread(target=self._status_loop, daemon=True).start()
 
     # ── sheet status (battery/online) refreshed in the background while idle ──
@@ -267,6 +269,7 @@ class Dock:
 
 UI_DIR = Path(__file__).resolve().parent / "ui"
 STATIC = {"/": ("index.html", "text/html; charset=utf-8"), "/settings": ("settings.html", "text/html; charset=utf-8"),
+          "/setup": ("setup.html", "text/html; charset=utf-8"),
           "/tokens.css": ("tokens.css", "text/css"), "/app.css": ("app.css", "text/css"), "/favicon.svg": ("favicon.svg", "image/svg+xml")}
 
 
@@ -283,6 +286,7 @@ def make_handler(dock: Dock):
                 fn, ct = STATIC[u.path]; return self._send((UI_DIR / fn).read_bytes(), ct, cache="no-store")   # tiny files; never let a browser hold an old stylesheet
             if u.path == "/api/status": return self._json(dock.snapshot())
             if u.path == "/api/settings": return self._json(dock.settings())
+            if u.path == "/api/wifi": return self._json(dock.wifi.info())
             if u.path == "/api/discover":
                 try: return self._json({"found": dock.discover()})
                 except Exception as e: return self._json({"error": str(e)}, 400)
@@ -303,6 +307,16 @@ def make_handler(dock: Dock):
                 try:
                     data = json.loads(raw or b"{}")
                     if u.path == "/api/settings": dock.save_settings(data); return self._json({"ok": True})
+                    if u.path == "/api/wifi/join":
+                        if not dock.wifi.supported: return self._json({"error": "Wi-Fi setup is not available on this host"}, 400)
+                        ssid = str(data.get("ssid", "")).strip()
+                        if not ssid: return self._json({"error": "pick a network"}, 400)
+                        dock.wifi.join(ssid, str(data.get("password", "")))
+                        return self._json({"ok": True})
+                    if u.path == "/api/wifi/hotspot":
+                        if not dock.wifi.supported: return self._json({"error": "Wi-Fi setup is not available on this host"}, 400)
+                        dock.wifi.hotspot_up(timeout_min=int(data.get("minutes", 5)))
+                        return self._json({"ok": True, "ssid": dock.wifi.ap_ssid})
                     if u.path == "/api/sheets/add": return self._json(dock.add_sheet(data.get("input", ""), data.get("name", ""), data.get("serial", "")))
                     m = re.fullmatch(r"/api/sheets/([A-Za-z0-9_.-]+)(?:/(remove|test-page|calibrate))?", u.path)
                     if m:
