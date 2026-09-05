@@ -549,6 +549,10 @@ export const registerApi = (app: FastifyInstance) => {
     f.post("/api/devices/:id/update", async (req, reply) => {
       const d = ownDevice(req as Authed);
       if (!d) return reply.code(404).send({ error: "unknown device" });
+      if (((req.body ?? {}) as { cancel?: boolean }).cancel) {
+        setTargetVersion(d.id, null);         // a queued update simply stops being offered
+        return { ok: true, cancelled: true };
+      }
       const version = String(((req.body ?? {}) as { version?: string }).version ?? "") || latestRelease()?.version;
       if (!version || !getRelease(version)) return reply.code(404).send({ error: "no such release" });
       setTargetVersion(d.id, version);

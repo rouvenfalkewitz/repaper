@@ -74,6 +74,7 @@ function deviceRow(d) {
     state = d.online
       ? `<span class="stat busy"><span class="pspin">${ICON.spin}</span>Installing…</span>`
       : `<span class="stat wait">${ICON.clock}Updates when it reconnects</span>`;
+    if (!d.online) action = `<button class="btn ghost small" data-id="${esc(d.id)}" data-act="cancel">Cancel</button>`;
   } else if (behind(d)) {
     state = `<span class="stat wait">${ICON.download}Update ready</span>`;
     action = `<button class="btn outline small" data-id="${esc(d.id)}" data-act="update">${ICON.download}Update</button>`;
@@ -108,7 +109,15 @@ async function load() {
 }
 
 el("devs").addEventListener("click", async e => {
-  const b = e.target.closest("[data-act=update]"); if (!b) return;
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  if (b.dataset.act === "cancel") {
+    const done = busy(b, "Cancelling…");
+    try { await api(`/api/devices/${b.dataset.id}/update`, { cancel: true }); done("Cancelled");
+      toast("Update cancelled — the device stays on its current version."); load(); }
+    catch (x) { done("Failed", true); toast(x.message, "err"); }
+    return;
+  }
+  if (b.dataset.act !== "update") return;
   const done = busy(b, "Starting…");
   try { await api(`/api/devices/${b.dataset.id}/update`, {}); done("Started");
     toast("Update started — the device installs and restarts on its own."); load(); }
