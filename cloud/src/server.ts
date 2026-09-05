@@ -4,7 +4,7 @@ import websocket from "@fastify/websocket";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { registerApi } from "./api.js";
+import { publishBundledRelease, registerApi } from "./api.js";
 import { handleDeviceSocket } from "./devices.js";
 import { userFromRequest } from "./auth.js";
 
@@ -64,6 +64,8 @@ app.get("/status", (_req, reply) =>
 for (const [path, [file, type]] of Object.entries(STATIC)) {
   app.get(path, (_req, reply) => reply.header("Cache-Control", "no-store").type(type).send(page(file)));
 }
+
+publishBundledRelease(app.log);
 
 const port = Number(process.env.PORT || 3000);
 await app.listen({ port, host: "0.0.0.0" });

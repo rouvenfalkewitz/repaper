@@ -1,0 +1,8 @@
+.git
+dist
+cloud/node_modules
+cloud/dist
+cloud/data
+dock/sidecar/.venv
+**/__pycache__
+**/*.egg-info

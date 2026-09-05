@@ -49,6 +49,7 @@ function render() {
     <div class="planlist">
       <div class="planline"><span>Published</span><span class="mono">${new Date(latest.created * 1000).toLocaleString()}</span></div>
       <div class="planline"><span>Size · checksum</span><span class="mono">${(latest.size / 1024 / 1024).toFixed(1)} MB · sha256 ${esc(latest.sha256.slice(0, 12))}…</span></div>
+      <div class="planline"><span>Publishing</span><span class="mono">automatic with every cloud deploy</span></div>
       <div class="planline"><span>Rollout</span><span class="mono">push per device below, or the whole fleet at once</span></div>
     </div>`
     : `<div class="devmeta">No releases published yet${ME?.vendor ? " — upload the first one." : "."}</div>`;
@@ -92,7 +93,7 @@ async function updateAll(b) {
 
 function openUpload() {
   setModal("Upload a release", `<form class="ed" data-ed="upload">
-    <p>Build it with <span class="mono">dock/make-release.sh</span>, then drop the tarball here. Devices verify the checksum before installing and roll back if they don't come back healthy.</p>
+    <p>Normally releases publish themselves with each cloud deploy — this is the manual fallback. Build with <span class="mono">dock/make-release.sh</span> and drop the tarball here; devices verify the checksum and roll back if they don't come back healthy.</p>
     <label>Tarball</label><input type="file" name="file" accept=".gz,.tgz" required>
     <label for="edVer">Version</label><input id="edVer" name="version" placeholder="0.0.2" pattern="\\d+\\.\\d+\\.\\d+" required autocomplete="off" style="font-family:var(--font-mono)">
     <label for="edNotes">Notes</label><input id="edNotes" name="notes" maxlength="200" placeholder="What changed?" autocomplete="off">

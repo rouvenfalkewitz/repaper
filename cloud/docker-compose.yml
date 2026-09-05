@@ -4,8 +4,8 @@
 services:
   repaper-cloud:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: cloud/Dockerfile
     container_name: repaper-cloud
     restart: unless-stopped
     networks:

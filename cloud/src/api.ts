@@ -1,7 +1,8 @@
 /* Console API: everything a signed-in user does. Device-facing traffic lives in devices.ts. */
 import { createHash, randomBytes } from "node:crypto";
-import { createReadStream, mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { copyFileSync, createReadStream, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import QRCode from "qrcode";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { generateSecret, otpauthUrl, totpCheck } from "./totp.js";
@@ -56,6 +57,26 @@ mkdirSync(RELEASES_DIR, { recursive: true });
 const dlTokens = new Map<string, { version: string; expires: number }>();
 const publicBase = () => (process.env.DOMAIN ? `https://${process.env.DOMAIN}` : `http://localhost:${process.env.PORT || 3000}`);
 const VENDOR_ORG = 1;   // pilot: the RePaper org uploads releases; a proper vendor role comes later
+
+/* Releases publish themselves: the Docker image bundles the Dock software at the
+   version in the repo, and startup registers it if the store doesn't have it yet.
+   The console upload stays as a manual fallback. */
+export const publishBundledRelease = (log: { info: (s: string) => void; warn: (s: string) => void }) => {
+  const bundled = join(dirname(fileURLToPath(import.meta.url)), "..", "bundled");
+  try {
+    if (!existsSync(join(bundled, "VERSION"))) return;
+    const version = readFileSync(join(bundled, "VERSION"), "utf8").trim();
+    if (!/^\d+\.\d+\.\d+$/.test(version) || getRelease(version)) return;
+    const buf = readFileSync(join(bundled, "dock-release.tar.gz"));
+    copyFileSync(join(bundled, "dock-release.tar.gz"), join(RELEASES_DIR, `${version}.tar.gz`));
+    let notes = "Published automatically with the cloud deploy.";
+    try { notes = readFileSync(join(bundled, "RELEASE_NOTES.md"), "utf8").split("\n")[0].replace(/^[\d.]+\s*[—-]\s*/, "").trim() || notes; } catch {}
+    createRelease(version, "stable", notes, createHash("sha256").update(buf).digest("hex"), buf.length);
+    log.info(`bundled Dock release ${version} published`);
+  } catch (e) {
+    log.warn(`bundled release publish failed: ${e}`);
+  }
+};
 
 const pushUpdate = (deviceId: string, version: string): boolean => {
   const rel = getRelease(version);
