@@ -74,7 +74,7 @@ class CloudAgent(threading.Thread):
                 await asyncio.sleep(3); continue
             try:
                 self.state, self.detail = "connecting", ""
-                async with websockets.connect(url, open_timeout=10, ping_interval=30, ping_timeout=10, max_size=1 << 20) as ws:
+                async with websockets.connect(url, open_timeout=10, ping_interval=20, ping_timeout=20, max_size=1 << 20) as ws:
                     await ws.send(json.dumps({"t": "hello", "id": self.identity["device_id"], "secret": self.identity["secret"],
                                               "claim": self.identity["claim_code"], "kind": "dock",
                                               "name": self.dock.cfg["printer_name"], "version": __version__}))
@@ -86,10 +86,14 @@ class CloudAgent(threading.Thread):
                              f"claimed by {self.org}" if self.claimed else f"not claimed yet — code {self.identity['claim_code']}")
                     await ws.send(json.dumps(self._status())); last = time.time()
                     while (self.dock.cfg.get("cloud_url") or "").strip() == url:   # a URL change in Settings drops the link
-                        try:
-                            r = self._handle(json.loads(await asyncio.wait_for(ws.recv(), timeout=5)))
+                        try: raw = await asyncio.wait_for(ws.recv(), timeout=5)
+                        except asyncio.TimeoutError: raw = None
+                        if raw is not None:
+                            try: r = self._handle(json.loads(raw))
+                            except RuntimeError: raise                     # server said error → reconnect
+                            except Exception as e:                          # a bad message must never kill the link
+                                r = None; log.warning("cloud: message handling failed: %s", e)
                             if r: await ws.send(json.dumps(r))
-                        except asyncio.TimeoutError: pass
                         if time.time() - last >= self.dock.cfg.get("status_refresh_seconds", 60):
                             await ws.send(json.dumps(self._status())); last = time.time()
             except Exception as e:

@@ -1,1 +1,1 @@
-0.0.2 — Honest unreachable-sheet message (SoluM labels have no button), OTA update support.
+0.0.3 — Resilient cloud link (handler errors survive, wider ping tolerance); honest unreachable-sheet message; OTA support.

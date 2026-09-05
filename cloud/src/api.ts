@@ -14,13 +14,13 @@ import {
   inviteByTokenHash, loginPendingByToken, markInviteUsed, markResetUsed, orgActivity, orgEvents,
   orgDevices, orgInvites, orgUsers, pendingInviteFor, publicCounts, recentResetFor, renameDevice, renameOrg,
   resetByTokenHash, revokeApiKey, revokeInvite, setDeviceSite, setTotpPending, setUserAvatar,
-  createRelease, getRelease, latestRelease, listReleases,
+  createRelease, getRelease, latestRelease, listReleases, setTargetVersion,
   setOrgLogo, setUserName, setUserRole, updateCompany, updatePassword, useRecoveryCode, userApiKeys,
   COMPANY_FIELDS, DATA_DIR, type DeviceRow, type UserRow,
 } from "./db.js";
 import { COOKIE, endSession, hashPassword, loginAllowed, loginFailed, loginOk, requireUser, startSession, verifyPassword } from "./auth.js";
 import { mailEnabled, sendInviteMail, sendRegisterMail, sendResetMail } from "./mail/index.js";
-import { dropDevice, isOnline, onlineCount, sendToDevice } from "./devices.js";
+import { dropDevice, isOnline, onlineCount, sendToDevice, setUpdateOffer } from "./devices.js";
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -85,6 +85,13 @@ const pushUpdate = (deviceId: string, version: string): boolean => {
   dlTokens.set(token, { version, expires: Date.now() + 10 * 60_000 });
   return sendToDevice(deviceId, { t: "update", version: rel.version, sha256: rel.sha256, url: `${publicBase()}/dl/${token}` });
 };
+
+/* convergence: the device channel re-offers a device's target version on every
+   hello and heartbeat until the device reports it — flaky links just take longer */
+setUpdateOffer((deviceId) => {
+  const d = getDevice(deviceId);
+  if (d?.target_version && d.version !== d.target_version) pushUpdate(deviceId, d.target_version);
+});
 
 /* a device row must belong to the caller's org */
 const ownDevice = (req: Authed): DeviceRow | undefined => {
@@ -518,8 +525,9 @@ export const registerApi = (app: FastifyInstance) => {
       if (!d) return reply.code(404).send({ error: "unknown device" });
       const version = String(((req.body ?? {}) as { version?: string }).version ?? "") || latestRelease()?.version;
       if (!version || !getRelease(version)) return reply.code(404).send({ error: "no such release" });
-      if (!pushUpdate(d.id, version)) return reply.code(409).send({ error: "the device is offline right now" });
-      return { ok: true, version };
+      setTargetVersion(d.id, version);
+      const sent = pushUpdate(d.id, version);
+      return { ok: true, version, sent };   // offline or flaky? it converges on the next contact
     });
 
     f.post("/api/fleet/update", async (req, reply) => {
@@ -528,7 +536,10 @@ export const registerApi = (app: FastifyInstance) => {
       if (!version || !getRelease(version)) return reply.code(404).send({ error: "no such release" });
       let sent = 0;
       for (const d of orgDevices(u.org_id))
-        if (d.kind === "dock" && isOnline(d.id) && d.version !== version && pushUpdate(d.id, version)) sent++;
+        if (d.kind === "dock" && d.version !== version) {
+          setTargetVersion(d.id, version);
+          if (pushUpdate(d.id, version)) sent++;
+        }
       return { ok: true, version, sent };
     });
 

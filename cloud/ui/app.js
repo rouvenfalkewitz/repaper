@@ -31,7 +31,19 @@ const ICON = {
   warn: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>`,
   search: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>`,
   key: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15.5" r="4.5"/><path d="m11.5 12 8.5-8.5M17 6.5 19.5 9M14.5 9 17 11.5"/></svg>`,
+  copy: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>`,
+  mail: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m3.5 7 8.5 6 8.5-6"/></svg>`,
 };
+/* a standard copy-button: icon + label, flips to ✓ Copied for a moment */
+function copyBtnHtml(id, label = "Copy link") { return `<button class="btn outline" type="button" id="${id}">${ICON.copy}<span>${label}</span></button>`; }
+function wireCopyBtn(id, text) {
+  const b = el(id); if (!b) return;
+  b.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(text); } catch { toast("Copy failed — select it by hand.", "err"); return; }
+    b.classList.add("ok"); b.innerHTML = ICON.check + "<span>Copied</span>";
+    setTimeout(() => { b.classList.remove("ok"); b.innerHTML = ICON.copy + "<span>Copy link</span>"; }, 1600);
+  });
+}
 let toastT;
 function toast(t, kind) { const x = el("toast"); if (!x) return; x.querySelector(".tx").textContent = t; x.querySelector(".ic").innerHTML = kind === "err" ? ICON.x : ICON.check; x.className = "toast show " + (kind || ""); clearTimeout(toastT); toastT = setTimeout(() => x.classList.remove("show"), 2800); }
 async function api(path, body) {

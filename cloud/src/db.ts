@@ -110,6 +110,7 @@ if (!(db.prepare("PRAGMA table_info(invite)").all() as { name: string }[]).some(
 {
   const dcols = (db.prepare("PRAGMA table_info(device)").all() as { name: string }[]).map((c) => c.name);
   if (!dcols.includes("site")) db.exec("ALTER TABLE device ADD COLUMN site TEXT");
+  if (!dcols.includes("target_version")) db.exec("ALTER TABLE device ADD COLUMN target_version TEXT");
   if (!dcols.includes("diag")) db.exec("ALTER TABLE device ADD COLUMN diag TEXT");
   if (!dcols.includes("diag_at")) db.exec("ALTER TABLE device ADD COLUMN diag_at REAL");
 }
@@ -186,7 +187,7 @@ export type InviteRow = { id: number; org_id: number; email: string; role: strin
 export type DeviceRow = {
   id: string; org_id: number | null; kind: string; name: string; secret_hash: string;
   claim_code: string; version: string; status: string; created: number; claimed_at: number | null; last_seen: number | null;
-  site: string | null; diag: string | null; diag_at: number | null;
+  site: string | null; diag: string | null; diag_at: number | null; target_version: string | null;
 };
 
 // ── orgs & users ────────────────────────────────────────────────────────────
@@ -293,6 +294,7 @@ export const touchDevice = (id: string, version?: string) =>
 export const saveDeviceStatus = (id: string, status: string) =>
   db.prepare("UPDATE device SET status=?, last_seen=? WHERE id=?").run(status, now(), id);
 export const renameDevice = (id: string, name: string) => db.prepare("UPDATE device SET name=? WHERE id=?").run(name, id);
+export const setTargetVersion = (id: string, v: string | null) => db.prepare("UPDATE device SET target_version=? WHERE id=?").run(v, id);
 export const setDeviceSite = (id: string, site: string | null) => db.prepare("UPDATE device SET site=? WHERE id=?").run(site, id);
 export const saveDiag = (id: string, diag: string) => db.prepare("UPDATE device SET diag=?, diag_at=? WHERE id=?").run(diag, now(), id);
 export const upsertStat = (deviceId: string, day: string, jobs: number) =>

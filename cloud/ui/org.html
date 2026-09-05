@@ -162,9 +162,14 @@ el("edDlg").addEventListener("submit", async e => {
       const email = f.elements.invitee.value.trim();
       const r = await api("/api/invites", {email, role: f.elements.admin.checked ? "admin" : "member"});
       loadTeam(); loadOrg();
-      el("edBody").innerHTML = `<div class="ed"><p><b>Invitation created for ${esc(email)}.</b> ${r.mailed ? "An email with the link is on its way." : "Mail sending is off for now — pass them the link yourself:"}</p>
+      el("edTitle").textContent = "Invitation sent";
+      el("edBody").innerHTML = `<div class="ed">
+        <div class="twofa" style="align-items:flex-start"><span class="okic">${r.mailed ? ICON.mail : ICON.warn}</span>
+          <div style="flex:1"><b>${r.mailed ? "Email on its way" : "Mail is off right now"}</b>
+          <span>${r.mailed ? `<b>${esc(email)}</b> just got an invitation from RePaper Cloud — the link inside is valid for 14 days. The backup copy below is the same link.` : `Send <b>${esc(email)}</b> the link below yourself — it's valid for 14 days.`}</span></div></div>
         <div class="linkbox mono">${esc(r.link)}</div>
-        <div class="row end"><button class="btn outline" type="button" onclick="copyInv('${esc(r.link)}')">Copy link</button><button class="btn primary" type="button" data-act="close">Done</button></div></div>`;
+        <div class="row end">${copyBtnHtml("invCopy")}<button class="btn primary" type="button" data-act="close">Done</button></div></div>`;
+      wireCopyBtn("invCopy", r.link);
       return;
     }
     if (kind === "kick") { await api(`/api/team/${f.dataset.uid}/remove`, {}); el("edDlg").close(); toast("Removed from the team."); loadTeam(); loadOrg(); return; }

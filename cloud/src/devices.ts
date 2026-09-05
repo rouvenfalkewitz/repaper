@@ -4,9 +4,25 @@
    signed-in user enters their claim code in the console. */
 import type { WebSocket } from "ws";
 import { hashSecret, secretMatches } from "./auth.js";
-import { addEvent, getDevice, getOrg, registerDevice, saveDeviceStatus, saveDiag, touchDevice, upsertStat } from "./db.js";
+import { addEvent, getDevice, getOrg, registerDevice, saveDeviceStatus, saveDiag, setTargetVersion, touchDevice, upsertStat } from "./db.js";
 
 const live = new Map<string, WebSocket>(); // device id → open socket
+const alive = new WeakMap<WebSocket, boolean>();
+
+/* the server pings every device socket; a missed pong means the link is dead
+   and the map must not lie about it */
+setInterval(() => {
+  for (const [id, ws] of live) {
+    if (alive.get(ws) === false) { live.delete(id); try { ws.terminate(); } catch {} continue; }
+    alive.set(ws, false);
+    try { ws.ping(); } catch {}
+  }
+}, 30_000);
+
+/* update offers converge: whoever knows the device's target re-offers it until
+   the device reports that version. Set by the API, re-sent on hello + status. */
+export let offerUpdate: (deviceId: string) => void = () => {};
+export const setUpdateOffer = (fn: (deviceId: string) => void) => { offerUpdate = fn; };
 
 export const isOnline = (id: string) => live.has(id);
 export const onlineCount = () => live.size;
@@ -59,10 +75,12 @@ export const handleDeviceSocket = (ws: WebSocket, remote: string) => {
       deviceId = h.id;
       live.get(deviceId)?.close(4002, "replaced"); // a reconnect supersedes a stale socket
       live.set(deviceId, ws);
+      alive.set(ws, true);
       const d = getDevice(deviceId)!;
       const org = d.org_id ? getOrg(d.org_id) : undefined;
       ws.send(JSON.stringify({ t: "hello_ok", claimed: !!d.org_id, org: org?.name ?? null }));
       addEvent(deviceId, "online");
+      offerUpdate(deviceId);
       return;
     }
 
@@ -71,6 +89,11 @@ export const handleDeviceSocket = (ws: WebSocket, remote: string) => {
       saveDeviceStatus(deviceId, JSON.stringify(status).slice(0, 256 * 1024));
       if (typeof status.jobs_today === "number")
         upsertStat(deviceId, new Date().toISOString().slice(0, 10), status.jobs_today);
+      const row = getDevice(deviceId);
+      if (row?.target_version && typeof status.version === "string") {
+        if (status.version === row.target_version) setTargetVersion(deviceId, null);   // converged
+        else offerUpdate(deviceId);
+      }
     }
     if (msg.t === "diag") {
       saveDiag(deviceId, String(msg.log ?? "").slice(0, 64 * 1024));
@@ -89,4 +112,5 @@ export const handleDeviceSocket = (ws: WebSocket, remote: string) => {
     }
   });
   ws.on("error", () => { /* close follows */ });
+  ws.on("pong", () => alive.set(ws, true));
 };
