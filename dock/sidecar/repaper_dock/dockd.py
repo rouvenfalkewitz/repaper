@@ -191,8 +191,8 @@ class Dock:
             except Exception as e:
                 if "encryption key" in str(e) or type(e).__name__ == "AuthenticationRequiredError":
                     raise ValueError(f"{address} is locked. Its key travels only in the QR code printed on the label — scan that QR and paste the whole link; the name alone can't unlock it.") from e
-                if "timed out" in str(e).lower() or "not found" in str(e).lower():
-                    raise ValueError("could not reach the sheet — wake it up (press its button or open its page once) and keep it within a metre") from e
+                if "timed out" in str(e).lower() or "not found" in str(e).lower() or "disappeared" in str(e).lower():
+                    raise ValueError("could not reach the sheet — bring it within arm's reach of the Dock and try again; these labels only speak up every few seconds, so a second try often lands") from e
                 raise ValueError(f"could not read the sheet: {e}") from e
         base = re.sub(r"[^a-z0-9]+", "-", (name or address).lower()).strip("-") or "sheet"; sid = base; n = 2
         while sid in self.registry.ids(): sid = f"{base}-{n}"; n += 1
