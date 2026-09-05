@@ -46,6 +46,12 @@ function render() {
     <button class="net" onclick="pick(${i})">${bars(n.signal)}<b>${esc(n.ssid)}</b>${n.secured ? LOCK : ""}</button>
     ${open === i ? `<form class="pwbox" onsubmit="return join(${i})">
       ${n.secured ? `<div class="field"><label for="pw">Password for ${esc(n.ssid)}</label><input id="pw" type="password" autocomplete="off" required autofocus></div>` : `<p style="margin:0;color:var(--text-2);font-size:.875rem">Open network — no password needed.</p>`}
+      <details><summary style="cursor:pointer;color:var(--text-3);font-size:.8125rem">Static address (advanced — DHCP is the default)</summary>
+        <div style="display:grid;gap:8px;padding-top:10px">
+          <input id="stAddr" placeholder="Address, e.g. 192.168.1.50/24" autocomplete="off">
+          <input id="stGw" placeholder="Gateway, e.g. 192.168.1.1" autocomplete="off">
+          <input id="stDns" placeholder="DNS (optional)" autocomplete="off">
+        </div></details>
       <button class="btn primary" type="submit">Join this network</button>
     </form>` : ""}`).join("")
     : `<p style="color:var(--text-2)">No networks in the list — the Dock scanned just before opening this hotspot. Move it closer to your router and power-cycle it to rescan.</p>`;
@@ -53,7 +59,9 @@ function render() {
 function pick(i) { open = open === i ? null : i; render(); if (open !== null) setTimeout(() => el("pw")?.focus(), 50); }
 function join(i) {
   const n = NETS[i], pw = el("pw") ? el("pw").value : "";
-  fetch("/api/wifi/join", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ ssid: n.ssid, password: pw }) }).catch(() => {});
+  const body = { ssid: n.ssid, password: pw };
+  if (el("stAddr") && el("stAddr").value.trim()) { body.static = { address: el("stAddr").value.trim(), gateway: el("stGw").value.trim(), dns: el("stDns").value.trim() }; }
+  fetch("/api/wifi/join", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body) }).catch(() => {});
   el("nets").innerHTML = "";
   el("intro").hidden = true;
   el("msg").innerHTML = `<div class="joinmsg"><span class="okic" style="display:grid;place-items:center;border-radius:50%;background:var(--accent-tint);color:var(--accent-text)"><svg style="width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg></span>

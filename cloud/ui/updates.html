@@ -38,10 +38,11 @@
 <script src="/app.js"></script>
 <script>
 let R = { releases: [], latest: null }, DEVICES = [];
+el("devs").innerHTML = skeletons("rows", 2); el("history").innerHTML = skeletons("rows", 2);
 
 function render() {
   const latest = R.releases.find(r => r.version === R.latest);
-  el("latestCard").innerHTML = latest ? `
+  setHTML("latestCard", latest ? `
     <div class="row between">
       <div><b class="planname">RePaper Dock ${esc(latest.version)}</b><div class="devmeta">${esc(latest.notes || "No release notes.")}</div></div>
       <span class="pill">${esc(latest.channel)}</span>
@@ -52,12 +53,12 @@ function render() {
       <div class="planline"><span>Publishing</span><span class="mono">automatic with every cloud deploy</span></div>
       <div class="planline"><span>Rollout</span><span class="mono">push per device below, or the whole fleet at once</span></div>
     </div>`
-    : `<div class="devmeta">No releases published yet${ME?.vendor ? " — upload the first one." : "."}</div>`;
+    : `<div class="devmeta">No releases published yet${ME?.vendor ? " — upload the first one." : "."}</div>`);
 
   const behindOnline = DEVICES.filter(d => d.kind === "dock" && d.online && R.latest && d.version !== R.latest);
   const ab = el("allBtn"); ab.hidden = !behindOnline.length; ab.innerHTML = ICON.download + `<span>Update all (${behindOnline.length})</span>`;
 
-  el("devs").innerHTML = DEVICES.length ? DEVICES.map(d => {
+  setHTML("devs", DEVICES.length ? DEVICES.map(d => {
     const st = d.status || {}, current = R.latest && d.version === R.latest;
     const installing = d.target_version && d.target_version !== d.version;
     const pill = installing ? `<span class="pill amber installing"><span class="pspin">${ICON.spin}</span>installing v${esc(d.target_version)}</span>`
@@ -67,10 +68,10 @@ function render() {
     return `<div class="member"><span class="mrow"><span class="okic ${d.online ? "" : "off"}" style="width:36px;height:36px">${d.kind === "dock" ? ICON.dock : ICON.phone}</span>
       <span class="who2"><b>${esc(d.name || st.printer || d.id)}</b><span class="mono">v${esc(d.version || "?")} · ${d.online ? "online" : "seen " + ago(d.last_seen)}</span></span></span>
       <span class="row" style="gap:8px;flex-wrap:nowrap">${pill}${btn}</span></div>`;
-  }).join("") : `<div class="devmeta">No devices claimed yet.</div>`;
+  }).join("") : `<div class="devmeta">No devices claimed yet.</div>`);
 
-  el("history").innerHTML = R.releases.length ? R.releases.map(r => `<div class="member"><span class="who2"><b>${esc(r.version)}</b><span class="mono">${esc(r.channel)} · ${new Date(r.created * 1000).toLocaleDateString()} · ${(r.size / 1024 / 1024).toFixed(1)} MB${r.notes ? " — " + esc(r.notes) : ""}</span></span></div>`).join("")
-    : `<div class="devmeta">Empty so far.</div>`;
+  setHTML("history", R.releases.length ? R.releases.map(r => `<div class="member"><span class="who2"><b>${esc(r.version)}</b><span class="mono">${esc(r.channel)} · ${new Date(r.created * 1000).toLocaleDateString()} · ${(r.size / 1024 / 1024).toFixed(1)} MB${r.notes ? " — " + esc(r.notes) : ""}</span></span></div>`).join("")
+    : `<div class="devmeta">Empty so far.</div>`);
 }
 
 async function load() {

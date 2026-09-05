@@ -37,9 +37,48 @@ class WifiOnboarding(threading.Thread):
         self._revert_at: float | None = None
 
     def info(self) -> dict:
-        return {"supported": self.supported, "mode": self.mode, "ap_ssid": self.ap_ssid,
-                "detail": self.detail, "networks": self.networks,
-                "current": self._current_ssid() if self.supported and self.mode == "normal" else None}
+        out = {"supported": self.supported, "mode": self.mode, "ap_ssid": self.ap_ssid,
+               "detail": self.detail, "networks": self.networks,
+               "current": self._current_ssid() if self.supported and self.mode == "normal" else None}
+        if self.supported and self.mode == "normal":
+            try: out["net"] = self.net_config()
+            except Exception: pass
+        return out
+
+    def _active_con(self) -> str | None:
+        r = _nmcli("-t", "-f", "NAME,DEVICE", "connection", "show", "--active")
+        for l in r.stdout.splitlines():
+            name, _, dev = l.rpartition(":")
+            if dev == "wlan0" and name != HOTSPOT_CON: return name
+        return None
+
+    def net_config(self) -> dict:
+        con = self._active_con()
+        if not con: return {"method": "auto"}
+        r = _nmcli("-g", "ipv4.method,ipv4.addresses,ipv4.gateway,ipv4.dns", "connection", "show", con)
+        v = (r.stdout.splitlines() + ["", "", "", ""])[:4]
+        return {"method": "manual" if v[0] == "manual" else "auto",
+                "address": v[1].split(",")[0].replace("\\", ""), "gateway": v[2],
+                "dns": v[3].replace(",", " ").strip()}
+
+    def apply_net(self, method: str, address: str = "", gateway: str = "", dns: str = "") -> None:
+        """Applied async — re-activating the connection can drop the page briefly.
+        A broken static config is recoverable: the watchdog notices the dead
+        gateway and reopens the setup hotspot."""
+        con = self._active_con()
+        if not con: raise ValueError("no active Wi-Fi connection to configure")
+        def work():
+            log.info("wifi: applying %s network config on '%s'", method, con)
+            if method == "manual":
+                _nmcli("connection", "modify", con, "ipv4.method", "manual",
+                       "ipv4.addresses", address, "ipv4.gateway", gateway,
+                       "ipv4.dns", dns.replace(" ", ","))
+            else:
+                _nmcli("connection", "modify", con, "ipv4.method", "auto",
+                       "ipv4.gateway", "", "ipv4.dns", "")
+                _nmcli("connection", "modify", con, "ipv4.addresses", "")
+            _nmcli("connection", "up", con, timeout=45)
+        threading.Thread(target=work, daemon=True).start()
 
     # ── the watchdog ─────────────────────────────────────────────────────────
     def run(self) -> None:
@@ -64,7 +103,19 @@ class WifiOnboarding(threading.Thread):
 
     def _wifi_connected(self) -> bool:
         r = _nmcli("-t", "-f", "DEVICE,STATE", "device")
-        return any(l.startswith("wlan0:connected") for l in r.stdout.splitlines())
+        if not any(l.startswith("wlan0:connected") for l in r.stdout.splitlines()): return False
+        # a wrong static config looks "connected" — for manual configs, require the
+        # gateway to actually answer (a few misses in a row, to forgive lost pings)
+        try:
+            cfg = self.net_config()
+            if cfg.get("method") == "manual" and cfg.get("gateway"):
+                ok = subprocess.run(["ping", "-c1", "-W1", cfg["gateway"]], capture_output=True).returncode == 0
+                self._gw_fails = 0 if ok else getattr(self, "_gw_fails", 0) + 1
+                if self._gw_fails >= 5:
+                    log.warning("wifi: static config looks dead (gateway silent ×%d)", self._gw_fails)
+                    return False
+        except Exception: pass
+        return True
 
     def _current_ssid(self) -> str | None:
         r = _nmcli("-t", "-f", "ACTIVE,SSID", "device", "wifi")
@@ -111,7 +162,7 @@ class WifiOnboarding(threading.Thread):
         # NetworkManager autoconnects known networks by itself from here
 
     # ── joining a network from the setup page ────────────────────────────────
-    def join(self, ssid: str, password: str) -> None:
+    def join(self, ssid: str, password: str, static: dict | None = None) -> None:
         """Async: the phone loses this hotspot the moment we switch — the page
         explains that. Failure re-opens the hotspot with a hint."""
         def work():
@@ -128,6 +179,9 @@ class WifiOnboarding(threading.Thread):
             if r.returncode == 0 and self._wifi_connected():
                 log.info("wifi: joined '%s'", ssid)
                 self.mode, self.detail, self._offline_since = "normal", "", None
+                if static and static.get("address"):
+                    try: self.apply_net("manual", static.get("address", ""), static.get("gateway", ""), static.get("dns") or static.get("gateway", ""))
+                    except Exception as e: log.warning("wifi: static config after join failed: %s", e)
             else:
                 self.detail = "could not join — wrong password?"
                 log.warning("wifi: join '%s' failed: %s", ssid, (r.stderr or r.stdout).strip()[-200:])

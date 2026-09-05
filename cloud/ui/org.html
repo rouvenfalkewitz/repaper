@@ -40,6 +40,7 @@
 <script src="/app.js"></script>
 <script>
 let T = null, ORG = null;
+el("team").innerHTML = skeletons("rows", 3);
 const CFIELDS = ["company_name", "vat_id", "contact_name", "billing_email", "address", "zip", "city", "country"];
 const DIAL = [["🇩🇪","+49","Germany"],["🇦🇹","+43","Austria"],["🇨🇭","+41","Switzerland"],["🇳🇱","+31","Netherlands"],["🇧🇪","+32","Belgium"],["🇫🇷","+33","France"],["🇬🇧","+44","United Kingdom"],["🇮🇪","+353","Ireland"],["🇩🇰","+45","Denmark"],["🇸🇪","+46","Sweden"],["🇳🇴","+47","Norway"],["🇫🇮","+358","Finland"],["🇵🇱","+48","Poland"],["🇨🇿","+420","Czechia"],["🇮🇹","+39","Italy"],["🇪🇸","+34","Spain"],["🇵🇹","+351","Portugal"],["🇱🇺","+352","Luxembourg"],["🇺🇸","+1","USA / Canada"],["🇦🇺","+61","Australia"],["🇯🇵","+81","Japan"],["🌐","+","Other"]];
 
@@ -72,7 +73,7 @@ function renderTeam() {
     : `<span class="rolestat">${u.role === "admin" ? "Admin" : "Member"}</span>`;
   const rows = users.map(u => `<div class="member"><span class="mrow">${avatarHtml(u, 36)}<span class="who2"><b>${esc(u.name || u.email)}${u.you ? ` <span class="youtag">you</span>` : ""}</b><span class="mono">${esc(u.email)}</span></span></span><span class="row" style="gap:6px;flex-wrap:nowrap">${roleCtl(u)}${admin && !u.you ? `<button class="iconbtn danger" data-uid="${u.id}" data-name="${esc(u.name || u.email)}" data-act="kick" title="Remove">${ICON.trash}</button>` : ""}</span></div>`).join("");
   const inv = invites.map(i => `<div class="member dim"><span class="mrow"><span class="av" style="width:36px;height:36px;background:var(--surface-2);color:var(--text-3);font-size:14px">✉</span><span class="who2"><b>${esc(i.email)}</b><span class="mono">invited by ${esc(i.invited_by_email)} · expires ${new Date(i.expires * 1000).toLocaleDateString()}</span></span></span><span class="row" style="gap:6px;flex-wrap:nowrap"><span class="rolestat">Invited</span><button class="iconbtn danger" data-iid="${i.id}" data-act="revoke" title="Revoke invitation">${ICON.x}</button></span></div>`).join("");
-  el("team").innerHTML = (rows + inv) || `<div class="devmeta" style="padding:8px 0">${q ? "Nobody matches your search." : "Just you so far."}</div>`;
+  setHTML("team", (rows + inv) || `<div class="devmeta" style="padding:8px 0">${q ? "Nobody matches your search." : "Just you so far."}</div>`);
 }
 el("team").addEventListener("change", async e => {
   const s = e.target.closest(".rolesel"); if (!s) return;

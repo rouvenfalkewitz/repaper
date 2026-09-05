@@ -37,6 +37,7 @@ class CloudAgent(threading.Thread):
         self.claimed: bool | None = None
         self.org: str | None = None
         self._updating = False
+        self.updating_version: str | None = None
         threading.Thread(target=self._update_check_loop, daemon=True, name="update-check").start()
 
     # ── what Settings shows ───────────────────────────────────────────────────
@@ -94,7 +95,8 @@ class CloudAgent(threading.Thread):
                             try: r = self._handle(json.loads(raw))
                             except RuntimeError: raise                     # server said error → reconnect
                             except Exception as e:                          # a bad message must never kill the link
-                                r = None; log.warning("cloud: message handling failed: %s", e)
+                                import traceback
+                                r = None; log.warning("cloud: message handling failed: %s\n%s", e, traceback.format_exc())
                             if r: await ws.send(json.dumps(r))
                         if time.time() - last >= self.dock.cfg.get("status_refresh_seconds", 60):
                             await ws.send(json.dumps(self._status())); last = time.time()
@@ -124,9 +126,7 @@ class CloudAgent(threading.Thread):
                 log.warning("cloud: update to %s requested but this host has no updater (dev machine?)", version)
                 return {"t": "update_failed", "error": "no updater on this host"}
             if self._updating: return None
-            log.info("cloud: updating to %s", version)
-            self._updating = True
-            threading.Thread(target=self._do_update, args=(script, version, url, sha), daemon=True).start()
+            self._start_update(version, url, sha)
             return {"t": "updating", "version": version}
         elif t == "error":
             raise RuntimeError(msg.get("error") or "server error")
@@ -154,14 +154,21 @@ class CloudAgent(threading.Thread):
                     with urllib.request.urlopen(req, timeout=20) as r:
                         j = json.loads(r.read() or b"{}")
                     if j.get("version") and j["version"] != __version__:
-                        script = Path(__file__).resolve().parents[2] / "update-pi.sh"
-                        if script.exists() and sys.platform.startswith("linux"):
-                            log.info("cloud: update check found %s — installing", j["version"])
-                            self._updating = True
-                            self._do_update(script, j["version"], j["url"], j["sha256"])
+                        log.info("cloud: update check found %s", j["version"])
+                        self._start_update(j["version"], j["url"], j["sha256"])
             except Exception as e:
                 log.debug("cloud: update check: %s", e)
             time.sleep(300)
+
+    def _start_update(self, version: str, url: str, sha256: str) -> None:
+        """One entry point for both trigger paths (socket offer and HTTPS poll)."""
+        script = Path(__file__).resolve().parents[2] / "update-pi.sh"
+        if not (script.exists() and sys.platform.startswith("linux")):
+            log.warning("cloud: update to %s requested but this host has no updater", version); return
+        if self._updating: return
+        self._updating, self.updating_version = True, version
+        log.info("cloud: updating to %s", version)
+        threading.Thread(target=self._do_update, args=(script, version, url, sha256), daemon=True).start()
 
     def _do_update(self, script: Path, version: str, url: str, sha256: str) -> None:
         """Download, verify, then hand over to the detached updater script —
@@ -176,5 +183,5 @@ class CloudAgent(threading.Thread):
             subprocess.Popen(["/usr/bin/env", "bash", str(script), str(tar), version],
                              start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except Exception as e:
-            self._updating = False
+            self._updating, self.updating_version = False, None
             log.error("cloud: update %s failed before install: %s", version, e)

@@ -43,7 +43,7 @@
   <h2>Network</h2>
   <div class="card">
     <div class="facts" id="net"></div>
-    <div class="row" style="margin-top:14px" id="hotspotRow" hidden><button class="btn outline small" id="hotspotBtn" onclick="testHotspot()"></button><span class="hint" style="color:var(--text-3);font-size:.8125rem">Opens the Wi-Fi setup hotspot for 5 minutes — the Dock leaves this network meanwhile, then returns on its own.</span></div>
+    <div class="row" style="margin-top:14px" id="hotspotRow" hidden><button class="btn outline small" id="netBtn" onclick="openNetConfig()"></button><button class="btn outline small" id="hotspotBtn" onclick="testHotspot()"></button><span class="hint" style="color:var(--text-3);font-size:.8125rem">Opens the Wi-Fi setup hotspot for 5 minutes — the Dock leaves this network meanwhile, then returns on its own.</span></div>
     <div class="hint" style="margin-top:14px;color:var(--text-3);font-size:.8125rem">Addressing, DHCP/static IP and DNS are configured in the device's system for now; they move here with the device build.</div>
   </div>
 
@@ -156,8 +156,26 @@ async function saveCloud(e) {
 }
 setInterval(async () => { try { renderCloud((await api("/api/settings")).cloud); } catch {} }, 4000);
 /* wifi onboarding test (Pi Docks only) */
+let W = null;
 async function initWifi() {
-  try { const w = await api("/api/wifi"); if (w.supported) { el("hotspotRow").hidden = false; el("hotspotBtn").innerHTML = ICON.scan + "<span>Test the setup hotspot</span>"; } } catch {}
+  try { W = await api("/api/wifi"); if (W.supported) { el("hotspotRow").hidden = false;
+    el("hotspotBtn").innerHTML = ICON.scan + "<span>Test the setup hotspot</span>";
+    el("netBtn").innerHTML = ICON.info + "<span>Network configuration</span>"; } } catch {}
+}
+function openNetConfig() {
+  const n = (W && W.net) || {method: "auto"};
+  el("edTitle").textContent = "Network configuration";
+  el("edBody").innerHTML = `<form class="ed" data-ed="netcfg">
+    <p>Connected to <b>${esc((W && W.current) || "—")}</b>. DHCP fits almost everyone; static is for managed networks. A wrong static config is not fatal — the Dock notices a dead gateway and reopens its setup hotspot.</p>
+    <label class="checkline"><input type="radio" name="method" value="auto" ${n.method !== "manual" ? "checked" : ""} onchange="el('statics').hidden=true"> Automatic (DHCP)</label>
+    <label class="checkline"><input type="radio" name="method" value="manual" ${n.method === "manual" ? "checked" : ""} onchange="el('statics').hidden=false"> Static address</label>
+    <div id="statics" ${n.method === "manual" ? "" : "hidden"} style="display:grid;gap:10px">
+      <label for="cfAddr">Address / prefix</label><input id="cfAddr" name="address" value="${esc(n.address || "")}" placeholder="192.168.1.50/24" autocomplete="off">
+      <label for="cfGw">Gateway</label><input id="cfGw" name="gateway" value="${esc(n.gateway || "")}" placeholder="192.168.1.1" autocomplete="off">
+      <label for="cfDns">DNS (optional, space-separated)</label><input id="cfDns" name="dns" value="${esc(n.dns || "")}" placeholder="192.168.1.1 1.1.1.1" autocomplete="off">
+    </div>
+    <div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Apply</button></div></form>`;
+  el("edDlg").showModal();
 }
 async function testHotspot() {
   const done = busy(el("hotspotBtn"), "Opening…");
@@ -262,6 +280,13 @@ el("edDlg").addEventListener("click", async e => {
 el("edDlg").addEventListener("submit", async e => {
   e.preventDefault(); const f = e.target, id = f.dataset.id, kind = f.dataset.ed, sb = f.querySelector("button[type=submit]"), done = busy(sb, kind === "remove" ? "Removing…" : "Saving…");
   try {
+    if (kind === "netcfg") {
+      const method = f.elements.method.value;
+      await api("/api/wifi/config", method === "manual"
+        ? {method, address: f.elements.address.value.trim(), gateway: f.elements.gateway.value.trim(), dns: f.elements.dns.value.trim()}
+        : {method});
+      done("Applied"); toast("Network config applied — the page may drop for a moment while the Dock re-joins."); await wait(600); closeModal(); initWifi(); return;
+    }
     if (kind === "remove") { await api(`/api/sheets/${id}/remove`, {}); closeModal(); const c = el("sheets").querySelector(`[data-id="${CSS.escape(id)}"]`); if (c) { c.classList.add("leave"); await wait(240); } toast(`${S.sheets[id]?.name || id} removed.`); await load(); return; }
     const body = kind === "inset" ? {inset: ["l", "t", "r", "b"].map(n => Number(f.elements[n].value) || 0).join(",")} : {[kind]: f.elements.value.value.trim()};
     await api(`/api/sheets/${id}`, body); done("Saved"); toast({name: "Renamed.", inset: "Calibration saved."}[kind]); await wait(400); closeModal(); await load();

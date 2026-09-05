@@ -118,6 +118,20 @@ function renderShell() {
     document.dispatchEvent(new CustomEvent("me-ready"));
   });
 }
+/* flicker killer: only touch the DOM when the content actually changed */
+const _lastHTML = new Map();
+function setHTML(id, html) {
+  if (_lastHTML.get(id) === html) return;
+  _lastHTML.set(id, html);
+  const n = el(id); if (n) n.innerHTML = html;
+}
+/* initial-load skeletons */
+function skeletons(kind, n = 3) {
+  if (kind === "cards") return Array.from({ length: n }, () => `<div class="dev skel"><div class="skl w40"></div><div class="skl w70 tall"></div><div class="skl w55"></div><div class="skl w100 thin"></div></div>`).join("");
+  if (kind === "rows") return Array.from({ length: n }, () => `<div class="member"><span class="mrow"><span class="skl av"></span><span style="flex:1;display:grid;gap:6px"><span class="skl w40"></span><span class="skl w60 thin"></span></span></span></div>`).join("");
+  return `<div class="skl w70"></div>`;
+}
+
 /* tiny sparkline: jobs per day, last two weeks */
 function spark(stats, w = 64, h = 18) {
   if (!stats || stats.length < 2) return "";

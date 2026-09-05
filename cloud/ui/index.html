@@ -32,6 +32,7 @@
 <script src="/app.js"></script>
 <script>
 let S = { devices: [] };
+el("fleet").innerHTML = skeletons("cards", 2);
 
 function card(d) {
   const st = d.status || {}, sheets = st.sheets || [], off = !d.online;
@@ -55,14 +56,14 @@ function render() {
     for (const [site, devs] of [...bySite.entries()].sort((a, b) => (a[0] || "~").localeCompare(b[0] || "~")))
       html += `<div class="sitehead">${esc(site || "No site")}</div>` + devs.map(card).join("");
   } else html = S.devices.map(card).join("");
-  el("fleet").innerHTML = html
+  setHTML("fleet", html
     + `<button class="addcard" type="button" onclick="openModal('claim')"><span class="plus">${ICON.plus}</span><span>${S.devices.length ? "Claim a device" : "Claim your first device"}</span></button>`
-    + (S.devices.length ? "" : `<div class="empty-hint" style="grid-column:1/-1">A Dock shows its claim code on its settings page under <b>RePaper Cloud</b> once it is pointed at this cloud. Enter the code here and it joins your fleet.</div>`);
+    + (S.devices.length ? "" : `<div class="empty-hint" style="grid-column:1/-1">A Dock shows its claim code on its settings page under <b>RePaper Cloud</b> once it is pointed at this cloud. Enter the code here and it joins your fleet.</div>`));
 }
 
 function renderAlerts(alerts) {
-  el("alerts").innerHTML = (alerts || []).map(a =>
-    `<div class="notice ${a.level === "err" ? "err" : ""}">${a.level === "err" ? ICON.x : ICON.warn}<div><b>${esc(a.title)}</b><span>${esc(a.text)}</span></div></div>`).join("");
+  setHTML("alerts", (alerts || []).map(a =>
+    `<div class="notice ${a.level === "err" ? "err" : ""}">${a.level === "err" ? ICON.x : ICON.warn}<div><b>${esc(a.title)}</b><span>${esc(a.text)}</span></div></div>`).join(""));
 }
 
 async function load() {

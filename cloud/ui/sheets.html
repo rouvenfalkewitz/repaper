@@ -27,6 +27,7 @@
 <script src="/app.js"></script>
 <script>
 let ROWS = [], sortK = "name", sortDir = 1;
+el("rows").innerHTML = `<tr><td colspan="6">${skeletons("rows", 3)}</td></tr>`;
 function gauge(v) {
   if (v == null) return `<span class="mono">—</span>`;
   const pct = Math.max(0, Math.min(100, ((v - 2.4) / (3.0 - 2.4)) * 100));
@@ -40,14 +41,14 @@ function render() {
   });
   el("count").textContent = ROWS.length ? `${ROWS.length} sheet${ROWS.length === 1 ? "" : "s"}` : "";
   el("empty").hidden = !!ROWS.length;
-  el("rows").innerHTML = rows.map(s => `<tr class="${s.online === false ? "dim" : ""}">
+  setHTML("rows", rows.map(s => `<tr class="${s.online === false ? "dim" : ""}">
     <td><b>${esc(s.name || s.id)}</b></td>
     <td>${esc(s.device)}${s.device_online ? "" : ` <span class="mono">(offline)</span>`}</td>
     <td class="mono">${esc(s.size || "")}</td>
     <td>${gauge(s.battery_volts)}</td>
     <td class="mono">${(s.temperature_c ?? null) !== null ? s.temperature_c + " °C" : "—"}</td>
     <td class="mono">${s.online ? `<span class="live-dot"></span>in range` : s.seen ? "seen " + ago(s.seen) : "—"}</td>
-  </tr>`).join("");
+  </tr>`).join(""));
   document.querySelectorAll("th").forEach(th => th.classList.toggle("sorted", th.dataset.k === sortK));
 }
 document.querySelector("thead").addEventListener("click", e => {

@@ -1,1 +1,1 @@
-0.0.4 — Wi-Fi onboarding: no known network opens a setup hotspot with a captive portal; test button in Settings.
+0.0.5 — Static network config (portal + settings, dead-gateway recovery), update banner on the Dock page, unified update worker.

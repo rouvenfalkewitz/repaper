@@ -253,7 +253,8 @@ class Dock:
                          "width": m["width"], "height": m["height"], "palette": m["palette"], "inset": list(m.get("inset", (0, 0, 0, 0))),
                          "size": f'{m["width"]}×{m["height"]} {m["palette"]}', "hw": e.get("keys", {}).get("hw", {}),
                          "min_battery_mv": caps.get("min_battery_mv"), "last": last, **st.get(k, {})}
-        return {"state": self.state, "phase": self.phase, "message": self.message, "error": (self.message if self.state == "error" else getattr(self, "last_error", "")) or "",
+        return {"state": self.state, "phase": self.phase, "message": self.message,
+                "updating": getattr(self.cloud, "updating_version", None), "error": (self.message if self.state == "error" else getattr(self, "last_error", "")) or "",
                 "printer": self.cfg["printer_name"], "notifications": self.notifications(sheets),
                 "identifier": self.identifier.id, "version": __version__, "address": f"http://{socket.gethostname()}:{self.cfg['web_port']}/",
                 "job": None if not self.current else {"id": self.current.id, "name": self.current.name, "pages": self.current.pages, "user": self.current.user,
@@ -311,7 +312,21 @@ def make_handler(dock: Dock):
                         if not dock.wifi.supported: return self._json({"error": "Wi-Fi setup is not available on this host"}, 400)
                         ssid = str(data.get("ssid", "")).strip()
                         if not ssid: return self._json({"error": "pick a network"}, 400)
-                        dock.wifi.join(ssid, str(data.get("password", "")))
+                        dock.wifi.join(ssid, str(data.get("password", "")), data.get("static") if isinstance(data.get("static"), dict) else None)
+                        return self._json({"ok": True})
+                    if u.path == "/api/wifi/config":
+                        if not dock.wifi.supported: return self._json({"error": "network setup is not available on this host"}, 400)
+                        method = data.get("method")
+                        if method not in ("auto", "manual"): return self._json({"error": "method must be auto or manual"}, 400)
+                        if method == "manual":
+                            addr, gw = str(data.get("address", "")).strip(), str(data.get("gateway", "")).strip()
+                            dns = str(data.get("dns", "")).strip()
+                            if not re.fullmatch(r"\d{1,3}(\.\d{1,3}){3}/\d{1,2}", addr): return self._json({"error": "address must look like 192.168.1.50/24"}, 400)
+                            if not re.fullmatch(r"\d{1,3}(\.\d{1,3}){3}", gw): return self._json({"error": "gateway must be an IP address"}, 400)
+                            if dns and not re.fullmatch(r"\d{1,3}(\.\d{1,3}){3}( \d{1,3}(\.\d{1,3}){3})*", dns): return self._json({"error": "DNS must be one or two IP addresses"}, 400)
+                            dock.wifi.apply_net("manual", addr, gw, dns or gw)
+                        else:
+                            dock.wifi.apply_net("auto")
                         return self._json({"ok": True})
                     if u.path == "/api/wifi/hotspot":
                         if not dock.wifi.supported: return self._json({"error": "Wi-Fi setup is not available on this host"}, 400)
