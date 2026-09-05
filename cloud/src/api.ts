@@ -11,14 +11,14 @@ import {
   createInvite, createLoginPending, createOrg, createReset, createUser, deleteDevice, deleteLoginPending,
   deleteOtherSessions, deleteSessionsFor, deleteUser, deviceEvents, deviceStats, disableTotp,
   enableTotp, findClaimable, firstAdmin, getDevice, getOrg, getOrgByName, getUser, getUserByEmail,
-  inviteByTokenHash, loginPendingByToken, markInviteUsed, markResetUsed, orgActivity, orgEvents,
+  inviteByTokenHash, loginPendingByToken, markInviteUsed, markResetUsed, orgActivity, orgEvents, touchDevice,
   orgDevices, orgInvites, orgUsers, pendingInviteFor, publicCounts, recentResetFor, renameDevice, renameOrg,
   resetByTokenHash, revokeApiKey, revokeInvite, setDeviceSite, setTotpPending, setUserAvatar,
   createRelease, getRelease, latestRelease, listReleases, setTargetVersion,
   setOrgLogo, setUserName, setUserRole, updateCompany, updatePassword, useRecoveryCode, userApiKeys,
   COMPANY_FIELDS, DATA_DIR, type DeviceRow, type UserRow,
 } from "./db.js";
-import { COOKIE, endSession, hashPassword, loginAllowed, loginFailed, loginOk, requireUser, startSession, verifyPassword } from "./auth.js";
+import { COOKIE, endSession, hashPassword, loginAllowed, loginFailed, loginOk, requireUser, secretMatches, startSession, verifyPassword } from "./auth.js";
 import { mailEnabled, sendInviteMail, sendRegisterMail, sendResetMail } from "./mail/index.js";
 import { dropDevice, isOnline, onlineCount, sendToDevice, setUpdateOffer } from "./devices.js";
 
@@ -28,7 +28,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 type Authed = FastifyRequest & { user: UserRow };
 
 const publicDevice = (d: DeviceRow) => ({
-  id: d.id, kind: d.kind, name: d.name, version: d.version, site: d.site,
+  id: d.id, kind: d.kind, name: d.name, version: d.version, site: d.site, target_version: d.target_version,
   online: isOnline(d.id), last_seen: d.last_seen, claimed_at: d.claimed_at,
   status: JSON.parse(d.status || "{}"),
   stats: deviceStats(d.id).reverse(),
@@ -109,6 +109,24 @@ export const registerApi = (app: FastifyInstance) => {
     const rel = getRelease(t.version)!;
     return reply.header("Content-Type", "application/gzip").header("Content-Length", String(rel.size))
       .send(createReadStream(join(RELEASES_DIR, `${rel.version}.tar.gz`)));
+  });
+
+  /* the pull path: devices check in over plain HTTPS — short requests survive
+     radio interference that kills long-lived sockets. The check-in also reports
+     the running version, so convergence works with a dead WebSocket. */
+  app.post("/api/device/update-check", async (req, reply) => {
+    const { id, secret, version } = (req.body ?? {}) as { id?: string; secret?: string; version?: string };
+    if (typeof id !== "string" || typeof secret !== "string") return reply.code(400).send({ error: "bad request" });
+    const d = getDevice(id);
+    if (!d || !secretMatches(secret, d.secret_hash)) return reply.code(401).send({ error: "auth" });
+    if (typeof version === "string" && version && version !== d.version) touchDevice(d.id, version);
+    if (d.target_version && version === d.target_version) { setTargetVersion(d.id, null); return {}; }
+    if (!d.target_version || d.target_version === version) return {};
+    const rel = getRelease(d.target_version);
+    if (!rel) return {};
+    const token = randomBytes(24).toString("hex");
+    dlTokens.set(token, { version: rel.version, expires: Date.now() + 10 * 60_000 });
+    return { version: rel.version, sha256: rel.sha256, url: `${publicBase()}/dl/${token}` };
   });
 
   /* aggregate numbers for the public status page — never per-org detail */

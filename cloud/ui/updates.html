@@ -59,9 +59,11 @@ function render() {
 
   el("devs").innerHTML = DEVICES.length ? DEVICES.map(d => {
     const st = d.status || {}, current = R.latest && d.version === R.latest;
-    const pill = !R.latest ? "" : current ? `<span class="pill">up to date</span>` : `<span class="pill amber">v${esc(R.latest)} available</span>`;
-    const btn = R.latest && !current && d.kind === "dock"
-      ? `<button class="btn outline small" data-id="${esc(d.id)}" data-act="update" ${d.online ? "" : "disabled"}>${ICON.download}Update</button>` : "";
+    const installing = d.target_version && d.target_version !== d.version;
+    const pill = installing ? `<span class="pill amber installing"><span class="pspin">${ICON.spin}</span>installing v${esc(d.target_version)}</span>`
+      : !R.latest ? "" : current ? `<span class="pill">up to date</span>` : `<span class="pill amber">v${esc(R.latest)} available</span>`;
+    const btn = R.latest && !current && !installing && d.kind === "dock"
+      ? `<button class="btn outline small" data-id="${esc(d.id)}" data-act="update">${ICON.download}Update</button>` : "";
     return `<div class="member"><span class="mrow"><span class="okic ${d.online ? "" : "off"}" style="width:36px;height:36px">${d.kind === "dock" ? ICON.dock : ICON.phone}</span>
       <span class="who2"><b>${esc(d.name || st.printer || d.id)}</b><span class="mono">v${esc(d.version || "?")} · ${d.online ? "online" : "seen " + ago(d.last_seen)}</span></span></span>
       <span class="row" style="gap:8px;flex-wrap:nowrap">${pill}${btn}</span></div>`;
@@ -82,7 +84,7 @@ async function load() {
 el("devs").addEventListener("click", async e => {
   const b = e.target.closest("[data-act=update]"); if (!b) return;
   const done = busy(b, "Pushing…");
-  try { const r = await api(`/api/devices/${b.dataset.id}/update`, {}); done("Sent"); toast(`Update to ${r.version} pushed — the device installs, restarts and reports back within a minute.`); }
+  try { const r = await api(`/api/devices/${b.dataset.id}/update`, {}); done("Sent"); toast(`Target set to ${r.version} — the device installs on its next contact and reports back.`); load(); }
   catch (x) { done("Failed", true); toast(x.message, "err"); }
 });
 async function updateAll(b) {

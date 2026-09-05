@@ -36,6 +36,8 @@ class CloudAgent(threading.Thread):
         self.detail = ""            # last error, for Settings
         self.claimed: bool | None = None
         self.org: str | None = None
+        self._updating = False
+        threading.Thread(target=self._update_check_loop, daemon=True, name="update-check").start()
 
     # ── what Settings shows ───────────────────────────────────────────────────
     def info(self) -> dict:
@@ -121,12 +123,45 @@ class CloudAgent(threading.Thread):
             if not (script.exists() and sys.platform.startswith("linux")):
                 log.warning("cloud: update to %s requested but this host has no updater (dev machine?)", version)
                 return {"t": "update_failed", "error": "no updater on this host"}
+            if self._updating: return None
             log.info("cloud: updating to %s", version)
+            self._updating = True
             threading.Thread(target=self._do_update, args=(script, version, url, sha), daemon=True).start()
             return {"t": "updating", "version": version}
         elif t == "error":
             raise RuntimeError(msg.get("error") or "server error")
         return None
+
+    def _http_base(self) -> str:
+        u = (self.dock.cfg.get("cloud_url") or "").strip()
+        if u.startswith("wss://"): u = "https://" + u[6:]
+        elif u.startswith("ws://"): u = "http://" + u[5:]
+        return u.split("/ws/")[0]
+
+    def _update_check_loop(self) -> None:
+        """The pull path: a WebSocket needs calm air, a 2-second HTTPS request doesn't.
+        Every few minutes the Dock asks the cloud whether a target version is set —
+        updates arrive even when BLE traffic keeps trampling the socket."""
+        time.sleep(20)
+        while True:
+            try:
+                base = self._http_base()
+                if base and not self._updating:
+                    req = urllib.request.Request(base + "/api/device/update-check",
+                        data=json.dumps({"id": self.identity["device_id"], "secret": self.identity["secret"],
+                                         "version": __version__}).encode(),
+                        headers={"Content-Type": "application/json"})
+                    with urllib.request.urlopen(req, timeout=20) as r:
+                        j = json.loads(r.read() or b"{}")
+                    if j.get("version") and j["version"] != __version__:
+                        script = Path(__file__).resolve().parents[2] / "update-pi.sh"
+                        if script.exists() and sys.platform.startswith("linux"):
+                            log.info("cloud: update check found %s — installing", j["version"])
+                            self._updating = True
+                            self._do_update(script, j["version"], j["url"], j["sha256"])
+            except Exception as e:
+                log.debug("cloud: update check: %s", e)
+            time.sleep(300)
 
     def _do_update(self, script: Path, version: str, url: str, sha256: str) -> None:
         """Download, verify, then hand over to the detached updater script —
@@ -141,4 +176,5 @@ class CloudAgent(threading.Thread):
             subprocess.Popen(["/usr/bin/env", "bash", str(script), str(tar), version],
                              start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except Exception as e:
+            self._updating = False
             log.error("cloud: update %s failed before install: %s", version, e)

@@ -253,6 +253,8 @@ dialog.modal::backdrop { background: rgba(12,16,15,.72); backdrop-filter: blur(4
 .member:last-of-type { border-bottom: 0 }
 .who2 { display: grid; gap: 2px; min-width: 0 } .who2 b { font-weight: 500; font-size: .9375rem } .who2 .mono { overflow-wrap: anywhere }
 .pill.amber { background: var(--amber-tint); color: var(--amber) }
+.pill.installing::before { display: none }
+.pill .pspin { display: inline-grid } .pill .pspin svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; animation: spin .9s linear infinite }
 .checkline { display: flex; gap: 8px; align-items: center; font-size: .875rem; cursor: pointer } .checkline input { width: auto; accent-color: var(--accent) }
 .linkbox { padding: 10px 12px; border-radius: var(--r-control); background: var(--code-bg); border: 1px solid var(--border); overflow-wrap: anywhere; user-select: all; font-size: .75rem }
 
