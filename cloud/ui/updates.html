@@ -13,19 +13,17 @@
 <div class="layout">
   <aside class="side" id="side"></aside>
   <main class="main">
-    <div class="pagehead"><h1>Updates</h1><span class="row" style="gap:8px">
-      <button class="btn outline small" id="uploadBtn" onclick="openUpload()" hidden></button>
-      <button class="btn primary small" id="allBtn" onclick="updateAll(this)" hidden></button>
-    </span></div>
+    <div class="pagehead"><h1>Updates</h1><button class="btn outline small" id="uploadBtn" onclick="openUpload()" hidden></button></div>
 
-    <h2>Latest release</h2>
-    <div class="card plan" id="latestCard"><div class="devmeta">Loading…</div></div>
+    <div id="hero"></div>
 
     <h2>Your devices</h2>
     <div class="card" id="devs"></div>
 
-    <h2>Release history</h2>
-    <div class="card" id="history"></div>
+    <h2>What's new</h2>
+    <div class="card" id="news"></div>
+
+    <p class="trustline">Updates are verified before anything changes, install next to the running software, and undo themselves if a device doesn't come back healthy. Printing never depends on an update.</p>
   </main>
 </div>
 
@@ -38,68 +36,93 @@
 <script src="/app.js"></script>
 <script>
 let R = { releases: [], latest: null }, DEVICES = [];
-el("devs").innerHTML = skeletons("rows", 2); el("history").innerHTML = skeletons("rows", 2);
+el("hero").innerHTML = `<div class="card"><div class="twofa"><span class="skl av"></span><div style="flex:1;display:grid;gap:6px"><span class="skl w40"></span><span class="skl w70 thin"></span></div></div></div>`;
+el("devs").innerHTML = skeletons("rows", 2);
+el("news").innerHTML = skeletons("rows", 2);
+
+const fmtDate = (ts) => new Date(ts * 1000).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
+const isDock = (d) => d.kind === "dock";
+const installing = (d) => d.target_version && d.target_version !== d.version;
+const behind = (d) => isDock(d) && R.latest && d.version !== R.latest && !installing(d);
+
+function hero() {
+  const docks = DEVICES.filter(isDock);
+  const busyN = docks.filter(installing).length;
+  const behindN = docks.filter(behind).length;
+  if (!R.latest || !docks.length) {
+    return `<div class="card"><div class="twofa"><span class="okic">${ICON.check}</span><div style="flex:1"><b>Nothing to do</b><span>${docks.length ? "Your devices run the current software." : "Once you claim a device, its updates are looked after here."}</span></div></div></div>`;
+  }
+  if (busyN) {
+    return `<div class="card"><div class="twofa"><span class="okic herospin">${ICON.spin}</span><div style="flex:1"><b>Updating ${busyN === 1 ? "one device" : busyN + " devices"}…</b><span>Each device downloads, installs and restarts on its own — about a minute. You can leave this page.</span></div></div></div>`;
+  }
+  if (behindN) {
+    return `<div class="card"><div class="twofa"><span class="okic off">${ICON.download}</span><div style="flex:1"><b>An update is ready${behindN > 1 ? ` for ${behindN} devices` : ""}</b><span>Version ${esc(R.latest)} — see “What's new” below. Devices back themselves up first and keep printing afterwards.</span></div><button class="btn primary" onclick="updateAll(this)">${ICON.download}<span>Update ${behindN === 1 ? "now" : "all"}</span></button></div></div>`;
+  }
+  return `<div class="card"><div class="twofa"><span class="okic">${ICON.check}</span><div style="flex:1"><b>Everything is up to date</b><span>${docks.length === 1 ? "Your device runs" : `All ${docks.length} devices run`} the latest software (version ${esc(R.latest)}).</span></div></div></div>`;
+}
+
+function deviceRow(d) {
+  const st = d.status || {}, name = esc(d.name || st.printer || d.id);
+  const icon = `<span class="okic ${d.online ? "" : "off"}" style="width:36px;height:36px">${isDock(d) ? ICON.dock : ICON.phone}</span>`;
+  let state = "", action = "";
+  if (!isDock(d)) state = `<span class="mono">updates arrive with the app</span>`;
+  else if (installing(d)) {
+    state = d.online
+      ? `<span class="pill amber installing"><span class="pspin">${ICON.spin}</span>installing…</span>`
+      : `<span class="pill amber">installs when it reconnects</span>`;
+  } else if (behind(d)) {
+    state = `<span class="pill amber">update ready</span>`;
+    action = `<button class="btn outline small" data-id="${esc(d.id)}" data-act="update">${ICON.download}Update</button>`;
+  } else if (R.latest) {
+    state = `<span class="pill">up to date</span>`;
+  }
+  const sub = d.online ? "online" : `last seen ${ago(d.last_seen)}`;
+  return `<div class="member"><span class="mrow">${icon}<span class="who2"><b>${name}</b><span class="mono">${sub}${ME?.vendor ? ` · v${esc(d.version || "?")}` : ""}</span></span></span>
+    <span class="row" style="gap:8px;flex-wrap:nowrap">${state}${action}</span></div>`;
+}
+
+function news() {
+  if (!R.releases.length) return `<div class="devmeta">Release notes appear here with the first update.</div>`;
+  const [latest, ...older] = R.releases;
+  const item = (r, big) => `<div class="newsitem${big ? " big" : ""}">
+    <div class="newshead"><b>${big ? "Version " : ""}${esc(r.version)}</b><span class="mono">${fmtDate(r.created)}</span>${ME?.vendor ? `<span class="mono">${esc(r.channel)} · ${(r.size / 1024 / 1024).toFixed(1)} MB · ${esc(r.sha256.slice(0, 10))}…</span>` : ""}</div>
+    <p>${esc(r.notes || "Maintenance and reliability improvements.")}</p></div>`;
+  return item(latest, true) + (older.length ? `<details class="oldnews"><summary>Earlier versions</summary>${older.map(r => item(r, false)).join("")}</details>` : "");
+}
 
 function render() {
-  const latest = R.releases.find(r => r.version === R.latest);
-  setHTML("latestCard", latest ? `
-    <div class="row between">
-      <div><b class="planname">RePaper Dock ${esc(latest.version)}</b><div class="devmeta">${esc(latest.notes || "No release notes.")}</div></div>
-      <span class="pill">${esc(latest.channel)}</span>
-    </div>
-    <div class="planlist">
-      <div class="planline"><span>Published</span><span class="mono">${new Date(latest.created * 1000).toLocaleString()}</span></div>
-      <div class="planline"><span>Size · checksum</span><span class="mono">${(latest.size / 1024 / 1024).toFixed(1)} MB · sha256 ${esc(latest.sha256.slice(0, 12))}…</span></div>
-      <div class="planline"><span>Publishing</span><span class="mono">automatic with every cloud deploy</span></div>
-      <div class="planline"><span>Rollout</span><span class="mono">push per device below, or the whole fleet at once</span></div>
-    </div>`
-    : `<div class="devmeta">No releases published yet${ME?.vendor ? " — upload the first one." : "."}</div>`);
-
-  const behindOnline = DEVICES.filter(d => d.kind === "dock" && d.online && R.latest && d.version !== R.latest);
-  const ab = el("allBtn"); ab.hidden = !behindOnline.length; ab.innerHTML = ICON.download + `<span>Update all (${behindOnline.length})</span>`;
-
-  setHTML("devs", DEVICES.length ? DEVICES.map(d => {
-    const st = d.status || {}, current = R.latest && d.version === R.latest;
-    const installing = d.target_version && d.target_version !== d.version;
-    const pill = installing ? `<span class="pill amber installing"><span class="pspin">${ICON.spin}</span>installing v${esc(d.target_version)}</span>`
-      : !R.latest ? "" : current ? `<span class="pill">up to date</span>` : `<span class="pill amber">v${esc(R.latest)} available</span>`;
-    const btn = R.latest && !current && !installing && d.kind === "dock"
-      ? `<button class="btn outline small" data-id="${esc(d.id)}" data-act="update">${ICON.download}Update</button>` : "";
-    return `<div class="member"><span class="mrow"><span class="okic ${d.online ? "" : "off"}" style="width:36px;height:36px">${d.kind === "dock" ? ICON.dock : ICON.phone}</span>
-      <span class="who2"><b>${esc(d.name || st.printer || d.id)}</b><span class="mono">v${esc(d.version || "?")} · ${d.online ? "online" : "seen " + ago(d.last_seen)}</span></span></span>
-      <span class="row" style="gap:8px;flex-wrap:nowrap">${pill}${btn}</span></div>`;
-  }).join("") : `<div class="devmeta">No devices claimed yet.</div>`);
-
-  setHTML("history", R.releases.length ? R.releases.map(r => `<div class="member"><span class="who2"><b>${esc(r.version)}</b><span class="mono">${esc(r.channel)} · ${new Date(r.created * 1000).toLocaleDateString()} · ${(r.size / 1024 / 1024).toFixed(1)} MB${r.notes ? " — " + esc(r.notes) : ""}</span></span></div>`).join("")
-    : `<div class="devmeta">Empty so far.</div>`);
+  setHTML("hero", hero());
+  setHTML("devs", DEVICES.length ? DEVICES.map(deviceRow).join("") : `<div class="devmeta">No devices yet — claim one on the Fleet page.</div>`);
+  setHTML("news", news());
+  if (ME) { el("uploadBtn").hidden = !ME.vendor; el("uploadBtn").innerHTML = ICON.plus + "<span>Upload release</span>"; }
 }
 
 async function load() {
   const [rel, fleet] = await Promise.all([api("/api/releases"), api("/api/fleet")]);
   R = rel; DEVICES = fleet.devices;
-  if (ME) el("uploadBtn").hidden = !ME.vendor;
-  el("uploadBtn").innerHTML = ICON.plus + "<span>Upload release</span>";
   render();
 }
 
 el("devs").addEventListener("click", async e => {
   const b = e.target.closest("[data-act=update]"); if (!b) return;
-  const done = busy(b, "Pushing…");
-  try { const r = await api(`/api/devices/${b.dataset.id}/update`, {}); done("Sent"); toast(`Target set to ${r.version} — the device installs on its next contact and reports back.`); load(); }
+  const done = busy(b, "Starting…");
+  try { await api(`/api/devices/${b.dataset.id}/update`, {}); done("Started");
+    toast("Update started — the device installs and restarts on its own."); load(); }
   catch (x) { done("Failed", true); toast(x.message, "err"); }
 });
 async function updateAll(b) {
-  const done = busy(b, "Pushing…");
-  try { const r = await api("/api/fleet/update", {}); done(`Sent to ${r.sent}`); toast(`Update to ${r.version} pushed to ${r.sent} device(s).`); }
+  const done = busy(b, "Starting…");
+  try { const r = await api("/api/fleet/update", {}); done("Started");
+    toast(r.sent ? "Updates started — each device installs and restarts on its own." : "Updates queued — offline devices install when they reconnect."); load(); }
   catch (x) { done("Failed", true); toast(x.message, "err"); }
 }
 
 function openUpload() {
   setModal("Upload a release", `<form class="ed" data-ed="upload">
-    <p>Normally releases publish themselves with each cloud deploy — this is the manual fallback. Build with <span class="mono">dock/make-release.sh</span> and drop the tarball here; devices verify the checksum and roll back if they don't come back healthy.</p>
+    <p>Normally releases publish themselves with each cloud deploy — this is the manual fallback. Build with <span class="mono">dock/make-release.sh</span>; devices verify the checksum and roll back if unhealthy.</p>
     <label>Tarball</label><input type="file" name="file" accept=".gz,.tgz" required>
-    <label for="edVer">Version</label><input id="edVer" name="version" placeholder="0.0.2" pattern="\\d+\\.\\d+\\.\\d+" required autocomplete="off" style="font-family:var(--font-mono)">
-    <label for="edNotes">Notes</label><input id="edNotes" name="notes" maxlength="200" placeholder="What changed?" autocomplete="off">
+    <label for="edVer">Version</label><input id="edVer" name="version" placeholder="0.0.6" pattern="\\d+\\.\\d+\\.\\d+" required autocomplete="off" style="font-family:var(--font-mono)">
+    <label for="edNotes">What's new (users read this)</label><input id="edNotes" name="notes" maxlength="200" placeholder="One sentence, plain words" autocomplete="off">
     <label class="checkline"><input type="checkbox" name="beta"> Beta channel</label>
     <div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Publish</button></div></form>`);
   const f = el("edBody").querySelector("input[type=file]");
@@ -118,13 +141,13 @@ el("edDlg").addEventListener("submit", async e => {
     let bin = ""; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
     const data = btoa(bin);
     const r = await api("/api/releases", { version: f.elements.version.value.trim(), notes: f.elements.notes.value.trim(), channel: f.elements.beta.checked ? "beta" : "stable", data });
-    done("Published"); toast(`Release ${r.version} published (${(r.size / 1024 / 1024).toFixed(1)} MB).`); await wait(400); closeModal(); load();
+    done("Published"); toast(`Release ${r.version} published.`); await wait(400); closeModal(); load();
   } catch (x) { done("Failed", true); toast(x.message, "err"); }
 });
 
 document.addEventListener("me-ready", () => load().catch(() => {}));
 load().catch(x => { if (x.message !== "signed out") toast(x.message, "err"); });
-setInterval(() => load().catch(() => {}), 10000);
+setInterval(() => load().catch(() => {}), 8000);
 </script>
 </body>
 </html>
