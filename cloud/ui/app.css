@@ -123,6 +123,12 @@ dialog.modal { max-height: calc(100svh - 48px); overflow-y: auto }
 .pillbtn { border: 0; cursor: pointer; font: inherit } .pillbtn:hover { filter: brightness(1.15) }
 
 /* ── updates page ── */
+.stat { display: inline-flex; align-items: center; gap: 7px; font-size: .8125rem; font-weight: 500; color: var(--text-2); white-space: nowrap }
+.stat svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none }
+.stat.ok svg { color: var(--accent-text) }
+.stat.wait svg { color: var(--amber) }
+.stat.busy { color: var(--text) } .stat.busy .pspin svg { width: 14px; height: 14px; animation: spin .9s linear infinite }
+.stat.mute { color: var(--text-3); font-weight: 400 }
 #hero .twofa { flex-wrap: nowrap } #hero .btn { flex: none }
 @media (max-width: 560px) { #hero .twofa { flex-wrap: wrap } }
 .okic.herospin svg, .okic .spin { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; animation: spin .9s linear infinite }

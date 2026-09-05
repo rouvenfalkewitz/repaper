@@ -47,13 +47,17 @@ const behind = (d) => isDock(d) && R.latest && d.version !== R.latest && !instal
 
 function hero() {
   const docks = DEVICES.filter(isDock);
-  const busyN = docks.filter(installing).length;
+  const busyN = docks.filter(d => installing(d) && d.online).length;
+  const queuedN = docks.filter(d => installing(d) && !d.online).length;
   const behindN = docks.filter(behind).length;
   if (!R.latest || !docks.length) {
     return `<div class="card"><div class="twofa"><span class="okic">${ICON.check}</span><div style="flex:1"><b>Nothing to do</b><span>${docks.length ? "Your devices run the current software." : "Once you claim a device, its updates are looked after here."}</span></div></div></div>`;
   }
   if (busyN) {
-    return `<div class="card"><div class="twofa"><span class="okic herospin">${ICON.spin}</span><div style="flex:1"><b>Updating ${busyN === 1 ? "one device" : busyN + " devices"}…</b><span>Each device downloads, installs and restarts on its own — about a minute. You can leave this page.</span></div></div></div>`;
+    return `<div class="card"><div class="twofa"><span class="okic herospin">${ICON.spin}</span><div style="flex:1"><b>Updating ${busyN === 1 ? "one device" : busyN + " devices"}…</b><span>Each device downloads, installs and restarts on its own — about a minute. You can leave this page.${queuedN ? ` ${queuedN === 1 ? "One more device updates" : queuedN + " more devices update"} on reconnect.` : ""}</span></div></div></div>`;
+  }
+  if (queuedN && !behindN) {
+    return `<div class="card"><div class="twofa"><span class="okic off">${ICON.clock}</span><div style="flex:1"><b>${queuedN === 1 ? "One device updates" : queuedN + " devices update"} when back online</b><span>Nothing to do — the update installs automatically the moment ${queuedN === 1 ? "it reconnects" : "they reconnect"}.</span></div></div></div>`;
   }
   if (behindN) {
     return `<div class="card"><div class="twofa"><span class="okic off">${ICON.download}</span><div style="flex:1"><b>An update is ready${behindN > 1 ? ` for ${behindN} devices` : ""}</b><span>Version ${esc(R.latest)} — see “What's new” below. Devices back themselves up first and keep printing afterwards.</span></div><button class="btn primary" onclick="updateAll(this)">${ICON.download}<span>Update ${behindN === 1 ? "now" : "all"}</span></button></div></div>`;
@@ -65,16 +69,16 @@ function deviceRow(d) {
   const st = d.status || {}, name = esc(d.name || st.printer || d.id);
   const icon = `<span class="okic ${d.online ? "" : "off"}" style="width:36px;height:36px">${isDock(d) ? ICON.dock : ICON.phone}</span>`;
   let state = "", action = "";
-  if (!isDock(d)) state = `<span class="mono">updates arrive with the app</span>`;
+  if (!isDock(d)) state = `<span class="stat mute">${ICON.phone}Updates arrive with the app</span>`;
   else if (installing(d)) {
     state = d.online
-      ? `<span class="pill amber installing"><span class="pspin">${ICON.spin}</span>installing…</span>`
-      : `<span class="pill amber">installs when it reconnects</span>`;
+      ? `<span class="stat busy"><span class="pspin">${ICON.spin}</span>Installing…</span>`
+      : `<span class="stat wait">${ICON.clock}Updates when it reconnects</span>`;
   } else if (behind(d)) {
-    state = `<span class="pill amber">update ready</span>`;
+    state = `<span class="stat wait">${ICON.download}Update ready</span>`;
     action = `<button class="btn outline small" data-id="${esc(d.id)}" data-act="update">${ICON.download}Update</button>`;
   } else if (R.latest) {
-    state = `<span class="pill">up to date</span>`;
+    state = `<span class="stat ok">${ICON.check}Up to date</span>`;
   }
   const sub = d.online ? "online" : `last seen ${ago(d.last_seen)}`;
   return `<div class="member"><span class="mrow">${icon}<span class="who2"><b>${name}</b><span class="mono">${sub}${ME?.vendor ? ` · v${esc(d.version || "?")}` : ""}</span></span></span>
