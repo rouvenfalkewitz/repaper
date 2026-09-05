@@ -1,1 +1,1 @@
-0.0.5 — Static network config (portal + settings, dead-gateway recovery), update banner on the Dock page, unified update worker.
+0.0.6 — Change Wi-Fi from the Dock's settings page, with the setup hotspot as automatic safety net.

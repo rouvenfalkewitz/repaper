@@ -43,7 +43,7 @@
   <h2>Network</h2>
   <div class="card">
     <div class="facts" id="net"></div>
-    <div class="row" style="margin-top:14px" id="hotspotRow" hidden><button class="btn outline small" id="netBtn" onclick="openNetConfig()"></button><button class="btn outline small" id="hotspotBtn" onclick="testHotspot()"></button><span class="hint" style="color:var(--text-3);font-size:.8125rem">Opens the Wi-Fi setup hotspot for 5 minutes — the Dock leaves this network meanwhile, then returns on its own.</span></div>
+    <div class="row" style="margin-top:14px" id="hotspotRow" hidden><button class="btn outline small" id="wifiBtn" onclick="openWifiChange()"></button><button class="btn outline small" id="netBtn" onclick="openNetConfig()"></button><button class="btn outline small" id="hotspotBtn" onclick="testHotspot()"></button><span class="hint" style="color:var(--text-3);font-size:.8125rem">Opens the Wi-Fi setup hotspot for 5 minutes — the Dock leaves this network meanwhile, then returns on its own.</span></div>
     <div class="hint" style="margin-top:14px;color:var(--text-3);font-size:.8125rem">Addressing, DHCP/static IP and DNS are configured in the device's system for now; they move here with the device build.</div>
   </div>
 
@@ -160,7 +160,44 @@ let W = null;
 async function initWifi() {
   try { W = await api("/api/wifi"); if (W.supported) { el("hotspotRow").hidden = false;
     el("hotspotBtn").innerHTML = ICON.scan + "<span>Test the setup hotspot</span>";
-    el("netBtn").innerHTML = ICON.info + "<span>Network configuration</span>"; } } catch {}
+    el("netBtn").innerHTML = ICON.info + "<span>Network configuration</span>";
+    el("wifiBtn").innerHTML = ICON.scan + "<span>Change Wi-Fi</span>"; } } catch {}
+}
+async function openWifiChange() {
+  el("edTitle").textContent = "Change Wi-Fi";
+  el("edBody").innerHTML = `<div class="ed"><p>Connected to <b>${esc((W && W.current) || "—")}</b>. Pick the new network — the Dock switches over and this page follows it. If the new network doesn't work out, the Dock comes back here or opens its setup hotspot so nothing is ever lost.</p><div class="scanning"><span class="dot"></span>looking for networks…</div></div>`;
+  el("edDlg").showModal();
+  try {
+    const r = await api("/api/wifi/scan", {});
+    const bars = sig => { const s4 = Math.max(1, Math.ceil(sig / 25)); return `<span class="bars s${s4}"><i></i><i></i><i></i><i></i></span>`; };
+    const lock = `<svg class="wlock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`;
+    el("edBody").innerHTML = `<div class="ed"><p>Connected to <b>${esc(r.current || "—")}</b>. Pick the new network:</p>
+      <div class="wnets">${(r.networks || []).map((n, i) => `
+        <button class="wnet" type="button" data-i="${i}" data-ssid="${esc(n.ssid)}" data-sec="${n.secured ? 1 : 0}">${bars(n.signal)}<b>${esc(n.ssid)}</b>${n.ssid === r.current ? `<span class="chip">${ICON.check}<span>current</span></span>` : n.secured ? lock : ""}</button>
+        <div class="wjoin" id="wjoin${i}" hidden></div>`).join("") || '<p class="hint">No networks found — try again closer to the router.</p>'}</div></div>`;
+  } catch (x) { el("edBody").innerHTML = `<div class="ed"><p>${esc(x.message)}</p></div>`; }
+}
+el("edBody").addEventListener("click", e => {
+  const b = e.target.closest(".wnet"); if (!b) return;
+  const i = b.dataset.i, box = el("wjoin" + i), wasOpen = !box.hidden;
+  el("edBody").querySelectorAll(".wjoin").forEach(x => { x.hidden = true; x.innerHTML = ""; });
+  if (wasOpen) return;
+  box.hidden = false;
+  box.innerHTML = `<form class="ed" data-wifissid="${b.dataset.ssid}" onsubmit="return joinWifi(event)">
+    ${b.dataset.sec === "1" ? `<label>Password for ${esc(b.dataset.ssid)}</label><input name="pw" type="password" required autocomplete="off">` : `<p style="margin:0;font-size:.875rem;color:var(--text-2)">Open network — no password needed.</p>`}
+    <div class="row end"><button class="btn primary" type="submit">Switch to this network</button></div></form>`;
+  const inp = box.querySelector("input"); if (inp) inp.focus();
+});
+async function joinWifi(e) {
+  e.preventDefault(); const f = e.target, ssid = f.dataset.wifissid, sb = f.querySelector("button[type=submit]");
+  const done = busy(sb, "Switching…");
+  try {
+    await api("/api/wifi/join", {ssid, password: f.elements.pw ? f.elements.pw.value : ""});
+    done("Switching");
+    el("edBody").innerHTML = `<div class="ed"><p><b>Switching to ${esc(ssid)}.</b> This page will drop for a moment. Find the Dock again at <span class="mono">http://${esc(location.hostname)}:9631</span> once your computer is on the same network.<br><br>If the switch fails, the Dock returns to the old network or opens its setup hotspot — nothing is lost.</p>
+      <div class="row end"><button class="btn primary" type="button" onclick="closeModal()">Got it</button></div></div>`;
+  } catch (x) { done("Failed", true); toast(x.message, "err"); }
+  return false;
 }
 function openNetConfig() {
   const n = (W && W.net) || {method: "auto"};

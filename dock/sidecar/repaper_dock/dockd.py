@@ -308,6 +308,11 @@ def make_handler(dock: Dock):
                 try:
                     data = json.loads(raw or b"{}")
                     if u.path == "/api/settings": dock.save_settings(data); return self._json({"ok": True})
+                    if u.path == "/api/wifi/scan":
+                        if not dock.wifi.supported: return self._json({"error": "not available on this host"}, 400)
+                        if dock.wifi.mode != "normal": return self._json({"error": "busy with Wi-Fi setup right now"}, 409)
+                        try: return self._json({"networks": dock.wifi.scan(), "current": dock.wifi._current_ssid()})
+                        except Exception as e: return self._json({"error": f"scan failed: {e}"}, 500)
                     if u.path == "/api/wifi/join":
                         if not dock.wifi.supported: return self._json({"error": "Wi-Fi setup is not available on this host"}, 400)
                         ssid = str(data.get("ssid", "")).strip()

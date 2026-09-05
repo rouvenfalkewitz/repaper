@@ -215,3 +215,15 @@
   .cal-panel { grid-column: 2; grid-row: 2; width: 100%; display: grid; place-items: center; background: var(--epaper-panel); border: 6px solid var(--epaper-bezel); border-radius: 6px; color: var(--ink) } .cal-panel.wide { aspect-ratio: 2 / 1; max-width: 260px } .cal-panel.tall { aspect-ratio: 3 / 4; max-width: 160px }
   .cal-panel .mono { color: var(--graphite) }
   .sheet-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px } .sheet-foot .bat { margin-top: 0 } .away-note { white-space: nowrap }
+
+  /* wifi picker (settings modal) */
+  .wnets { display: grid; gap: 6px; max-height: 320px; overflow-y: auto }
+  .wnet { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 11px 12px; border: 1px solid var(--border); background: var(--bg); color: var(--text); border-radius: var(--r-control); cursor: pointer; font: inherit }
+  .wnet:hover { border-color: var(--accent) }
+  .wnet b { flex: 1; font-weight: 600; overflow-wrap: anywhere }
+  .wlock { width: 14px; height: 14px; fill: none; stroke: var(--text-3); stroke-width: 1.8; flex: none }
+  .bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px }
+  .bars i { width: 3.5px; border-radius: 1px; background: var(--border-strong) }
+  .bars i:nth-child(1){height:5px} .bars i:nth-child(2){height:8px} .bars i:nth-child(3){height:11px} .bars i:nth-child(4){height:14px}
+  .bars.s1 i:nth-child(-n+1), .bars.s2 i:nth-child(-n+2), .bars.s3 i:nth-child(-n+3), .bars.s4 i { background: var(--accent) }
+  .wjoin { padding: 4px 2px 8px }
