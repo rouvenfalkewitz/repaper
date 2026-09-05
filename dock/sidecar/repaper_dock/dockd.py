@@ -127,10 +127,17 @@ class Dock:
     # ── settings & sheet management (used by /settings) ──────────────────────
     def settings(self) -> dict:
         import platform
+        # /etc/hosts often maps the hostname to 127.0.1.1 (Debian), so ask the
+        # kernel which local address routes outward instead (no packet is sent)
         ips = []
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as _s:
+                _s.connect(("192.0.2.1", 80)); ips.append(_s.getsockname()[0])
+        except Exception: pass
         try:
             for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET): ips.append(info[4][0])
         except Exception: pass
+        ips = [ip for ip in ips if not ip.startswith("127.")]
         sheets = {k: {"name": e["name"], "serial": e.get("serial"), "transport": e["transport"], "address": e["address"],
                       "size": f'{e["model"]["width"]}×{e["model"]["height"]} {e["model"]["palette"]}', "inset": list(e["model"].get("inset", (0, 0, 0, 0))),
                       "hw": e.get("keys", {}).get("hw", {})}

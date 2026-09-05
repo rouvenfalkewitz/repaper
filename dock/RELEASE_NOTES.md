@@ -1,1 +1,1 @@
-0.0.8 — Settings page in plain language: one-click cloud connect with a clear claim code, friendly job timeout, technical details tucked away.
+0.0.9 — The settings page now shows the Dock's real network address instead of a loopback placeholder.
