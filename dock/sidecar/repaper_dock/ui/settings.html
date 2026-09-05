@@ -22,7 +22,10 @@
   <div class="card">
     <form id="printerForm" class="stack" oninput="dirty()" onsubmit="return savePrinter(event)">
       <div class="field"><label for="pname">Printer name</label><input id="pname" name="printer_name" maxlength="63" required autocomplete="off"><div class="hint">What people see in their print dialog. Applied when the printer restarts.</div></div>
-      <div class="field"><label for="timeout">Job timeout</label><input id="timeout" name="job_timeout_seconds" type="number" min="30" max="86400" step="30"><div class="hint">Seconds a job waits for a sheet before it is discarded.</div></div>
+      <div class="field"><label for="timeout">Keep waiting jobs for</label><select id="timeout" name="job_timeout_seconds">
+        <option value="600">10 minutes</option><option value="1800">30 minutes</option><option value="3600">1 hour</option>
+        <option value="14400">4 hours</option><option value="86400">1 day</option>
+      </select><div class="hint">A print job waits this long for someone to pick a sheet — then it's quietly discarded.</div></div>
       <div class="row end"><button class="btn primary" id="saveBtn" type="submit" disabled>Save</button></div>
     </form>
   </div>
@@ -31,20 +34,12 @@
   <div class="sheets" id="sheets"></div>
 
   <h2>RePaper Cloud</h2>
-  <div class="card stack">
-    <div class="facts" id="cloudFacts"></div>
-    <form class="stack" id="cloudForm" oninput="cloudDirty()" onsubmit="return saveCloud(event)">
-      <div class="field"><label for="curl">Cloud address</label><input id="curl" name="cloud_url" placeholder="wss://repaper.schisch.net/ws/device" autocomplete="off">
-        <div class="hint">Fleet view, claiming and remote care. The Dock only ever connects outward — leave this empty and it stays local-only.</div></div>
-      <div class="row end"><button class="btn primary" id="cloudBtn" type="submit" disabled>Save</button></div>
-    </form>
-  </div>
+  <div class="card stack" id="cloudCard"></div>
 
   <h2>Network</h2>
   <div class="card">
     <div class="facts" id="net"></div>
     <div class="row" style="margin-top:14px" id="hotspotRow" hidden><button class="btn outline small" id="wifiBtn" onclick="openWifiChange()"></button><button class="btn outline small" id="netBtn" onclick="openNetConfig()"></button><button class="btn outline small" id="hotspotBtn" onclick="testHotspot()"></button><span class="hint" style="color:var(--text-3);font-size:.8125rem">Opens the Wi-Fi setup hotspot for 5 minutes — the Dock leaves this network meanwhile, then returns on its own.</span></div>
-    <div class="hint" style="margin-top:14px;color:var(--text-3);font-size:.8125rem">Addressing, DHCP/static IP and DNS are configured in the device's system for now; they move here with the device build.</div>
   </div>
 
   <h2>About</h2>
@@ -133,30 +128,48 @@ function openDetails(k) {
 }
 async function load() {
   const s = S = await api("/api/settings");
-  el("pname").value = s.printer_name; el("timeout").value = s.job_timeout_seconds; el("addr").textContent = s.address; dirty();
+  el("pname").value = s.printer_name;
+  const opts = [...el("timeout").options].map(o => Number(o.value));
+  el("timeout").value = opts.reduce((a, b) => Math.abs(b - s.job_timeout_seconds) < Math.abs(a - s.job_timeout_seconds) ? b : a);
+  el("addr").textContent = s.address; dirty();
   el("sheets").innerHTML = Object.entries(s.sheets).map(([k, v]) => card(k, v)).join("") + `<button class="sheet addcard" type="button" onclick="openAdd()"><span class="plus">${ICON.plus}</span><span>${Object.keys(s.sheets).length ? "Add a sheet" : "Add your first sheet"}</span></button>`;
   el("notes").innerHTML = (s.notifications || []).length
     ? s.notifications.map(n => `<div class="notice ${n.level === "warn" ? "" : n.level}">${ICON[n.level] || ICON.info}<div><b>${esc(n.title)}</b><span>${esc(n.text)}</span></div></div>`).join("")
     : `<div class="allgood"><span class="ic">${ICON.check}</span><span>Nothing needs attention.</span></div>`;
   el("net").innerHTML = Object.entries(s.network).map(([k, v]) => fact(k, v)).join("");
-  el("about").innerHTML = Object.entries(s.about).map(([k, v]) => fact(k, v)).join("");
-  el("curl").value = (s.cloud || {}).url || ""; renderCloud(s.cloud); cloudDirty();
+  el("about").innerHTML = Object.entries(s.about).map(([k, v]) => fact(k, v)).join("")
+    + `<details class="techd"><summary>Technical details</summary><div class="facts" style="margin-top:12px">${Object.entries(s.tech || {}).map(([k, v]) => fact(k, v)).join("")}</div></details>`;
+  renderCloud(s.cloud);
 }
-/* cloud: facts refresh on their own; the address field is only written on page load */
+/* cloud: one clear state, one button. The server address hides behind Advanced. */
+const DEFAULT_CLOUD = "wss://repaper.schisch.net/ws/device";
 function renderCloud(c) {
   if (!c) return; S.cloud = c;
-  const st = {online: c.claimed ? `Connected · ${c.org}` : "Connected — waiting to be claimed",
-              connecting: "Connecting…", error: `Not reachable${c.detail ? " · " + c.detail : ""}`,
-              off: "Off — this Dock is local-only"}[c.state] || c.state;
-  el("cloudFacts").innerHTML = fact("Status", st)
-    + (c.state === "online" && !c.claimed ? `<div class="fact"><i>Claim code</i><b class="mono serial">${esc(c.claim_code)}</b></div>` : "")
-    + (c.url ? fact("Device id", c.device_id) : "");
+  const adv = `<details class="techd"><summary>Advanced: server address</summary>
+    <form class="row" style="margin-top:10px" onsubmit="return setCloudUrl(event, this.curl.value.trim())">
+      <input name="curl" class="advinput" value="${esc(c.url || "")}" placeholder="${DEFAULT_CLOUD}" autocomplete="off">
+      <button class="btn outline small" type="submit">Apply</button></form>
+    <div class="hint" style="margin-top:6px">Only for self-hosted RePaper Cloud servers.</div></details>`;
+  if (!c.url) {
+    el("cloudCard").innerHTML = `<p class="meta" style="margin:0">See this Dock from anywhere, install updates with one click and share it with your team. It only connects outward — and printing never needs the cloud.</p>
+      <div class="row"><button class="btn primary" onclick="setCloudUrl(event, DEFAULT_CLOUD, this)">Connect to RePaper Cloud</button></div>${adv}`;
+    return;
+  }
+  const stMap = {online: c.claimed ? [`Connected — managed in the <b>${esc(c.org)}</b> fleet`, "ok"] : ["Connected — waiting to be claimed", "wait"],
+                 connecting: ["Connecting…", "wait"], error: [`Can't reach the cloud right now — retrying on its own${c.detail ? `<span class="mono" style="display:block">${esc(c.detail)}</span>` : ""}`, "warn"],
+                 off: ["Off", "warn"]};
+  const [stText, stKind] = stMap[c.state] || [esc(c.state), "wait"];
+  el("cloudCard").innerHTML = `<div class="cstate ${stKind}"><span class="cdot"></span><span>${stText}</span></div>
+    ${c.state === "online" && !c.claimed ? `<div class="claimbox"><i>Claim code</i><b class="serial mono">${esc(c.claim_code)}</b><span>Enter it in your fleet console under “Claim a device”.</span></div>` : ""}
+    <div class="row"><button class="btn outline small" onclick="setCloudUrl(event, '', this)">Disconnect</button></div>${adv}`;
 }
-function cloudDirty() { const d = el("curl").value.trim() !== ((S.cloud || {}).url || ""); const b = el("cloudBtn"); if (!b.classList.contains("busy") && !b.classList.contains("ok")) b.disabled = !d; b.dataset.stayDisabled = d ? "0" : "1"; }
-async function saveCloud(e) {
-  e.preventDefault(); const b = el("cloudBtn"), url = el("curl").value.trim(), done = busy(b, "Saving…");
-  try { await api("/api/settings", {cloud_url: url}); S.cloud = {...(S.cloud || {}), url}; b.dataset.stayDisabled = "1"; done("Saved"); toast(url ? "Saved — connecting to the cloud…" : "Saved — cloud is off."); }
-  catch (x) { done("Not saved", true); shake(el("curl")); toast(x.message, "err"); }
+async function setCloudUrl(e, url, b) {
+  e.preventDefault && e.preventDefault();
+  const done = b ? busy(b, url ? "Connecting…" : "Disconnecting…") : null;
+  try { await api("/api/settings", {cloud_url: url}); if (done) done(url ? "Connecting" : "Off");
+    toast(url ? "Connecting to the cloud…" : "Disconnected — this Dock is local-only now.");
+    setTimeout(async () => { try { renderCloud((await api("/api/settings")).cloud); } catch {} }, 1500); }
+  catch (x) { if (done) done("Failed", true); toast(x.message, "err"); }
   return false;
 }
 setInterval(async () => { try { renderCloud((await api("/api/settings")).cloud); } catch {} }, 4000);

@@ -1,1 +1,1 @@
-0.0.7 — Restart and factory reset from Settings, remote restart from the cloud, and the Dock page refreshes itself after updates.
+0.0.8 — Settings page in plain language: one-click cloud connect with a clear claim code, friendly job timeout, technical details tucked away.

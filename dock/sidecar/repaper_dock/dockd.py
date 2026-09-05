@@ -137,10 +137,12 @@ class Dock:
                   for k, e in self.registry.all().items()}
         return {"printer_name": self.cfg["printer_name"], "job_timeout_seconds": self.cfg["job_timeout_seconds"], "notifications": self.notifications(self.snapshot()["sheets"]),
                 "address": f"http://{socket.gethostname()}:{self.cfg['web_port']}/", "sheets": sheets, "cloud": self.cloud.info(),
-                "network": {"hostname": socket.gethostname(), "addresses": ", ".join(sorted(set(ips))) or "—", "dock page": f"http://{socket.gethostname()}:{self.cfg['web_port']}/",
-                            "printer": "advertised via DNS-SD (AirPrint, IPP Everywhere)"},
-                "about": {"software": f"RePaper Dock {__version__}", "system": f"{platform.system()} {platform.machine()}",
-                          "transports": ", ".join(self.transports), "identifier": self.identifier.id, "state": str(HOME_PATH())}}
+                "network": {"Hostname": socket.gethostname(), "IP address": ", ".join(sorted(set(ips))) or "—",
+                            "Printer sharing": "AirPrint & IPP Everywhere — visible to devices on this network"},
+                "about": {"Software": f"RePaper Dock {__version__}", "System": f"{platform.system()} {platform.machine()}"},
+                "tech": {"Sheet links": ", ".join(self.transports), "Tap reader": "not installed yet — choose sheets on this page for now" if self.identifier.id == "manual" else self.identifier.id,
+                         "Data folder": str(HOME_PATH()), "Web port": str(self.cfg["web_port"]),
+                         "Cloud device id": self.cloud.identity["device_id"]}}
 
     def notifications(self, sheets: dict) -> list[dict]:
         """Things a person should know about this Dock. Shown in Settings; counted on the gear."""
