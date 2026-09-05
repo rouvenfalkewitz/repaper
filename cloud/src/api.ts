@@ -1,5 +1,7 @@
 /* Console API: everything a signed-in user does. Device-facing traffic lives in devices.ts. */
 import { createHash, randomBytes } from "node:crypto";
+import { createReadStream, mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import QRCode from "qrcode";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { generateSecret, otpauthUrl, totpCheck } from "./totp.js";
@@ -11,8 +13,9 @@ import {
   inviteByTokenHash, loginPendingByToken, markInviteUsed, markResetUsed, orgActivity, orgEvents,
   orgDevices, orgInvites, orgUsers, pendingInviteFor, publicCounts, recentResetFor, renameDevice, renameOrg,
   resetByTokenHash, revokeApiKey, revokeInvite, setDeviceSite, setTotpPending, setUserAvatar,
+  createRelease, getRelease, latestRelease, listReleases,
   setOrgLogo, setUserName, setUserRole, updateCompany, updatePassword, useRecoveryCode, userApiKeys,
-  COMPANY_FIELDS, type DeviceRow, type UserRow,
+  COMPANY_FIELDS, DATA_DIR, type DeviceRow, type UserRow,
 } from "./db.js";
 import { COOKIE, endSession, hashPassword, loginAllowed, loginFailed, loginOk, requireUser, startSession, verifyPassword } from "./auth.js";
 import { mailEnabled, sendInviteMail, sendRegisterMail, sendResetMail } from "./mail/index.js";
@@ -46,6 +49,22 @@ const orgAlerts = (orgId: number) => {
   return out;
 };
 
+/* releases live as tarballs next to the database; devices fetch them with
+   short-lived tokens minted when an update is pushed over the socket */
+const RELEASES_DIR = join(DATA_DIR, "releases");
+mkdirSync(RELEASES_DIR, { recursive: true });
+const dlTokens = new Map<string, { version: string; expires: number }>();
+const publicBase = () => (process.env.DOMAIN ? `https://${process.env.DOMAIN}` : `http://localhost:${process.env.PORT || 3000}`);
+const VENDOR_ORG = 1;   // pilot: the RePaper org uploads releases; a proper vendor role comes later
+
+const pushUpdate = (deviceId: string, version: string): boolean => {
+  const rel = getRelease(version);
+  if (!rel) return false;
+  const token = randomBytes(24).toString("hex");
+  dlTokens.set(token, { version, expires: Date.now() + 10 * 60_000 });
+  return sendToDevice(deviceId, { t: "update", version: rel.version, sha256: rel.sha256, url: `${publicBase()}/dl/${token}` });
+};
+
 /* a device row must belong to the caller's org */
 const ownDevice = (req: Authed): DeviceRow | undefined => {
   const d = getDevice((req.params as { id: string }).id);
@@ -54,6 +73,15 @@ const ownDevice = (req: Authed): DeviceRow | undefined => {
 
 export const registerApi = (app: FastifyInstance) => {
   app.get("/api/health", async () => ({ status: "ok" }));
+
+  /* devices download release tarballs with a short-lived token (auth happened on the socket) */
+  app.get("/dl/:token", async (req, reply) => {
+    const t = dlTokens.get((req.params as { token: string }).token);
+    if (!t || t.expires < Date.now()) return reply.code(404).send({ error: "expired" });
+    const rel = getRelease(t.version)!;
+    return reply.header("Content-Type", "application/gzip").header("Content-Length", String(rel.size))
+      .send(createReadStream(join(RELEASES_DIR, `${rel.version}.tar.gz`)));
+  });
 
   /* aggregate numbers for the public status page — never per-org detail */
   app.get("/api/public-status", async () => {
@@ -214,7 +242,7 @@ export const registerApi = (app: FastifyInstance) => {
       const org = getOrg(u.org_id)!;
       return {
         email: u.email, name: u.name, role: u.role, org: org.name, org_logo: org.logo,
-        personal: isPersonal(u.org_id),
+        personal: isPersonal(u.org_id), vendor: u.org_id === VENDOR_ORG && u.role === "admin",
         avatar: u.avatar, twofa: !!u.totp_secret, mail: mailEnabled,
       };
     };
@@ -445,6 +473,43 @@ export const registerApi = (app: FastifyInstance) => {
     });
 
     f.get("/api/alerts", async (req) => ({ alerts: orgAlerts((req as Authed).user.org_id) }));
+
+    // ── software releases & OTA ────────────────────────────────────────────
+    f.get("/api/releases", async () => ({ releases: listReleases(), latest: latestRelease()?.version ?? null }));
+
+    f.post("/api/releases", { bodyLimit: 80 * 1024 * 1024 }, async (req, reply) => {
+      const u = (req as Authed).user;
+      if (u.org_id !== VENDOR_ORG || u.role !== "admin") return reply.code(403).send({ error: "only the vendor publishes releases" });
+      const { version, channel, notes, data } = (req.body ?? {}) as { version?: string; channel?: string; notes?: string; data?: string };
+      if (!version || !/^\d+\.\d+\.\d+$/.test(version)) return reply.code(400).send({ error: "version must look like 0.0.2" });
+      if (getRelease(version)) return reply.code(409).send({ error: "this version already exists — bump it" });
+      if (!data) return reply.code(400).send({ error: "no file attached" });
+      const buf = Buffer.from(data, "base64");
+      if (buf.length < 1024) return reply.code(400).send({ error: "that file looks too small to be a release" });
+      writeFileSync(join(RELEASES_DIR, `${version}.tar.gz`), buf);
+      const hash = createHash("sha256").update(buf).digest("hex");
+      createRelease(version, channel === "beta" ? "beta" : "stable", String(notes ?? "").slice(0, 2000), hash, buf.length);
+      return { ok: true, version, size: buf.length };
+    });
+
+    f.post("/api/devices/:id/update", async (req, reply) => {
+      const d = ownDevice(req as Authed);
+      if (!d) return reply.code(404).send({ error: "unknown device" });
+      const version = String(((req.body ?? {}) as { version?: string }).version ?? "") || latestRelease()?.version;
+      if (!version || !getRelease(version)) return reply.code(404).send({ error: "no such release" });
+      if (!pushUpdate(d.id, version)) return reply.code(409).send({ error: "the device is offline right now" });
+      return { ok: true, version };
+    });
+
+    f.post("/api/fleet/update", async (req, reply) => {
+      const u = (req as Authed).user;
+      const version = String(((req.body ?? {}) as { version?: string }).version ?? "") || latestRelease()?.version;
+      if (!version || !getRelease(version)) return reply.code(404).send({ error: "no such release" });
+      let sent = 0;
+      for (const d of orgDevices(u.org_id))
+        if (d.kind === "dock" && isOnline(d.id) && d.version !== version && pushUpdate(d.id, version)) sent++;
+      return { ok: true, version, sent };
+    });
 
     f.get("/api/sheets", async (req) => {
       const out: object[] = [];

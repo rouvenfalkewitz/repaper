@@ -82,7 +82,7 @@ const NAV = [
   { href: "/sheets", key: "sheets", label: "Sheets", icon: "sheet" },
   { href: "/activity", key: "activity", label: "Activity", icon: "pulse" },
   { href: "/org", key: "org", label: "Organisation", icon: "people" },
-  { href: "/updates", key: "updates", label: "Updates", icon: "download", tag: "preview" },
+  { href: "/updates", key: "updates", label: "Updates", icon: "download" },
   { href: "/billing", key: "billing", label: "Billing", icon: "card", tag: "preview" },
   { href: "/shop", key: "shop", label: "Shop", icon: "bag", tag: "preview" },
 ];

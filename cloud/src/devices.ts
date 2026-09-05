@@ -47,6 +47,8 @@ export const handleDeviceSocket = (ws: WebSocket, remote: string) => {
           console.warn(`device ${h.id} from ${remote}: wrong secret`);
           return refuse("auth");
         }
+        if (known.version && h.version && known.version !== String(h.version))
+          addEvent(h.id, "updated", `${known.version} → ${h.version}`);
         touchDevice(h.id, String(h.version ?? ""));
       } else {
         if (!CLAIM_RE.test(String(h.claim ?? ""))) return refuse("bad claim code");
@@ -74,6 +76,8 @@ export const handleDeviceSocket = (ws: WebSocket, remote: string) => {
       saveDiag(deviceId, String(msg.log ?? "").slice(0, 64 * 1024));
       addEvent(deviceId, "diagnostics");
     }
+    if (msg.t === "updating") addEvent(deviceId, "update_started", String(msg.version ?? ""));
+    if (msg.t === "update_failed") addEvent(deviceId, "update_failed", String(msg.error ?? "").slice(0, 200));
   });
 
   ws.on("close", () => {

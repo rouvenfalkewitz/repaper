@@ -2,7 +2,8 @@
 Printing never depends on it — with no cloud_url configured, or the cloud unreachable,
 the Dock just keeps working. The cloud sees metadata (status, sheet readings), never pages."""
 from __future__ import annotations
-import asyncio, json, logging, secrets, threading, time
+import asyncio, hashlib, json, logging, secrets, subprocess, sys, threading, time, urllib.request
+from pathlib import Path
 from . import __version__
 from .config import HOME
 from .spool import list_jobs
@@ -110,6 +111,30 @@ class CloudAgent(threading.Thread):
             try: tail = "".join((HOME / "dock.log").read_text(errors="replace").splitlines(keepends=True)[-200:])
             except Exception as e: tail = f"could not read the log: {e}"
             return {"t": "diag", "log": tail}
+        elif t == "update":
+            version, url, sha = str(msg.get("version", "")), str(msg.get("url", "")), str(msg.get("sha256", ""))
+            script = Path(__file__).resolve().parents[2] / "update-pi.sh"
+            if not (script.exists() and sys.platform.startswith("linux")):
+                log.warning("cloud: update to %s requested but this host has no updater (dev machine?)", version)
+                return {"t": "update_failed", "error": "no updater on this host"}
+            log.info("cloud: updating to %s", version)
+            threading.Thread(target=self._do_update, args=(script, version, url, sha), daemon=True).start()
+            return {"t": "updating", "version": version}
         elif t == "error":
             raise RuntimeError(msg.get("error") or "server error")
         return None
+
+    def _do_update(self, script: Path, version: str, url: str, sha256: str) -> None:
+        """Download, verify, then hand over to the detached updater script —
+        which restarts this very process, so it must outlive us (own session)."""
+        try:
+            tar = Path(f"/tmp/repaper-{version}.tar.gz")
+            with urllib.request.urlopen(url, timeout=120) as r: tar.write_bytes(r.read())
+            digest = hashlib.sha256(tar.read_bytes()).hexdigest()
+            if digest != sha256:
+                log.error("cloud: update %s checksum mismatch — refusing", version); tar.unlink(missing_ok=True); return
+            log.info("cloud: update %s downloaded and verified (%d bytes) — handing over to the updater", version, tar.stat().st_size)
+            subprocess.Popen(["/usr/bin/env", "bash", str(script), str(tar), version],
+                             start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        except Exception as e:
+            log.error("cloud: update %s failed before install: %s", version, e)

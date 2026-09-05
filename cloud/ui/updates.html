@@ -13,40 +13,114 @@
 <div class="layout">
   <aside class="side" id="side"></aside>
   <main class="main">
-    <div class="pagehead"><h1>Updates</h1><span class="pill amber">preview — rollout isn't wired yet</span></div>
+    <div class="pagehead"><h1>Updates</h1><span class="row" style="gap:8px">
+      <button class="btn outline small" id="uploadBtn" onclick="openUpload()" hidden></button>
+      <button class="btn primary small" id="allBtn" onclick="updateAll(this)" hidden></button>
+    </span></div>
 
     <h2>Latest release</h2>
-    <div class="card plan">
-      <div class="row between">
-        <div><b class="planname">RePaper Dock 0.0.1</b><div class="devmeta">Cloud channel, sheet security fixes, the new add-sheet flow.</div></div>
-        <span class="pill">stable</span>
-      </div>
-      <div class="planlist">
-        <div class="planline"><span>Channel</span><span class="mono">stable · beta (soon)</span></div>
-        <div class="planline"><span>Delivery</span><span class="mono">signed bundle over the device channel — soon</span></div>
-        <div class="planline"><span>Maintenance window</span><span class="mono">soon</span></div>
-      </div>
-      <div class="row end"><button class="btn primary" disabled>Roll out to fleet</button></div>
-    </div>
+    <div class="card plan" id="latestCard"><div class="devmeta">Loading…</div></div>
 
     <h2>Your devices</h2>
     <div class="card" id="devs"></div>
+
+    <h2>Release history</h2>
+    <div class="card" id="history"></div>
   </main>
 </div>
+
+<dialog class="modal" id="edDlg">
+  <div class="modal-head"><b id="edTitle"></b><button class="iconbtn" type="button" onclick="closeModal()" aria-label="Close">✕</button></div>
+  <div class="modal-body" id="edBody"></div>
+</dialog>
 <div class="toast" id="toast" role="status"><span class="ic"></span><span class="tx"></span></div>
+
 <script src="/app.js"></script>
 <script>
-const LATEST = "0.0.1";
-async function load() {
-  const { devices } = await api("/api/fleet");
-  el("devs").innerHTML = devices.length ? devices.map(d => {
-    const st = d.status || {}, current = d.version === LATEST;
-    return `<div class="member"><span class="mrow"><span class="okic ${d.online ? "" : "off"}" style="width:36px;height:36px">${ICON.dock}</span>
-      <span class="who2"><b>${esc(d.name || st.printer || d.id)}</b><span class="mono">${d.online ? "online" : "seen " + ago(d.last_seen)}</span></span></span>
-      <span class="row" style="gap:10px"><span class="mono">v${esc(d.version || "?")}</span><span class="pill ${current ? "" : "amber"}">${current ? "up to date" : "update available"}</span></span></div>`;
+let R = { releases: [], latest: null }, DEVICES = [];
+
+function render() {
+  const latest = R.releases.find(r => r.version === R.latest);
+  el("latestCard").innerHTML = latest ? `
+    <div class="row between">
+      <div><b class="planname">RePaper Dock ${esc(latest.version)}</b><div class="devmeta">${esc(latest.notes || "No release notes.")}</div></div>
+      <span class="pill">${esc(latest.channel)}</span>
+    </div>
+    <div class="planlist">
+      <div class="planline"><span>Published</span><span class="mono">${new Date(latest.created * 1000).toLocaleString()}</span></div>
+      <div class="planline"><span>Size · checksum</span><span class="mono">${(latest.size / 1024 / 1024).toFixed(1)} MB · sha256 ${esc(latest.sha256.slice(0, 12))}…</span></div>
+      <div class="planline"><span>Rollout</span><span class="mono">push per device below, or the whole fleet at once</span></div>
+    </div>`
+    : `<div class="devmeta">No releases published yet${ME?.vendor ? " — upload the first one." : "."}</div>`;
+
+  const behindOnline = DEVICES.filter(d => d.kind === "dock" && d.online && R.latest && d.version !== R.latest);
+  const ab = el("allBtn"); ab.hidden = !behindOnline.length; ab.innerHTML = ICON.download + `<span>Update all (${behindOnline.length})</span>`;
+
+  el("devs").innerHTML = DEVICES.length ? DEVICES.map(d => {
+    const st = d.status || {}, current = R.latest && d.version === R.latest;
+    const pill = !R.latest ? "" : current ? `<span class="pill">up to date</span>` : `<span class="pill amber">v${esc(R.latest)} available</span>`;
+    const btn = R.latest && !current && d.kind === "dock"
+      ? `<button class="btn outline small" data-id="${esc(d.id)}" data-act="update" ${d.online ? "" : "disabled"}>${ICON.download}Update</button>` : "";
+    return `<div class="member"><span class="mrow"><span class="okic ${d.online ? "" : "off"}" style="width:36px;height:36px">${d.kind === "dock" ? ICON.dock : ICON.phone}</span>
+      <span class="who2"><b>${esc(d.name || st.printer || d.id)}</b><span class="mono">v${esc(d.version || "?")} · ${d.online ? "online" : "seen " + ago(d.last_seen)}</span></span></span>
+      <span class="row" style="gap:8px;flex-wrap:nowrap">${pill}${btn}</span></div>`;
   }).join("") : `<div class="devmeta">No devices claimed yet.</div>`;
+
+  el("history").innerHTML = R.releases.length ? R.releases.map(r => `<div class="member"><span class="who2"><b>${esc(r.version)}</b><span class="mono">${esc(r.channel)} · ${new Date(r.created * 1000).toLocaleDateString()} · ${(r.size / 1024 / 1024).toFixed(1)} MB${r.notes ? " — " + esc(r.notes) : ""}</span></span></div>`).join("")
+    : `<div class="devmeta">Empty so far.</div>`;
 }
+
+async function load() {
+  const [rel, fleet] = await Promise.all([api("/api/releases"), api("/api/fleet")]);
+  R = rel; DEVICES = fleet.devices;
+  if (ME) el("uploadBtn").hidden = !ME.vendor;
+  el("uploadBtn").innerHTML = ICON.plus + "<span>Upload release</span>";
+  render();
+}
+
+el("devs").addEventListener("click", async e => {
+  const b = e.target.closest("[data-act=update]"); if (!b) return;
+  const done = busy(b, "Pushing…");
+  try { const r = await api(`/api/devices/${b.dataset.id}/update`, {}); done("Sent"); toast(`Update to ${r.version} pushed — the device installs, restarts and reports back within a minute.`); }
+  catch (x) { done("Failed", true); toast(x.message, "err"); }
+});
+async function updateAll(b) {
+  const done = busy(b, "Pushing…");
+  try { const r = await api("/api/fleet/update", {}); done(`Sent to ${r.sent}`); toast(`Update to ${r.version} pushed to ${r.sent} device(s).`); }
+  catch (x) { done("Failed", true); toast(x.message, "err"); }
+}
+
+function openUpload() {
+  setModal("Upload a release", `<form class="ed" data-ed="upload">
+    <p>Build it with <span class="mono">dock/make-release.sh</span>, then drop the tarball here. Devices verify the checksum before installing and roll back if they don't come back healthy.</p>
+    <label>Tarball</label><input type="file" name="file" accept=".gz,.tgz" required>
+    <label for="edVer">Version</label><input id="edVer" name="version" placeholder="0.0.2" pattern="\\d+\\.\\d+\\.\\d+" required autocomplete="off" style="font-family:var(--font-mono)">
+    <label for="edNotes">Notes</label><input id="edNotes" name="notes" maxlength="200" placeholder="What changed?" autocomplete="off">
+    <label class="checkline"><input type="checkbox" name="beta"> Beta channel</label>
+    <div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Publish</button></div></form>`);
+  const f = el("edBody").querySelector("input[type=file]");
+  f.addEventListener("change", () => {
+    const m = (f.files[0]?.name || "").match(/(\d+\.\d+\.\d+)/);
+    if (m && !el("edVer").value) el("edVer").value = m[1];
+  });
+}
+el("edDlg").addEventListener("click", e => { const b = e.target.closest("[data-act=close]"); if (b) closeModal(); });
+el("edDlg").addEventListener("submit", async e => {
+  e.preventDefault(); const f = e.target, sb = f.querySelector("button[type=submit]"), done = busy(sb, "Uploading…");
+  try {
+    const file = f.elements.file.files[0];
+    if (!file) throw new Error("pick the tarball first");
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    let bin = ""; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    const data = btoa(bin);
+    const r = await api("/api/releases", { version: f.elements.version.value.trim(), notes: f.elements.notes.value.trim(), channel: f.elements.beta.checked ? "beta" : "stable", data });
+    done("Published"); toast(`Release ${r.version} published (${(r.size / 1024 / 1024).toFixed(1)} MB).`); await wait(400); closeModal(); load();
+  } catch (x) { done("Failed", true); toast(x.message, "err"); }
+});
+
+document.addEventListener("me-ready", () => load().catch(() => {}));
 load().catch(x => { if (x.message !== "signed out") toast(x.message, "err"); });
+setInterval(() => load().catch(() => {}), 10000);
 </script>
 </body>
 </html>

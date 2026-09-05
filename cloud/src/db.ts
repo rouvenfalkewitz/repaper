@@ -6,6 +6,7 @@ import { dirname } from "node:path";
 
 const path = process.env.DATABASE_PATH || "data/cloud.db";
 mkdirSync(dirname(path), { recursive: true });
+export const DATA_DIR = dirname(path);
 export const db = new Database(path);
 db.pragma("journal_mode = WAL");
 db.pragma("foreign_keys = ON");
@@ -118,6 +119,15 @@ CREATE TABLE IF NOT EXISTS device_stat (
   day TEXT NOT NULL,                -- YYYY-MM-DD, device-local enough for a sparkline
   jobs INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (device_id, day)
+);
+CREATE TABLE IF NOT EXISTS release (
+  id INTEGER PRIMARY KEY,
+  version TEXT NOT NULL UNIQUE,
+  channel TEXT NOT NULL DEFAULT 'stable',
+  notes TEXT NOT NULL DEFAULT '',
+  sha256 TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  created REAL NOT NULL
 );
 CREATE TABLE IF NOT EXISTS org_event (
   id INTEGER PRIMARY KEY,
@@ -313,6 +323,15 @@ export const apiKeyByHash = (hash: string) => {
   return k;
 };
 export const revokeApiKey = (id: number, userId: number) => db.prepare("DELETE FROM api_key WHERE id=? AND user_id=?").run(id, userId);
+
+// ── software releases (vendor-level: the RePaper software itself) ──────────
+export type ReleaseRow = { id: number; version: string; channel: string; notes: string; sha256: string; size: number; created: number };
+export const createRelease = (version: string, channel: string, notes: string, sha256: string, size: number) =>
+  db.prepare("INSERT INTO release(version, channel, notes, sha256, size, created) VALUES(?,?,?,?,?,?)").run(version, channel, notes, sha256, size, now());
+export const listReleases = () => db.prepare("SELECT * FROM release ORDER BY created DESC LIMIT 20").all() as ReleaseRow[];
+export const getRelease = (version: string) => db.prepare("SELECT * FROM release WHERE version=?").get(version) as ReleaseRow | undefined;
+export const latestRelease = (channel = "stable") =>
+  db.prepare("SELECT * FROM release WHERE channel=? ORDER BY created DESC LIMIT 1").get(channel) as ReleaseRow | undefined;
 
 // ── public aggregate (status page) ──────────────────────────────────────────
 export const publicCounts = () =>

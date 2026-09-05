@@ -25,6 +25,8 @@ const LABEL = {
   online: ["came online", "ok"], offline: ["went offline", "warn"],
   claimed: ["was claimed", "ok"], renamed: ["was renamed", "info"],
   identify: ["was pinged from the console", "info"], diagnostics: ["sent a diagnostics bundle", "info"],
+  update_started: ["started installing an update", "info"], updated: ["updated", "ok"],
+  update_failed: ["failed to update", "warn"],
 };
 function orgLine(e) {
   const a = esc(e.actor), d = esc(e.data);
