@@ -53,3 +53,12 @@ PoE HAT for the Pi 4 (~€25), a second Pi 4 for a second Dock, 3D printing serv
 **Raspberry Pi 3 Model A+** — in stock at reichelt, €29.90 ("ab Lager, 1–2 Werktage"): https://www.reichelt.de/de/de/shop/produkt/raspberry_pi_3_a_4x_1_4_ghz_512_mb_ram_wlan_bt-243791
 Same quad Cortex-A53 / 512 MB class as the Zero 2 W (a bit faster), full pre-soldered 40-pin GPIO, dual-band WiFi + BT 4.2, one USB-A for the BLE dongle; runs the identical Pi OS Bookworm stack (bleak, rpi_ws281x, PN532 overlays). Bigger footprint (65×56 mm) and micro-USB power. In production into 2030, so a pilot can scale on it.
 Zero 2 W itself is unavailable across DE (BerryBase/reichelt/rasppishop/Semaf; scalpers ~€70); Welectron lists €19.90 "soon in stock" — set a stock alert there. Radxa/Orange Pi Zero-form boards ruled out: no rpi_ws281x, Armbian-class images, and mostly sold out anyway.
+
+## H. Pilot bring-up findings (4 Sep 2026, Pi 3 A+ live)
+
+- **Trixie, not Bookworm**: Raspberry Pi OS Lite (64-bit) now ships Debian 13 — Python 3.13, BlueZ 5.82, kernel 6.18. Everything runs; docs saying "Bookworm required" now mean "Bookworm or newer".
+- **The A+ onboard radio can discover sheets but not connect** (shared WiFi/BT antenna; "device disappeared" after 4 attempts even at 10 cm). A USB BLE dongle is mandatory for Docks, not optional — that is what the two LogiLink BT0054 were for. Config: `dtoverlay=disable-bt` in `/boot/firmware/config.txt` so the dongle is the only adapter.
+- **Dongle chip of choice: Realtek RTL8761BU** (LogiLink BT0054 proven; firmware `rtl_bt/rtl8761bu_fw.bin` from `firmware-realtek`). For the enclosure, nano-format sticks with the same chip: **ASUS USB-BT500** (ordered; kernel ID supported for years) — avoid TP-Link UB600 (same silicon, newer USB ID, patchy kernel support history).
+- **After any Bluetooth adapter/stack change, restart repaper-dockd** — bleak caches its D-Bus state per process and keeps failing with `org.bluez.Error.NotSupported` until the daemon recycles. TODO: dockd should self-recover from persistent BLE errors.
+- **WiFi powersave must be off** on the A+ (`wifi.powersave = 2` via NetworkManager conf) or SSH and the cloud link drop under silence.
+- Wins of the day: full stack ~37 MB over idle (242 MB free on 512 MB), unplug-recovery clean, Label 2 added over the dongle, and the first iPhone photo printed onto e-paper by the pilot.
