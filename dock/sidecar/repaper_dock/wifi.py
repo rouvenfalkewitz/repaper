@@ -166,9 +166,21 @@ class WifiOnboarding(threading.Thread):
         # NetworkManager autoconnects known networks by itself from here
 
     # ── joining a network from the setup page ────────────────────────────────
+    def _drop_profiles(self, ssid: str) -> None:
+        """Delete profiles a `device wifi connect` created for this SSID (nmcli
+        names them after it: 'foo', 'foo-1', …). A failed connect leaves such a
+        profile behind, and broken ones fight the working connection at every
+        reconnect. Profiles from the OS install (netplan-*) are never touched."""
+        r = _nmcli("-t", "-f", "NAME", "connection", "show")
+        for name in r.stdout.splitlines():
+            base, _, suffix = name.rpartition("-")
+            if name == ssid or (base == ssid and suffix.isdigit()):
+                _nmcli("connection", "delete", name)
+
     def join(self, ssid: str, password: str, static: dict | None = None) -> None:
         """Async: the phone loses this hotspot the moment we switch — the page
-        explains that. Failure re-opens the hotspot with a hint."""
+        explains that. Failure re-opens the hotspot with the reason. Right after
+        AP mode the scan cache is empty, so each attempt rescans first."""
         def work():
             log.info("wifi: joining '%s'", ssid)
             was_hotspot = self.mode == "hotspot"
@@ -177,18 +189,31 @@ class WifiOnboarding(threading.Thread):
                 subprocess.run(["sudo", "-n", "systemctl", "stop", "repaper-portal"], capture_output=True)
                 _nmcli("connection", "down", HOTSPOT_CON)
                 _nmcli("connection", "delete", HOTSPOT_CON)
-            args = ["device", "wifi", "connect", ssid, "ifname", "wlan0"]
-            if password: args += ["password", password]
-            r = _nmcli(*args, timeout=60)
-            if r.returncode == 0 and self._wifi_connected():
-                log.info("wifi: joined '%s'", ssid)
-                self.mode, self.detail, self._offline_since = "normal", "", None
-                if static and static.get("address"):
-                    try: self.apply_net("manual", static.get("address", ""), static.get("gateway", ""), static.get("dns") or static.get("gateway", ""))
-                    except Exception as e: log.warning("wifi: static config after join failed: %s", e)
+            self._drop_profiles(ssid)
+            err = ""
+            for attempt in range(3):
+                try: _nmcli("device", "wifi", "rescan", timeout=20); time.sleep(3 + attempt * 2)
+                except Exception: pass
+                args = ["device", "wifi", "connect", ssid, "ifname", "wlan0"]
+                if password: args += ["password", password]
+                r = _nmcli(*args, timeout=60)
+                if r.returncode == 0 and self._wifi_connected():
+                    log.info("wifi: joined '%s' (attempt %d)", ssid, attempt + 1)
+                    self.mode, self.detail, self._offline_since = "normal", "", None
+                    if static and static.get("address"):
+                        try: self.apply_net("manual", static.get("address", ""), static.get("gateway", ""), static.get("dns") or static.get("gateway", ""))
+                        except Exception as e: log.warning("wifi: static config after join failed: %s", e)
+                    return
+                err = (r.stderr or r.stdout).strip()[-200:]
+                log.warning("wifi: join '%s' attempt %d failed: %s", ssid, attempt + 1, err)
+                self._drop_profiles(ssid)          # never leave a broken profile behind
+            low = err.lower()
+            if "no network" in low or "not found" in low:
+                self.detail = f"Couldn\u2019t find \u201c{ssid}\u201d \u2014 is it in range? Give it another try."
+            elif "secrets" in low or "password" in low or "802.1x" in low or "auth" in low:
+                self.detail = f"Joining \u201c{ssid}\u201d didn\u2019t work \u2014 the password looks wrong."
             else:
-                s_detail = f"Joining \u201c{ssid}\u201d didn\u2019t work \u2014 most likely the password."; self.detail = s_detail
-                log.warning("wifi: join '%s' failed: %s", ssid, (r.stderr or r.stdout).strip()[-200:])
-                self.mode = "normal"
-                if was_hotspot: self.hotspot_up(timeout_min=10)
+                self.detail = f"Joining \u201c{ssid}\u201d didn\u2019t work ({err[:80]})." if err else f"Joining \u201c{ssid}\u201d didn\u2019t work."
+            self.mode = "normal"
+            if was_hotspot: self.hotspot_up(timeout_min=10)
         threading.Thread(target=work, daemon=True).start()

@@ -1,1 +1,1 @@
-0.0.13 — Wi-Fi setup polish: clear feedback while the hotspot opens and joins, show-password buttons, simpler advanced network options, and plain instructions after joining.
+0.0.14 — Joining Wi-Fi from the setup hotspot is far more reliable, and when it fails the setup page now says exactly why.
