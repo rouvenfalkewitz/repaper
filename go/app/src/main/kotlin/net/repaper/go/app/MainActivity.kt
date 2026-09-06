@@ -52,6 +52,10 @@ class MainActivity : AppCompatActivity() {
         })
         val addBtn = Button(this).apply { text = "Add a sheet"; setOnClickListener { addSheetDialog() } }
         root.addView(addBtn)
+        root.addView(Button(this).apply {
+            text = "Print a sample page"
+            setOnClickListener { printSample() }   // the full illusion: system dialog → RePaper Go → sheet
+        })
         listView = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(listView)
         setContentView(ScrollView(this).apply { addView(root) })
@@ -230,6 +234,36 @@ class MainActivity : AppCompatActivity() {
             val c = model.colors.colors[band]
             (0xFF shl 24) or (c[0] shl 16) or (c[1] shl 8) or c[2]
         }
+    }
+
+    /** Prints through Android's own print dialog, so the whole path is the real one:
+     *  dialog → "RePaper Go" printer → spooled job → pick a sheet. */
+    private fun printSample() {
+        val pm = getSystemService(android.print.PrintManager::class.java)
+        pm.print("RePaper sample", object : android.print.PrintDocumentAdapter() {
+            override fun onLayout(old: android.print.PrintAttributes?, new: android.print.PrintAttributes,
+                                  sig: android.os.CancellationSignal?, cb: LayoutResultCallback,
+                                  extras: Bundle?) {
+                cb.onLayoutFinished(android.print.PrintDocumentInfo.Builder("sample.pdf")
+                    .setContentType(android.print.PrintDocumentInfo.CONTENT_TYPE_DOCUMENT).setPageCount(1).build(), true)
+            }
+            override fun onWrite(pages: Array<out android.print.PageRange>?, dest: ParcelFileDescriptor,
+                                 sig: android.os.CancellationSignal?, cb: WriteResultCallback) {
+                val doc = android.graphics.pdf.PdfDocument()
+                val page = doc.startPage(android.graphics.pdf.PdfDocument.PageInfo.Builder(472, 232, 1).create())
+                val c = page.canvas
+                val paint = android.graphics.Paint().apply { color = Color.BLACK; textSize = 40f; isAntiAlias = true }
+                c.drawText("RePaper Go", 24f, 90f, paint)
+                paint.textSize = 20f
+                c.drawText("printed from a phone — no dock, no cloud", 24f, 130f, paint)
+                paint.color = Color.RED
+                c.drawRect(24f, 160f, 448f, 200f, paint)
+                doc.finishPage(page)
+                doc.writeTo(java.io.FileOutputStream(dest.fileDescriptor))
+                doc.close()
+                cb.onWriteFinished(arrayOf(android.print.PageRange.ALL_PAGES))
+            }
+        }, null)
     }
 
     // ── plumbing ─────────────────────────────────────────────────────────────
