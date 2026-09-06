@@ -85,13 +85,28 @@ class WifiOnboarding(threading.Thread):
         threading.Thread(target=work, daemon=True).start()
 
     # ── the watchdog ─────────────────────────────────────────────────────────
+    def _known_wifi(self) -> bool:
+        r = _nmcli("-t", "-f", "NAME,TYPE", "connection", "show")
+        return any(l.endswith(":802-11-wireless") and not l.startswith(HOTSPOT_CON + ":")
+                   for l in r.stdout.splitlines())
+
     def run(self) -> None:
         if not self.supported: return
+        time.sleep(8)                        # let NetworkManager settle after boot
+        try:
+            if not self._known_wifi():       # factory-fresh: nothing to wait for
+                log.info("wifi: no known networks — opening setup hotspot right away")
+                self.hotspot_up(timeout_min=30)
+        except Exception as e:
+            log.debug("wifi first-boot check: %s", e)
         while True:
             time.sleep(15)
             try:
                 if self.mode == "hotspot":
                     if self._revert_at and time.time() > self._revert_at:
+                        if not self._known_wifi():
+                            self._revert_at = time.time() + 600   # nowhere to revert to — stay open
+                            continue
                         log.info("wifi: hotspot timed out — returning to normal Wi-Fi")
                         self.hotspot_down()
                     continue
@@ -149,6 +164,9 @@ class WifiOnboarding(threading.Thread):
         try: self.scan()
         except Exception: pass
         log.info("wifi: opening setup hotspot '%s' (auto-revert in %d min)", self.ap_ssid, timeout_min)
+        # the portal (port 80, binds 0.0.0.0) must answer the phone's very first
+        # captive-portal probe — start it before the AP exists, not after
+        subprocess.run(["sudo", "-n", "systemctl", "start", "repaper-portal"], capture_output=True)
         _nmcli("connection", "delete", HOTSPOT_CON)
         _nmcli("connection", "add", "type", "wifi", "ifname", "wlan0", "con-name", HOTSPOT_CON,
                "autoconnect", "no", "ssid", self.ap_ssid, "802-11-wireless.mode", "ap",
@@ -156,8 +174,8 @@ class WifiOnboarding(threading.Thread):
         r = _nmcli("connection", "up", HOTSPOT_CON, timeout=45)
         if r.returncode != 0:
             self.detail = (r.stderr or r.stdout).strip()[-200:]
+            subprocess.run(["sudo", "-n", "systemctl", "stop", "repaper-portal"], capture_output=True)
             log.warning("wifi: hotspot failed: %s", self.detail); return
-        subprocess.run(["sudo", "-n", "systemctl", "start", "repaper-portal"], capture_output=True)
         self.mode, self._revert_at = "hotspot", time.time() + timeout_min * 60
 
     def hotspot_down(self) -> None:

@@ -1,1 +1,1 @@
-0.0.17 — The fleet console can now open a Dock's local page directly; Wi-Fi recovery is calmer about brief signal drops.
+0.0.18 — The setup page appears the moment your phone joins the hotspot, and a brand-new Dock opens its hotspot right after plugging in.
