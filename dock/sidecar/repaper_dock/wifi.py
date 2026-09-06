@@ -100,7 +100,9 @@ class WifiOnboarding(threading.Thread):
                     self._offline_since = None
                 else:
                     self._offline_since = self._offline_since or time.time()
-                    if time.time() - self._offline_since > 75:
+                    # 2.4 GHz links flap (BLE scans share the band) — don't open the
+                    # hotspot for a hiccup NetworkManager will heal by itself
+                    if time.time() - self._offline_since > 150:
                         self.hotspot_up(timeout_min=10)
             except Exception as e:
                 log.debug("wifi watchdog: %s", e)
@@ -217,7 +219,7 @@ class WifiOnboarding(threading.Thread):
             if "no network" in low or "not found" in low:
                 self.detail = f"Couldn\u2019t find \u201c{ssid}\u201d \u2014 is it in range? Give it another try."
             elif "secrets" in low or "password" in low or "802.1x" in low or "auth" in low:
-                self.detail = f"Joining \u201c{ssid}\u201d didn\u2019t work \u2014 the password looks wrong."
+                self.detail = f"Joining \u201c{ssid}\u201d didn\u2019t work \u2014 wrong password, or a weak signal at the Dock. Worth another try."
             else:
                 self.detail = f"Joining \u201c{ssid}\u201d didn\u2019t work ({err[:80]})." if err else f"Joining \u201c{ssid}\u201d didn\u2019t work."
             self.mode = "normal"

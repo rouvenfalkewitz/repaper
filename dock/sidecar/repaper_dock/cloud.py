@@ -51,8 +51,15 @@ class CloudAgent(threading.Thread):
         s = self.dock.snapshot()
         lt = time.localtime()
         midnight = time.mktime((lt.tm_year, lt.tm_mon, lt.tm_mday, 0, 0, 0, 0, 0, -1))
+        lan = ""
+        try:
+            import socket as _so
+            with _so.socket(_so.AF_INET, _so.SOCK_DGRAM) as _s:
+                _s.connect(("192.0.2.1", 80))
+                lan = f"http://{_s.getsockname()[0]}:{self.dock.cfg['web_port']}/"
+        except Exception: pass
         return {"t": "status", "printer": s["printer"], "state": s["state"], "version": __version__,
-                "identifier": s["identifier"], "web": s["address"],
+                "identifier": s["identifier"], "web": s["address"], "lan": lan,
                 "jobs_today": sum(1 for j in list_jobs() if j.created >= midnight),
                 "sheets": [{"id": k, "name": v["name"], "size": v["size"], "palette": v["palette"],
                             "battery_volts": v.get("battery_volts"), "temperature_c": v.get("temperature_c"),

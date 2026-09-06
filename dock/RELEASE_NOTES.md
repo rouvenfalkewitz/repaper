@@ -1,1 +1,1 @@
-0.0.16 — The settings page no longer jumps while loading, and Power & reset is now called Maintenance.
+0.0.17 — The fleet console can now open a Dock's local page directly; Wi-Fi recovery is calmer about brief signal drops.

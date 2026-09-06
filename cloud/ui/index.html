@@ -87,12 +87,13 @@ function openDetails(id) {
     el("detBody").innerHTML = `<div class="facts grid">${
       fact("Kind", d.kind) + fact("Printer", st.printer) + fact("Software", d.version) + fact("State", st.state)
       + fact("Reader", st.identifier) + fact("Jobs today", st.jobs_today != null ? String(st.jobs_today) : "")
-      + fact("Local page", st.web) + fact("Claimed", d.claimed_at ? new Date(d.claimed_at * 1000).toLocaleDateString() : "")
+      + (st.lan ? `<div class="fact"><i>Local page</i><b><a href="${esc(st.lan)}" target="_blank" rel="noopener" style="color:var(--accent-text)">${esc(st.lan.replace(/^http:\/\//, "").replace(/\/$/, ""))}</a></b></div>` : fact("Local page", st.web))
+      + fact("Claimed", d.claimed_at ? new Date(d.claimed_at * 1000).toLocaleDateString() : "")
       + fact("Last seen", d.online ? "online now" : ago(d.last_seen)) + fact("Device id", d.id)
     }</div>${sheets.length ? `<div><h2 style="margin-top:0">Sheets</h2><div class="dsheets">${rows}</div></div>` : ""}
     ${evts ? `<div><h2 style="margin-top:0">Activity</h2><div>${evts}</div></div>` : ""}
     <div><h2 style="margin-top:0">Diagnostics</h2>${full.diag ? `<pre class="diaglog mono">${esc(full.diag.log)}</pre><div class="hint" style="color:var(--text-3);font-size:.75rem">captured ${ago(full.diag.at)}</div>` : `<div class="devmeta">No bundle yet — ask the device for its recent log.</div>`}
-    <div class="row" style="margin-top:10px"><button class="btn outline small" onclick="requestDiag('${esc(d.id)}', this)" ${d.online ? "" : "disabled"}>Request diagnostics</button><button class="btn outline small" onclick="remoteReboot('${esc(d.id)}', this)" ${d.online ? "" : "disabled"}>Restart device</button></div></div>`;
+    <div class="row" style="margin-top:10px">${st.lan ? `<a class="btn outline small" href="${esc(st.lan)}" target="_blank" rel="noopener">Open device page</a><span class="hint" style="color:var(--text-3);font-size:.75rem;flex-basis:100%">The device page opens only from the Dock's own network.</span>` : ""}<button class="btn outline small" onclick="requestDiag('${esc(d.id)}', this)" ${d.online ? "" : "disabled"}>Request diagnostics</button><button class="btn outline small" onclick="remoteReboot('${esc(d.id)}', this)" ${d.online ? "" : "disabled"}>Restart device</button></div></div>`;
     el("detDlg").showModal();
   }).catch(x => toast(x.message, "err"));
 }
