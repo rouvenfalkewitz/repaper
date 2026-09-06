@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Paper palette: dark carbon ground, RePaper green accent — matches the Dock's web UI. -->
+    <style name="Theme.RePaperGo" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">#1EE3A5</item>
+        <item name="colorOnPrimary">#0C100F</item>
+        <item name="android:colorBackground">#0C100F</item>
+        <item name="colorSurface">#141A18</item>
+        <item name="colorOnSurface">#EFF1EE</item>
+        <item name="android:statusBarColor">#0C100F</item>
+    </style>
+</resources>

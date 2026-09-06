@@ -1,0 +1,89 @@
+package net.repaper.go.app
+
+import android.content.Context
+import net.repaper.go.core.SheetModel
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.File
+import java.security.SecureRandom
+
+const val GO_VERSION = "0.1.0"
+
+/** Same shape as the Dock's ~/.repaper/sheets.json: id → {name, transport, address, keys, model}.
+ *  The AES key from the QR link lives only here. */
+class Registry(context: Context) {
+    private val file = File(context.filesDir, "sheets.json")
+    private var data = JSONObject()
+
+    init { if (file.exists()) runCatching { data = JSONObject(file.readText()) } }
+
+    private fun save() = file.writeText(data.toString(2))
+
+    fun ids(): List<String> = data.keys().asSequence().toList()
+
+    fun entry(id: String): JSONObject = data.getJSONObject(id)
+
+    fun model(id: String): SheetModel {
+        val m = entry(id).getJSONObject("model")
+        val inset = m.optJSONArray("inset") ?: JSONArray(listOf(0, 0, 0, 0))
+        return SheetModel(m.getInt("width"), m.getInt("height"), m.optString("palette", "BW"),
+            IntArray(4) { inset.getInt(it) })
+    }
+
+    fun add(id: String, name: String, address: String, keyHex: String?, model: SheetModel) {
+        val keys = JSONObject()
+        if (keyHex != null) keys.put("key", keyHex)
+        data.put(id, JSONObject()
+            .put("name", name)
+            .put("transport", "opendisplay-ble")
+            .put("address", address)
+            .put("keys", keys)
+            .put("model", JSONObject()
+                .put("width", model.width).put("height", model.height)
+                .put("palette", model.palette).put("inset", JSONArray(model.inset.toList()))))
+        save()
+    }
+
+    fun updateKey(id: String, key: String, value: String) {
+        entry(id).getJSONObject("keys").put(key, value); save()
+    }
+
+    fun rename(id: String, name: String) { entry(id).put("name", name); save() }
+    fun remove(id: String) { data.remove(id); save() }
+
+    fun keyHex(id: String): String? = entry(id).getJSONObject("keys").optString("key").ifEmpty { null }
+    fun bleAddress(id: String): String? = entry(id).getJSONObject("keys").optString("ble_address").ifEmpty { null }
+    fun name(id: String): String = entry(id).optString("name").ifEmpty { id }
+    fun address(id: String): String = entry(id).getString("address")
+}
+
+/** Cloud identity, generated once — mirrors the Dock's ~/.repaper/cloud.json. */
+class Identity(context: Context) {
+    private val prefs = context.getSharedPreferences("cloud", Context.MODE_PRIVATE)
+
+    val deviceId: String
+    val secret: String
+    val claimCode: String
+
+    init {
+        if (!prefs.contains("device_id")) {
+            val rnd = SecureRandom()
+            fun hex(n: Int) = ByteArray(n).also { rnd.nextBytes(it) }.joinToString("") { "%02x".format(it) }
+            prefs.edit()
+                .putString("device_id", hex(16))
+                .putString("secret", hex(24))
+                .putString("claim_code", "${hex(2).uppercase()}-${hex(2).uppercase()}")
+                .apply()
+        }
+        deviceId = prefs.getString("device_id", "")!!
+        secret = prefs.getString("secret", "")!!
+        claimCode = prefs.getString("claim_code", "")!!
+    }
+}
+
+/** Print jobs waiting for a sheet, spooled as rendered PDFs in filesDir/jobs. */
+class JobStore(context: Context) {
+    val dir = File(context.filesDir, "jobs").apply { mkdirs() }
+    fun list(): List<File> = (dir.listFiles() ?: emptyArray()).filter { it.extension == "pdf" }.sortedBy { it.name }
+    fun newJob(label: String): File = File(dir, "${System.currentTimeMillis()}-${label.take(40).replace(Regex("[^A-Za-z0-9._-]"), "_")}.pdf")
+}

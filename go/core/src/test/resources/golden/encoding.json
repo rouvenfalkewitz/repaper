@@ -1,0 +1,21 @@
+{
+ "grid": [
+  "WWBBRRWYWB",
+  "BWBWBWBWBW",
+  "RRRRWWWWBB",
+  "YWYWYWBWRW",
+  "WWWWWWWWWW",
+  "BBBBBBBBBB",
+  "WBRYWBRYWB"
+ ],
+ "mono": "c28055400f005540ffc000008880",
+ "bwr": "cf805540ff00fdc0ffc00000bb800d000000f000a880000000003300",
+ "bwy": "c28055400f005540ffc0000088800d000000f000a880000000003300",
+ "bwry": "50f640111110ff55009991d05555500000004e4e40",
+ "bwry_logical_to_code": {
+  "W": 1,
+  "B": 0,
+  "R": 3,
+  "Y": 2
+ }
+}

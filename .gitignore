@@ -15,3 +15,8 @@ build/
 *.log
 .env
 .env.*
+# Android (go/)
+go/.gradle/
+go/build/
+go/*/build/
+go/local.properties
