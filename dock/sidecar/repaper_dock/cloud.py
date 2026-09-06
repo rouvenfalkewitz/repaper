@@ -92,7 +92,7 @@ class CloudAgent(threading.Thread):
                         try: raw = await asyncio.wait_for(ws.recv(), timeout=5)
                         except asyncio.TimeoutError: raw = None
                         if raw is not None:
-                            try: r = self._handle(json.loads(raw))
+                            try: r = self._on_message(json.loads(raw))
                             except RuntimeError: raise                     # server said error → reconnect
                             except Exception as e:                          # a bad message must never kill the link
                                 import traceback
@@ -107,7 +107,7 @@ class CloudAgent(threading.Thread):
             else:
                 await asyncio.sleep(1)   # clean drop (URL change / server close) → reconnect promptly
 
-    def _handle(self, msg: dict) -> dict | None:
+    def _on_message(self, msg: dict) -> dict | None:
         t = msg.get("t")
         if t == "identify":
             log.info("cloud: identify — someone in the console is looking for this Dock (ring lights up once we have one)")
