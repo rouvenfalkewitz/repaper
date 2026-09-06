@@ -242,3 +242,26 @@
   .techd summary:hover { color: var(--text-2) }
   .advinput { flex: 1; min-width: 220px; font: inherit; font-size: .875rem; font-family: var(--font-mono); padding: 8px 10px; border-radius: var(--r-control); border: 1px solid var(--border-strong); background: var(--bg); color: var(--text) }
   .advinput:focus { outline: none; border-color: var(--accent) }
+
+  /* settings: sectioned layout */
+  .sec { margin-top: var(--s-6) }
+  .notices { margin-top: var(--s-5) } .notices .notice { margin: 0 0 8px } .notices .notice:last-child { margin-bottom: 0 }
+  .shead { display: flex; align-items: center; gap: 13px; margin-bottom: var(--s-4) }
+  .shead .sic { width: 38px; height: 38px; border-radius: 12px; background: var(--accent-tint); color: var(--accent-text); display: grid; place-items: center; flex: none }
+  .shead .sic svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round }
+  .shead b { display: block; font-family: var(--font-display); font-weight: 700; font-size: 1.0625rem; letter-spacing: -.01em; line-height: 1.25 }
+  .shead > div > span { display: block; color: var(--text-3); font-size: .8125rem; margin-top: 1px }
+  .duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--s-4); margin-top: var(--s-6) }
+  .duo + .duo { margin-top: var(--s-4) }
+  .scard { display: flex; flex-direction: column } .scard .field { max-width: none }
+  .scard > form, .scard > .stack { flex: 1; align-content: start }
+  .scard > form > .row.end { margin-top: auto }
+  .acts .act { display: flex; align-items: center; gap: 14px; padding: 13px 0; border-bottom: 1px solid var(--border) }
+  .acts .act:last-child { border-bottom: 0; padding-bottom: 0 } .acts .act:first-child { padding-top: 0 }
+  .act .tx { flex: 1; min-width: 0 } .act .tx b { display: block; font-weight: 600; font-size: .9375rem }
+  .act .tx span { display: block; color: var(--text-3); font-size: .8125rem; margin-top: 1px } .act .tx span b { display: inline; font-size: inherit; color: var(--text-2) }
+  .act .btn { flex: none }
+  .acts.split { border-top: 1px solid var(--border); margin-top: var(--s-4); padding-top: 13px } .acts.split .act:first-child { padding-top: 0 }
+  .pagefoot { margin-top: var(--s-7); display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--text-3); font-family: var(--font-mono); font-size: .75rem }
+  .pagefoot .sep::before { content: "·" }
+  .linkbtn { font: inherit; background: none; border: 0; padding: 0; color: var(--text-2); text-decoration: underline; text-underline-offset: 3px; cursor: pointer } .linkbtn:hover { color: var(--text) }

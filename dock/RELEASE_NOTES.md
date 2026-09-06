@@ -1,1 +1,1 @@
-0.0.9 — The settings page now shows the Dock's real network address instead of a loopback placeholder.
+0.0.10 — A friendlier settings page: clear sections with icons, actions that explain themselves, and technical details tucked into the footer.

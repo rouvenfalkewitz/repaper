@@ -15,40 +15,47 @@
     <div class="actions"><div class="printer"><b>Settings</b><span id="addr"></span></div><a class="gear" href="/" aria-label="Back to the Dock" title="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/><path style="display:none" d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></a></div>
   </header>
 
-  <h2>Notifications</h2>
-  <div class="card" id="notes"></div>
+  <div class="notices" id="noteSec" hidden><div id="notes"></div></div>
 
-  <h2>Printer</h2>
-  <div class="card">
-    <form id="printerForm" class="stack" oninput="dirty()" onsubmit="return savePrinter(event)">
-      <div class="field"><label for="pname">Printer name</label><input id="pname" name="printer_name" maxlength="63" required autocomplete="off"><div class="hint">What people see in their print dialog. Applied when the printer restarts.</div></div>
-      <div class="field"><label for="timeout">Keep waiting jobs for</label><select id="timeout" name="job_timeout_seconds">
-        <option value="600">10 minutes</option><option value="1800">30 minutes</option><option value="3600">1 hour</option>
-        <option value="14400">4 hours</option><option value="86400">1 day</option>
-      </select><div class="hint">A print job waits this long for someone to pick a sheet — then it's quietly discarded.</div></div>
-      <div class="row end"><button class="btn primary" id="saveBtn" type="submit" disabled>Save</button></div>
-    </form>
+  <section class="sec">
+    <div class="shead"><span class="sic"><svg viewBox="0 0 24 24"><path d="M6 3h9l5 5v13H6z"/><path d="M15 3v5h5"/></svg></span><div><b>Sheets</b><span id="sheetSub">The e-paper displays this Dock prints to</span></div></div>
+    <div class="sheets" id="sheets"></div>
+  </section>
+
+  <div class="duo">
+    <section class="card scard">
+      <div class="shead"><span class="sic"><svg viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></svg></span><div><b>Printer</b><span>How this Dock appears in print dialogs</span></div></div>
+      <form id="printerForm" class="stack" oninput="dirty()" onsubmit="return savePrinter(event)">
+        <div class="field"><label for="pname">Printer name</label><input id="pname" name="printer_name" maxlength="63" required autocomplete="off"><div class="hint">What people see in their print dialog. Applied when the printer restarts.</div></div>
+        <div class="field"><label for="timeout">Keep waiting jobs for</label><select id="timeout" name="job_timeout_seconds">
+          <option value="600">10 minutes</option><option value="1800">30 minutes</option><option value="3600">1 hour</option>
+          <option value="14400">4 hours</option><option value="86400">1 day</option>
+        </select><div class="hint">A print job waits this long for someone to pick a sheet — then it's quietly discarded.</div></div>
+        <div class="row end"><button class="btn primary" id="saveBtn" type="submit" disabled>Save</button></div>
+      </form>
+    </section>
+    <section class="card scard">
+      <div class="shead"><span class="sic"><svg viewBox="0 0 24 24"><path d="M17.5 18a4.5 4.5 0 0 0 .4-9A6 6 0 0 0 6.2 10.3 4 4 0 0 0 7 18z"/></svg></span><div><b>RePaper Cloud</b><span>Remote care, updates and your fleet</span></div></div>
+      <div class="stack" id="cloudCard"></div>
+    </section>
   </div>
 
-  <h2>Sheets</h2>
-  <div class="sheets" id="sheets"></div>
-
-  <h2>RePaper Cloud</h2>
-  <div class="card stack" id="cloudCard"></div>
-
-  <h2>Network</h2>
-  <div class="card">
-    <div class="facts" id="net"></div>
-    <div class="row" style="margin-top:14px" id="hotspotRow" hidden><button class="btn outline small" id="wifiBtn" onclick="openWifiChange()"></button><button class="btn outline small" id="netBtn" onclick="openNetConfig()"></button><button class="btn outline small" id="hotspotBtn" onclick="testHotspot()"></button><span class="hint" style="color:var(--text-3);font-size:.8125rem">Opens the Wi-Fi setup hotspot for 5 minutes — the Dock leaves this network meanwhile, then returns on its own.</span></div>
+  <div class="duo">
+    <section class="card scard">
+      <div class="shead"><span class="sic"><svg viewBox="0 0 24 24"><path d="M2.5 9.5a15 15 0 0 1 19 0M5.5 13a10 10 0 0 1 13 0M8.5 16.5a5 5 0 0 1 7 0"/><circle cx="12" cy="20" r="1.2" fill="currentColor" stroke="none"/></svg></span><div><b>Network</b><span id="netSub">How devices find this Dock</span></div></div>
+      <div class="facts" id="net"></div>
+      <div class="acts split" id="netActs" hidden></div>
+    </section>
+    <section class="card scard" id="powerCard" hidden>
+      <div class="shead"><span class="sic"><svg viewBox="0 0 24 24"><path d="M12 3v8M6.3 7a8 8 0 1 0 11.4 0"/></svg></span><div><b>Power &amp; reset</b><span>Restart, or start over from scratch</span></div></div>
+      <div class="acts">
+        <div class="act"><div class="tx"><b>Restart the Dock</b><span>Back in about a minute — sheets and settings stay.</span></div><button class="btn outline small" id="rebootBtn" onclick="doReboot(this)">Restart</button></div>
+        <div class="act"><div class="tx"><b>Factory reset</b><span>Erases sheets, Wi-Fi and the cloud claim — like on day one.</span></div><button class="btn danger small" id="resetBtn" onclick="openFactoryReset()">Reset…</button></div>
+      </div>
+    </section>
   </div>
 
-  <h2>About</h2>
-  <div class="card"><div class="facts" id="about"></div>
-    <div class="row" style="margin-top:16px" id="maintRow" hidden>
-      <button class="btn outline small" id="rebootBtn" onclick="doReboot(this)"></button>
-      <button class="btn danger small" id="resetBtn" onclick="openFactoryReset()"></button>
-    </div>
-  </div>
+  <footer class="pagefoot"><span id="footline"></span><span class="sep"></span><button class="linkbtn" onclick="openTech()">Technical details</button></footer>
 </div>
 <dialog class="modal" id="addDlg">
   <div class="modal-head"><b>Add a sheet</b><button class="iconbtn" type="button" onclick="closeAdd()" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
@@ -133,13 +140,21 @@ async function load() {
   el("timeout").value = opts.reduce((a, b) => Math.abs(b - s.job_timeout_seconds) < Math.abs(a - s.job_timeout_seconds) ? b : a);
   el("addr").textContent = s.address; dirty();
   el("sheets").innerHTML = Object.entries(s.sheets).map(([k, v]) => card(k, v)).join("") + `<button class="sheet addcard" type="button" onclick="openAdd()"><span class="plus">${ICON.plus}</span><span>${Object.keys(s.sheets).length ? "Add a sheet" : "Add your first sheet"}</span></button>`;
-  el("notes").innerHTML = (s.notifications || []).length
-    ? s.notifications.map(n => `<div class="notice ${n.level === "warn" ? "" : n.level}">${ICON[n.level] || ICON.info}<div><b>${esc(n.title)}</b><span>${esc(n.text)}</span></div></div>`).join("")
-    : `<div class="allgood"><span class="ic">${ICON.check}</span><span>Nothing needs attention.</span></div>`;
-  el("net").innerHTML = Object.entries(s.network).map(([k, v]) => fact(k, v)).join("");
-  el("about").innerHTML = Object.entries(s.about).map(([k, v]) => fact(k, v)).join("")
-    + `<details class="techd"><summary>Technical details</summary><div class="facts" style="margin-top:12px">${Object.entries(s.tech || {}).map(([k, v]) => fact(k, v)).join("")}</div></details>`;
+  const notes = s.notifications || [];
+  el("noteSec").hidden = !notes.length;
+  el("notes").innerHTML = notes.map(n => `<div class="notice ${n.level === "warn" ? "" : n.level}">${ICON[n.level] || ICON.info}<div><b>${esc(n.title)}</b><span>${esc(n.text)}</span></div></div>`).join("");
+  const n = Object.keys(s.sheets).length;
+  el("sheetSub").textContent = n ? `${n} sheet${n === 1 ? "" : "s"} added to this Dock` : "The e-paper displays this Dock prints to";
+  const nf = { ...s.network }, share = nf["Printer sharing"]; delete nf["Printer sharing"];
+  if (share) el("netSub").textContent = share;
+  el("net").innerHTML = Object.entries(nf).map(([k, v]) => fact(k, v)).join("");
+  el("footline").textContent = `${s.about.Software} · ${s.about.System}`;
   renderCloud(s.cloud);
+}
+function openTech() {
+  el("detName").textContent = "Technical details";
+  el("detBody").innerHTML = Object.entries({ ...(S.about || {}), ...(S.tech || {}) }).map(([k, v]) => fact(k, v)).join("");
+  el("detDlg").showModal();
 }
 /* cloud: one clear state, one button. The server address hides behind Advanced. */
 const DEFAULT_CLOUD = "wss://repaper.schisch.net/ws/device";
@@ -173,16 +188,20 @@ async function setCloudUrl(e, url, b) {
   return false;
 }
 setInterval(async () => { try { renderCloud((await api("/api/settings")).cloud); } catch {} }, 4000);
-/* wifi onboarding test (Pi Docks only) */
+/* wifi + power (Pi Docks only): each row shows the current value next to its action */
 let W = null;
 async function initWifi() {
-  try { W = await api("/api/wifi"); if (W.supported) { el("hotspotRow").hidden = false;
-    el("hotspotBtn").innerHTML = ICON.scan + "<span>Test the setup hotspot</span>";
-    el("netBtn").innerHTML = ICON.info + "<span>Network configuration</span>";
-    el("wifiBtn").innerHTML = ICON.scan + "<span>Change Wi-Fi</span>";
-    el("maintRow").hidden = false;
-    el("rebootBtn").innerHTML = ICON.spin.replace(' class="spin"', '') + "<span>Restart the Dock</span>";
-    el("resetBtn").innerHTML = ICON.trash + "<span>Factory reset</span>"; } } catch {}
+  try {
+    W = await api("/api/wifi");
+    if (!W.supported) return;
+    const act = (title, sub, id, label, fn) => `<div class="act"><div class="tx"><b>${title}</b><span>${sub}</span></div><button class="btn outline small" id="${id}" onclick="${fn}">${label}</button></div>`;
+    el("netActs").innerHTML =
+      act("Wi-Fi network", W.current ? `Connected to <b>${esc(W.current)}</b>` : "Not connected", "wifiBtn", "Change…", "openWifiChange()")
+      + act("IP settings", (W.net && W.net.method) === "manual" ? "Static address" : "Automatic (DHCP) — fits almost everyone", "netBtn", "Configure…", "openNetConfig()")
+      + act("Setup hotspot", `Opens “${esc(W.ap_ssid)}” for 5 minutes, then the Dock returns here on its own`, "hotspotBtn", "Test", "testHotspot()");
+    el("netActs").hidden = false;
+    el("powerCard").hidden = false;
+  } catch {}
 }
 async function doReboot(b) {
   const done = busy(b, "Restarting…");
