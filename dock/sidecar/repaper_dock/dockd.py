@@ -353,7 +353,9 @@ def make_handler(dock: Dock):
                         return self._json({"ok": True})
                     if u.path == "/api/wifi/hotspot":
                         if not dock.wifi.supported: return self._json({"error": "Wi-Fi setup is not available on this host"}, 400)
-                        dock.wifi.hotspot_up(timeout_min=int(data.get("minutes", 5)))
+                        # async: the AP switch kills this network path — reply first, switch after
+                        dock.wifi.detail = ""
+                        threading.Thread(target=dock.wifi.hotspot_up, kwargs={"timeout_min": int(data.get("minutes", 5))}, daemon=True).start()
                         return self._json({"ok": True, "ssid": dock.wifi.ap_ssid})
                     if u.path == "/api/sheets/add": return self._json(dock.add_sheet(data.get("input", ""), data.get("name", ""), data.get("serial", "")))
                     m = re.fullmatch(r"/api/sheets/([A-Za-z0-9_.-]+)(?:/(remove|test-page|calibrate))?", u.path)

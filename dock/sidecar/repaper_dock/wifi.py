@@ -11,7 +11,7 @@ before the hotspot goes up. A hotspot always carries an auto-revert timer, so a
 test can never strand a working Dock off its Wi-Fi.
 """
 from __future__ import annotations
-import logging, os, re, shutil, subprocess, sys, threading, time
+import logging, os, re, shutil, socket, subprocess, sys, threading, time
 
 log = logging.getLogger("repaper")
 
@@ -42,7 +42,7 @@ class WifiOnboarding(threading.Thread):
 
     def info(self) -> dict:
         out = {"supported": self.supported, "mode": self.mode, "ap_ssid": self.ap_ssid,
-               "detail": self.detail, "networks": self.networks,
+               "hostname": socket.gethostname(), "detail": self.detail, "networks": self.networks,
                "current": self._current_ssid() if self.supported and self.mode == "normal" else None}
         if self.supported and self.mode == "normal":
             try: out["net"] = self.net_config()
@@ -187,7 +187,7 @@ class WifiOnboarding(threading.Thread):
                     try: self.apply_net("manual", static.get("address", ""), static.get("gateway", ""), static.get("dns") or static.get("gateway", ""))
                     except Exception as e: log.warning("wifi: static config after join failed: %s", e)
             else:
-                self.detail = "could not join — wrong password?"
+                s_detail = f"Joining \u201c{ssid}\u201d didn\u2019t work \u2014 most likely the password."; self.detail = s_detail
                 log.warning("wifi: join '%s' failed: %s", ssid, (r.stderr or r.stdout).strip()[-200:])
                 self.mode = "normal"
                 if was_hotspot: self.hotspot_up(timeout_min=10)

@@ -265,3 +265,16 @@
   .pagefoot { margin-top: var(--s-7); display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--text-3); font-family: var(--font-mono); font-size: .75rem }
   .pagefoot .sep::before { content: "·" }
   .linkbtn { font: inherit; background: none; border: 0; padding: 0; color: var(--text-2); text-decoration: underline; text-underline-offset: 3px; cursor: pointer } .linkbtn:hover { color: var(--text) }
+
+  /* toggle slider + password reveal */
+  .tgl { display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: .9375rem; font-weight: 600 }
+  .tgl input { position: absolute; opacity: 0; width: 0; height: 0 }
+  .tgl .knob { flex: none; width: 42px; height: 24px; border-radius: 999px; background: var(--border-strong); position: relative; transition: background var(--dur-fast) var(--ease-out) }
+  .tgl .knob::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35); transition: left var(--dur-fast) var(--ease-out) }
+  .tgl input:checked + .knob { background: var(--accent) } .tgl input:checked + .knob::after { left: 21px }
+  .tgl input:focus-visible + .knob { outline: 2px solid var(--accent); outline-offset: 2px }
+  .pwrap { position: relative; display: block } .pwrap input { width: 100%; padding-right: 44px; box-sizing: border-box }
+  .eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 32px; height: 32px; border: 0; background: none; color: var(--text-3); cursor: pointer; border-radius: 8px }
+  .eye:hover { color: var(--text) } .eye svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round }
+  .advbtn { align-self: start; font: 600 .8125rem var(--font-body); color: var(--text-3); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px }
+  .advbtn:hover { color: var(--text-2) }

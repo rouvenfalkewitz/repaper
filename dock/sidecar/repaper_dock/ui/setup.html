@@ -30,6 +30,7 @@
   </div>
   <h1 style="font-family:var(--font-display);font-weight:700;font-size:1.375rem;letter-spacing:-.02em;margin:0 0 6px">Connect this Dock to Wi-Fi</h1>
   <p style="color:var(--text-2);margin:0 0 20px;font-size:.9375rem" id="intro">Pick your network. The Dock joins it and this setup hotspot disappears.</p>
+  <div id="fail"></div>
   <div id="nets"></div>
   <div id="msg"></div>
 </div>
@@ -37,7 +38,10 @@
 const el = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const LOCK = `<svg class="lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`;
-let NETS = [], open = null;
+const EYE = `<svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const EYEOFF = `<svg viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/></svg>`;
+let NETS = [], open = null, HOSTNAME = "";
+function togglePw(b) { const i = b.parentElement.querySelector("input"); i.type = i.type === "password" ? "text" : "password"; b.innerHTML = i.type === "password" ? EYE : EYEOFF; i.focus(); }
 
 function bars(sig) { return `<span class="bars s${Math.max(1, Math.ceil(sig / 25))}"><i></i><i></i><i></i><i></i></span>`; }
 
@@ -45,13 +49,16 @@ function render() {
   el("nets").innerHTML = NETS.length ? NETS.map((n, i) => `
     <button class="net" onclick="pick(${i})">${bars(n.signal)}<b>${esc(n.ssid)}</b>${n.secured ? LOCK : ""}</button>
     ${open === i ? `<form class="pwbox" onsubmit="return join(${i})">
-      ${n.secured ? `<div class="field"><label for="pw">Password for ${esc(n.ssid)}</label><input id="pw" type="password" autocomplete="off" required autofocus></div>` : `<p style="margin:0;color:var(--text-2);font-size:.875rem">Open network — no password needed.</p>`}
-      <details><summary style="cursor:pointer;color:var(--text-3);font-size:.8125rem">Static address (advanced — DHCP is the default)</summary>
-        <div style="display:grid;gap:8px;padding-top:10px">
+      ${n.secured ? `<div class="field"><label for="pw">Password for ${esc(n.ssid)}</label><span class="pwrap"><input id="pw" type="password" autocomplete="off" required autofocus><button type="button" class="eye" onclick="togglePw(this)" aria-label="Show password">${EYE}</button></span></div>` : `<p style="margin:0;color:var(--text-2);font-size:.875rem">Open network — no password needed.</p>`}
+      <button type="button" class="advbtn" onclick="const b=el('advbox');b.hidden=!b.hidden">Advanced configuration</button>
+      <div id="advbox" hidden style="display:grid;gap:10px;padding:2px 0 4px">
+        <label class="tgl"><input type="checkbox" id="dhcp" checked onchange="el('statics').hidden=this.checked"><span class="knob"></span><span>Automatic network setup (DHCP)</span></label>
+        <div id="statics" hidden style="display:grid;gap:8px">
           <input id="stAddr" placeholder="Address, e.g. 192.168.1.50/24" autocomplete="off">
           <input id="stGw" placeholder="Gateway, e.g. 192.168.1.1" autocomplete="off">
           <input id="stDns" placeholder="DNS (optional)" autocomplete="off">
-        </div></details>
+        </div>
+      </div>
       <button class="btn primary" type="submit">Join this network</button>
     </form>` : ""}`).join("")
     : `<p style="color:var(--text-2)">No networks in the list — the Dock scanned just before opening this hotspot. Move it closer to your router and power-cycle it to rescan.</p>`;
@@ -60,17 +67,26 @@ function pick(i) { open = open === i ? null : i; render(); if (open !== null) se
 function join(i) {
   const n = NETS[i], pw = el("pw") ? el("pw").value : "";
   const body = { ssid: n.ssid, password: pw };
-  if (el("stAddr") && el("stAddr").value.trim()) { body.static = { address: el("stAddr").value.trim(), gateway: el("stGw").value.trim(), dns: el("stDns").value.trim() }; }
+  const dhcp = el("dhcp") ? el("dhcp").checked : true;
+  if (!dhcp && el("stAddr") && el("stAddr").value.trim()) { body.static = { address: el("stAddr").value.trim(), gateway: el("stGw").value.trim(), dns: el("stDns").value.trim() }; }
   fetch("/api/wifi/join", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body) }).catch(() => {});
-  el("nets").innerHTML = "";
+  el("nets").innerHTML = ""; el("fail").innerHTML = "";
   el("intro").hidden = true;
+  const dockurl = HOSTNAME ? `http://${esc(HOSTNAME)}.local:9631` : "its Dock page";
   el("msg").innerHTML = `<div class="joinmsg"><span class="okic" style="display:grid;place-items:center;border-radius:50%;background:var(--accent-tint);color:var(--accent-text)"><svg style="width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg></span>
     <b style="font-family:var(--font-display);font-size:1.125rem">Joining ${esc(n.ssid)}…</b>
-    <p style="margin:0;color:var(--text-2);font-size:.9375rem">This hotspot disappears now — that's the plan. Reconnect your phone to <b>${esc(n.ssid)}</b>.<br><br>If the hotspot comes back after a minute, the password was probably wrong — just try again.</p></div>`;
+    <div style="text-align:left;color:var(--text-2);font-size:.9375rem;display:grid;gap:8px">
+      <p style="margin:0">This hotspot switches off while the Dock joins — that's normal. Two steps for you:</p>
+      <p style="margin:0"><b style="color:var(--text)">1.</b> Reconnect your phone to <b style="color:var(--text)">${esc(n.ssid)}</b>.</p>
+      <p style="margin:0"><b style="color:var(--text)">2.</b> Open <b style="color:var(--text)">${dockurl}</b> — that's your Dock.</p>
+      <p style="margin:0;color:var(--text-3);font-size:.875rem">If this hotspot reappears in a minute or two, the join didn't work (usually the password) — reconnect to it and try again; it will say so at the top.</p>
+    </div></div>`;
   return false;
 }
 async function load() {
-  try { const j = await (await fetch("/api/wifi", {cache: "no-store"})).json(); NETS = j.networks || []; render(); }
+  try { const j = await (await fetch("/api/wifi", {cache: "no-store"})).json(); NETS = j.networks || []; HOSTNAME = j.hostname || "";
+    el("fail").innerHTML = j.detail ? `<div style="display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:10px;background:var(--red-tint);color:var(--red);margin-bottom:14px;font-size:.9375rem"><b style="flex:none">!</b><span>${esc(j.detail)} Pick your network below and try again.</span></div>` : "";
+    render(); }
   catch { setTimeout(load, 2000); }
 }
 load();

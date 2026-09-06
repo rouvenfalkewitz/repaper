@@ -105,7 +105,10 @@ const ICON = {
   warn: `<svg viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>`,
   err: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6m0-6 6 6"/></svg>`,
   info: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>`,
+  eye: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  eyeoff: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/></svg>`,
 };
+function togglePw(b) { const i = b.parentElement.querySelector("input"); i.type = i.type === "password" ? "text" : "password"; b.innerHTML = i.type === "password" ? ICON.eye : ICON.eyeoff; i.focus(); }
 let S = { sheets: {} }, toastT;
 function toast(t, kind) { const x = el("toast"); x.querySelector(".tx").textContent = t; x.querySelector(".ic").innerHTML = kind === "err" ? ICON.x : ICON.check; x.className = "toast show " + (kind || ""); clearTimeout(toastT); toastT = setTimeout(() => x.classList.remove("show"), 2800); }
 async function api(path, body) { const r = await fetch(path, body ? {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)} : {cache: "no-store"}); const j = await r.json(); if (!r.ok || j.error) throw new Error(j.error || r.statusText); return j; }
@@ -250,7 +253,7 @@ el("edBody").addEventListener("click", e => {
   if (wasOpen) return;
   box.hidden = false;
   box.innerHTML = `<form class="ed" data-wifissid="${b.dataset.ssid}" onsubmit="return joinWifi(event)">
-    ${b.dataset.sec === "1" ? `<label>Password for ${esc(b.dataset.ssid)}</label><input name="pw" type="password" required autocomplete="off">` : `<p style="margin:0;font-size:.875rem;color:var(--text-2)">Open network — no password needed.</p>`}
+    ${b.dataset.sec === "1" ? `<label>Password for ${esc(b.dataset.ssid)}</label><span class="pwrap"><input name="pw" type="password" required autocomplete="off"><button type="button" class="eye" onclick="togglePw(this)" aria-label="Show password">${ICON.eye}</button></span>` : `<p style="margin:0;font-size:.875rem;color:var(--text-2)">Open network — no password needed.</p>`}
     <div class="row end"><button class="btn primary" type="submit">Switch to this network</button></div></form>`;
   const inp = box.querySelector("input"); if (inp) inp.focus();
 });
@@ -269,9 +272,8 @@ function openNetConfig() {
   const n = (W && W.net) || {method: "auto"};
   el("edTitle").textContent = "Network configuration";
   el("edBody").innerHTML = `<form class="ed" data-ed="netcfg">
-    <p>Connected to <b>${esc((W && W.current) || "—")}</b>. DHCP fits almost everyone; static is for managed networks. A wrong static config is not fatal — the Dock notices a dead gateway and reopens its setup hotspot.</p>
-    <label class="checkline"><input type="radio" name="method" value="auto" ${n.method !== "manual" ? "checked" : ""} onchange="el('statics').hidden=true"> Automatic (DHCP)</label>
-    <label class="checkline"><input type="radio" name="method" value="manual" ${n.method === "manual" ? "checked" : ""} onchange="el('statics').hidden=false"> Static address</label>
+    <p>Connected to <b>${esc((W && W.current) || "—")}</b>. Automatic fits almost everyone; turn it off only for managed networks with fixed addresses. A wrong static config is not fatal — the Dock notices and reopens its setup hotspot.</p>
+    <label class="tgl"><input type="checkbox" name="dhcp" ${n.method !== "manual" ? "checked" : ""} onchange="el('statics').hidden=this.checked"><span class="knob"></span><span>Automatic network setup (DHCP)</span></label>
     <div id="statics" ${n.method === "manual" ? "" : "hidden"} style="display:grid;gap:10px">
       <label for="cfAddr">Address / prefix</label><input id="cfAddr" name="address" value="${esc(n.address || "")}" placeholder="192.168.1.50/24" autocomplete="off">
       <label for="cfGw">Gateway</label><input id="cfGw" name="gateway" value="${esc(n.gateway || "")}" placeholder="192.168.1.1" autocomplete="off">
@@ -280,11 +282,24 @@ function openNetConfig() {
     <div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Apply</button></div></form>`;
   el("edDlg").showModal();
 }
-async function testHotspot() {
-  const done = busy(el("hotspotBtn"), "Opening…");
-  try { const r = await api("/api/wifi/hotspot", {minutes: 5}); done("Hotspot up");
-    toast(`Look for the Wi-Fi network “${r.ssid}” on your phone — this page goes quiet until the Dock returns.`); }
-  catch (x) { done("Failed", true); toast(x.message, "err"); }
+/* the Dock leaves this network moments after we ask — fire, explain, poll for its return */
+function testHotspot() {
+  const b = el("hotspotBtn"), row = b.closest(".act"), tb = row.querySelector(".tx b"), ts = row.querySelector(".tx span");
+  api("/api/wifi/hotspot", {minutes: 5}).catch(() => {});
+  b.disabled = true; b.innerHTML = ICON.spin + "<span>Open</span>"; b.classList.add("busy");
+  tb.textContent = "Hotspot is opening…";
+  ts.innerHTML = `In ~20 seconds your phone sees “<b>${esc(W.ap_ssid)}</b>”. The Dock has left this network — this page reconnects by itself when it returns (5 minutes at most).`;
+  const t = setInterval(async () => {
+    try {
+      const w = await api("/api/wifi");
+      if (w.mode === "normal") {
+        clearInterval(t); b.disabled = false; b.classList.remove("busy"); b.innerHTML = "Test";
+        tb.textContent = "Setup hotspot";
+        ts.innerHTML = `Opens “${esc(W.ap_ssid)}” for 5 minutes, then the Dock returns here on its own`;
+        toast("The Dock is back on this network.");
+      }
+    } catch {}
+  }, 5000);
 }
 initWifi();
 /* printer form: Save only lights up when something changed */
@@ -384,7 +399,7 @@ el("edDlg").addEventListener("submit", async e => {
   e.preventDefault(); const f = e.target, id = f.dataset.id, kind = f.dataset.ed, sb = f.querySelector("button[type=submit]"), done = busy(sb, kind === "remove" ? "Removing…" : "Saving…");
   try {
     if (kind === "netcfg") {
-      const method = f.elements.method.value;
+      const method = f.elements.dhcp.checked ? "auto" : "manual";
       await api("/api/wifi/config", method === "manual"
         ? {method, address: f.elements.address.value.trim(), gateway: f.elements.gateway.value.trim(), dns: f.elements.dns.value.trim()}
         : {method});
