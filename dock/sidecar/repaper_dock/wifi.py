@@ -192,11 +192,17 @@ class WifiOnboarding(threading.Thread):
             self._drop_profiles(ssid)
             err = ""
             for attempt in range(3):
-                try: _nmcli("device", "wifi", "rescan", timeout=20); time.sleep(3 + attempt * 2)
-                except Exception: pass
-                args = ["device", "wifi", "connect", ssid, "ifname", "wlan0"]
-                if password: args += ["password", password]
-                r = _nmcli(*args, timeout=60)
+                # an explicit profile needs no scan results: right after AP teardown
+                # the scan cache is empty, and `device wifi connect` then fails with
+                # "key-mgmt: property is missing" because it can't infer security
+                self._drop_profiles(ssid)
+                args = ["connection", "add", "type", "wifi", "con-name", ssid, "ifname", "wlan0",
+                        "ssid", ssid, "connection.autoconnect", "yes"]
+                if password: args += ["wifi-sec.key-mgmt", "wpa-psk", "wifi-sec.psk", password]
+                r = _nmcli(*args)
+                if r.returncode == 0:
+                    time.sleep(1 + attempt * 2)
+                    r = _nmcli("connection", "up", ssid, timeout=75)
                 if r.returncode == 0 and self._wifi_connected():
                     log.info("wifi: joined '%s' (attempt %d)", ssid, attempt + 1)
                     self.mode, self.detail, self._offline_since = "normal", "", None
