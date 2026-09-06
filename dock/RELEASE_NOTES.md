@@ -1,1 +1,1 @@
-0.0.15 — Joining Wi-Fi from the setup hotspot now works even right after the hotspot closes.
+0.0.16 — The settings page no longer jumps while loading, and Power & reset is now called Maintenance.

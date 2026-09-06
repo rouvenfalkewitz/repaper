@@ -143,6 +143,7 @@ class Dock:
                       "hw": e.get("keys", {}).get("hw", {})}
                   for k, e in self.registry.all().items()}
         return {"printer_name": self.cfg["printer_name"], "job_timeout_seconds": self.cfg["job_timeout_seconds"], "notifications": self.notifications(self.snapshot()["sheets"]),
+                "wifi_supported": self.wifi.supported,
                 "address": f"http://{socket.gethostname()}:{self.cfg['web_port']}/", "sheets": sheets, "cloud": self.cloud.info(),
                 "network": {"Hostname": socket.gethostname(), "IP address": ", ".join(sorted(set(ips))) or "—",
                             "Printer sharing": "AirPrint & IPP Everywhere — visible to devices on this network"},

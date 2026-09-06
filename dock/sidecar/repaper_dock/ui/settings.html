@@ -47,7 +47,7 @@
       <div class="acts split" id="netActs" hidden></div>
     </section>
     <section class="card scard" id="powerCard" hidden>
-      <div class="shead"><span class="sic"><svg viewBox="0 0 24 24"><path d="M12 3v8M6.3 7a8 8 0 1 0 11.4 0"/></svg></span><div><b>Power &amp; reset</b><span>Restart, or start over from scratch</span></div></div>
+      <div class="shead"><span class="sic"><svg viewBox="0 0 24 24"><path d="M12 3v8M6.3 7a8 8 0 1 0 11.4 0"/></svg></span><div><b>Maintenance</b><span>Restart, or start over from scratch</span></div></div>
       <div class="acts">
         <div class="act"><div class="tx"><b>Restart the Dock</b><span>Back in about a minute — sheets and settings stay.</span></div><button class="btn outline small" id="rebootBtn" onclick="doReboot(this)">Restart</button></div>
         <div class="act"><div class="tx"><b>Factory reset</b><span>Erases sheets, Wi-Fi and the cloud claim — like on day one.</span></div><button class="btn danger small" id="resetBtn" onclick="openFactoryReset()">Reset…</button></div>
@@ -152,6 +152,14 @@ async function load() {
   if (share) el("netSub").textContent = share;
   el("net").innerHTML = Object.entries(nf).map(([k, v]) => fact(k, v)).join("");
   el("footline").textContent = `${s.about.Software} · ${s.about.System}`;
+  if (s.wifi_supported) {
+    el("powerCard").hidden = false;          /* static content — nothing to wait for */
+    if (el("netActs").hidden && !W) {        /* details still loading: hold the space with skeletons */
+      el("netActs").innerHTML = Array.from({length: 3}, () =>
+        `<div class="act"><div class="tx"><span class="skl" style="width:34%"></span><span class="skl thin" style="width:62%"></span></div><span class="skl btnskl"></span></div>`).join("");
+      el("netActs").hidden = false;
+    }
+  }
   renderCloud(s.cloud);
 }
 function openTech() {
