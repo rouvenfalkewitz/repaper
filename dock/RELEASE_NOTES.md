@@ -1,1 +1,1 @@
-0.0.10 — A friendlier settings page: clear sections with icons, actions that explain themselves, and technical details tucked into the footer.
+0.0.11 — Fixes Wi-Fi setup on the Dock: the setup hotspot, Change Wi-Fi and network configuration now work reliably.

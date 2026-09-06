@@ -11,7 +11,7 @@ before the hotspot goes up. A hotspot always carries an auto-revert timer, so a
 test can never strand a working Dock off its Wi-Fi.
 """
 from __future__ import annotations
-import logging, re, shutil, subprocess, sys, threading, time
+import logging, os, re, shutil, subprocess, sys, threading, time
 
 log = logging.getLogger("repaper")
 
@@ -20,7 +20,11 @@ AP_IP = "10.42.0.1"
 
 
 def _nmcli(*args: str, timeout: float = 30.0) -> subprocess.CompletedProcess:
-    return subprocess.run(["nmcli", *args], capture_output=True, text=True, timeout=timeout)
+    # polkit denies an unprivileged service the right to add/modify connections
+    # ("Insufficient privileges"), so on the appliance nmcli runs through sudo
+    cmd = ["nmcli", *args]
+    if os.geteuid() != 0 and shutil.which("sudo"): cmd = ["sudo", "-n", *cmd]
+    return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
 
 
 class WifiOnboarding(threading.Thread):
