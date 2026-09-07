@@ -315,7 +315,9 @@ a.btn { text-decoration: none }
 .dchip.warn { color: var(--amber); border-color: var(--amber-tint); background: var(--amber-tint) }
 .dchip.dim { color: var(--text-3) }
 .dev .dev-foot { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px }
-.dev .dev-foot > .mono { flex: 1; font-size: .75rem }
+.dev .dev-foot .presence { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap }
+.dev .dev-foot .iconrow { flex: none }
+.dev, .dev * { min-width: 0 }
 
 /* dashboard */
 .stat-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--s-3); margin-bottom: var(--s-5) }
@@ -333,3 +335,20 @@ a.stat-tile:hover { border-color: var(--border-strong); transform: translateY(-1
 .h2row { display: flex; align-items: baseline; justify-content: space-between; margin: var(--s-6) 0 var(--s-3) }
 .h2row h2, .dash-cols .h2row { margin: 0 }
 .dash-cols .h2row { margin-bottom: var(--s-3) }
+
+/* dashboard: the jobs chart */
+.chartcard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--s-5); margin-bottom: var(--s-5) }
+.chart-head { display: flex; align-items: flex-end; gap: 18px; flex-wrap: wrap; margin-bottom: 6px }
+.chart-head .lbl { font-family: var(--font-display); font-stretch: 112%; font-weight: 700; font-size: .625rem; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); display: block }
+.chart-head b { font-family: var(--font-display); font-weight: 800; font-size: 1.75rem; letter-spacing: -.02em; line-height: 1.1 }
+.chart-head .today { color: var(--text-2); font-size: .8125rem; padding-bottom: 4px }
+.chart { position: relative }
+.chart svg { display: block; width: 100%; height: 150px }
+.chart .grid { stroke: var(--border); stroke-width: 1 }
+.chart .area { fill: url(#chartFill) }
+.chart .line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round }
+.chart-max { position: absolute; top: 2px; right: 8px; font-size: .6875rem; color: var(--text-3) }
+.chart-dot { position: absolute; width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+  transform: translate(-50%, -50%); box-shadow: 0 0 0 3px var(--accent-tint), 0 0 12px rgba(30,227,165,.6);
+  animation: var(--ring-breathe) }
+.chart-days { display: flex; justify-content: space-between; margin-top: 4px; font-family: var(--font-mono); font-size: .6875rem; color: var(--text-3) }

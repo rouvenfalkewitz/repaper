@@ -19,6 +19,8 @@
 
     <div class="stat-tiles" id="tiles"></div>
 
+    <div class="chartcard" id="chart"><span class="skl" style="height:150px;border-radius:12px"></span></div>
+
     <div class="dash-cols">
       <div>
         <div class="h2row"><h2>Fleet</h2><a class="seeall" href="/fleet">Open fleet →</a></div>
@@ -61,6 +63,52 @@ function tiles(devices, latest) {
     <a class="stat-tile ${behind ? "warn" : "good"}" href="/updates"><i>Software</i><b>${behind ? behind : "✓"}</b><div class="sub">${behind ? `device${behind === 1 ? "" : "s"} can update` : "everything current"}</div></a>`;
 }
 
+/* pages printed across the fleet, last 14 days — one honest area chart */
+function jobsChart(devices) {
+  const byDay = new Map();
+  const days = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    days.push(key); byDay.set(key, 0);
+  }
+  for (const d of devices) for (const s of d.stats || []) {
+    if (byDay.has(s.day)) byDay.set(s.day, byDay.get(s.day) + (s.jobs || 0));
+  }
+  const vals = days.map(k => byDay.get(k));
+  const total = vals.reduce((a, b) => a + b, 0);
+  const today = vals[vals.length - 1];
+  const W = 600, H = 150, PAD = 6, TOP = 16;
+  const max = Math.max(4, ...vals);
+  const x = i => PAD + (i / (days.length - 1)) * (W - 2 * PAD);
+  const y = v => H - PAD - (v / max) * (H - PAD - TOP);
+  // gentle smoothing: cubic segments through midpoints
+  let path = `M ${x(0)} ${y(vals[0])}`;
+  for (let i = 1; i < vals.length; i++) {
+    const cx = (x(i - 1) + x(i)) / 2;
+    path += ` C ${cx} ${y(vals[i - 1])}, ${cx} ${y(vals[i])}, ${x(i)} ${y(vals[i])}`;
+  }
+  const area = path + ` L ${x(vals.length - 1)} ${H - PAD} L ${x(0)} ${H - PAD} Z`;
+  const grid = [0.25, 0.5, 0.75].map(f => `<line class="grid" x1="${PAD}" x2="${W - PAD}" y1="${y(max * f)}" y2="${y(max * f)}" stroke-dasharray="3 5"/>`).join("");
+  const fmtDay = k => { const d = new Date(k + "T12:00:00"); return d.toLocaleDateString(undefined, { weekday: "short" }).slice(0, 2); };
+  return `
+    <div class="chart-head">
+      <span><span class="lbl">Pages printed · last 14 days</span><b>${total}</b></span>
+      <span class="today">${today} today</span>
+    </div>
+    <div class="chart"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="pages printed per day">
+      <defs><linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#1EE3A5" stop-opacity=".28"/><stop offset="1" stop-color="#1EE3A5" stop-opacity="0"/>
+      </linearGradient></defs>
+      ${grid}
+      <path class="area" d="${area}"/>
+      <path class="line" d="${path}"/>
+    </svg>
+    <span class="chart-max mono">${max}</span>
+    <span class="chart-dot" style="left:${(x(vals.length - 1) / W * 100).toFixed(2)}%;top:${(y(today) / H * 100).toFixed(2)}%"></span></div>
+    <div class="chart-days">${days.map((k, i) => i % 2 === 1 ? `<span>${fmtDay(k)}</span>` : "").join("")}</div>`;
+}
+
 function deviceRow(d) {
   const st = d.status || {}, off = !d.online;
   const name = d.name || st.printer || d.kind;
@@ -91,6 +139,7 @@ async function load() {
   el("hello").textContent = greet((fleet.user || {}).name || ME?.name);
   el("orgName").textContent = fleet.org || "";
   setHTML("tiles", tiles(fleet.devices, rel?.latest));
+  setHTML("chart", jobsChart(fleet.devices));
   setHTML("devs", fleet.devices.length ? fleet.devices.map(deviceRow).join("")
     : `<div class="devmeta">No devices yet. Claim your first on the <a class="seeall" href="/fleet">Fleet page</a> — or install <a class="seeall" href="/updates">RePaper Go</a> on a phone.</div>`);
   setHTML("feed", feedRows(act?.activity || []));

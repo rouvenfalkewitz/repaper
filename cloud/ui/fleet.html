@@ -50,12 +50,11 @@ function card(d) {
     <div class="dev-top">
       <span class="devic ${off ? "off" : ""}">${d.kind === "dock" ? ICON.dock : ICON.phone}</span>
       <span class="devwho"><b>${esc(name)}</b><span class="mono">${esc(st.printer || "—")}${d.site ? " · " + esc(d.site) : ""}</span></span>
-      <span class="presence ${off ? "off" : ""}" title="${off ? "seen " + ago(d.last_seen) : "online"}"><span class="dot"></span></span>
     </div>
     ${d.approved === false ? `<div class="notice" style="margin:8px 0 0"><b style="color:var(--amber)">Waiting for approval</b><span>A member added this device.${ME?.role === "admin" ? "" : " An admin activates it."}</span>${ME?.role === "admin" ? `<button class="btn primary small" data-act="approve" style="margin-left:auto">Approve</button>` : ""}</div>` : ""}
     <div class="dchips">${chips}</div>
     <div class="dev-foot">
-      <span class="mono">${off ? "seen " + ago(d.last_seen) : "online now"}</span>${spark(d.stats)}
+      <span class="presence ${off ? "off" : ""}"><span class="dot"></span><b>${off ? "seen " + ago(d.last_seen) : "online"}</b></span>
       <span class="iconrow"><button class="iconbtn" data-act="identify" title="Identify" aria-label="Identify" ${off ? "disabled" : ""}>${ICON.ping}</button><button class="iconbtn" data-act="name" title="Rename" aria-label="Rename">${ICON.pencil}</button><button class="iconbtn" data-act="details" title="Details" aria-label="Details">${ICON.info}</button><button class="iconbtn danger" data-act="remove" title="Remove" aria-label="Remove">${ICON.trash}</button></span>
     </div></div>`;
 }
