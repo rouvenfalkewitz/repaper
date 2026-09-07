@@ -304,6 +304,9 @@ export const upsertStat = (deviceId: string, day: string, jobs: number) =>
   db.prepare("INSERT INTO device_stat(device_id, day, jobs) VALUES(?,?,?) ON CONFLICT(device_id, day) DO UPDATE SET jobs=excluded.jobs").run(deviceId, day, jobs);
 export const deviceStats = (deviceId: string, days = 14) =>
   db.prepare("SELECT day, jobs FROM device_stat WHERE device_id=? ORDER BY day DESC LIMIT ?").all(deviceId, days) as { day: string; jobs: number }[];
+export const orgPagesTotal = (orgId: number): number =>
+  (db.prepare("SELECT COALESCE(SUM(s.jobs),0) AS n FROM device_stat s JOIN device d ON d.id=s.device_id WHERE d.org_id=?")
+    .get(orgId) as { n: number }).n;
 export const orgActivity = (orgId: number, limit = 60) =>
   db.prepare(`SELECT e.at, e.type, e.data, d.id AS device_id, d.name AS device_name, d.kind
               FROM event e JOIN device d ON d.id = e.device_id

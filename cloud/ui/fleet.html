@@ -14,6 +14,7 @@
   <aside class="side" id="side"></aside>
   <main class="main">
     <div class="pagehead"><h1>Fleet</h1><span class="mono" id="orgName"></span></div>
+    <div class="filters" id="filters"></div>
     <div id="alerts"></div>
     <div class="fleet" id="fleet"></div>
   </main>
@@ -32,6 +33,23 @@
 <script src="/app.js"></script>
 <script>
 let S = { devices: [] };
+let FILTER = "all";
+const FILTERS = [
+  ["all", "All", () => true],
+  ["online", "Online", d => d.online],
+  ["offline", "Offline", d => !d.online],
+  ["pending", "Needs approval", d => d.approved === false],
+];
+function renderFilters() {
+  const counts = Object.fromEntries(FILTERS.map(([k, , fn]) => [k, S.devices.filter(fn).length]));
+  setHTML("filters", FILTERS
+    .filter(([k]) => k === "all" || counts[k] > 0)
+    .map(([k, label]) => `<button class="fchip ${FILTER === k ? "on" : ""}" data-f="${k}">${label}<span>${counts[k]}</span></button>`).join(""));
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest(".fchip"); if (!b) return;
+  FILTER = b.dataset.f; renderFilters(); render();
+});
 el("fleet").innerHTML = skeletons("cards", 2);
 
 function card(d, showSite = true) {
@@ -65,15 +83,18 @@ function card(d, showSite = true) {
 
 function render() {
   el("orgName").textContent = S.org || "";
+  const fn = (FILTERS.find(([k]) => k === FILTER) || FILTERS[0])[2];
+  const shown = S.devices.filter(fn);
   const bySite = new Map();
-  for (const d of S.devices) { const k = d.site || ""; if (!bySite.has(k)) bySite.set(k, []); bySite.get(k).push(d); }
+  for (const d of shown) { const k = d.site || ""; if (!bySite.has(k)) bySite.set(k, []); bySite.get(k).push(d); }
   let html = "";
   if (bySite.size > 1) {
     for (const [site, devs] of [...bySite.entries()].sort((a, b) => (a[0] || "~").localeCompare(b[0] || "~")))
       html += `<div class="sitehead">${esc(site || "No site")}</div>` + devs.map(d => card(d, false)).join("");
-  } else html = S.devices.map(card).join("");
+  } else html = shown.map(d => card(d)).join("");
   setHTML("fleet", html
-    + `<button class="addcard" type="button" onclick="openModal('claim')"><span class="plus">${ICON.plus}</span><span>${S.devices.length ? "Claim a device" : "Claim your first device"}</span></button>`
+    + (FILTER !== "all" && !shown.length ? `<div class="empty-hint" style="grid-column:1/-1">Nothing here — switch the filter above.</div>` : "")
+    + (FILTER === "all" ? `<button class="addcard" type="button" onclick="openModal('claim')"><span class="plus">${ICON.plus}</span><span>${S.devices.length ? "Claim a device" : "Claim your first device"}</span></button>` : "")
     + (S.devices.length ? "" : `<div class="empty-hint" style="grid-column:1/-1">A Dock shows its claim code on its settings page under <b>RePaper Cloud</b> once it is pointed at this cloud. Enter the code here and it joins your fleet.</div>`));
 }
 
@@ -85,6 +106,7 @@ function renderAlerts(alerts) {
 async function load() {
   const [fleet, al] = await Promise.all([api("/api/fleet"), api("/api/alerts").catch(() => null)]);
   S = { ...S, ...fleet };
+  renderFilters();
   if (al) renderAlerts(al.alerts);
   if (!document.querySelector("dialog[open]")) render();
 }

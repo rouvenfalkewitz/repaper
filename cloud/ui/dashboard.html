@@ -17,9 +17,11 @@
 
     <div id="alerts"></div>
 
+    <div class="dash-hero" id="hero"><span class="skl" style="height:150px;border-radius:16px"></span><span class="skl" style="height:150px;border-radius:16px"></span></div>
+
     <div class="stat-tiles" id="tiles"></div>
 
-    <div class="chartcard" id="chart"><span class="skl" style="height:150px;border-radius:12px"></span></div>
+    <div class="chartcard" id="chart" hidden></div>
 
     <div class="dash-cols">
       <div>
@@ -51,61 +53,58 @@ function greet(name) {
 
 function tiles(devices, latest) {
   const docks = devices.filter(isDock);
-  const online = devices.filter(d => d.online).length;
   const sheets = devices.reduce((n, d) => n + ((d.status || {}).sheets || []).length, 0);
   const jobs = devices.reduce((n, d) => n + ((d.status || {}).jobs_today || 0), 0);
   const behind = docks.filter(d => latest && d.version !== latest && !(d.target_version && d.target_version !== d.version)).length;
-  const pending = devices.filter(d => d.approved === false).length;
   return `
-    <a class="stat-tile ${online === devices.length && devices.length ? "good" : ""}" href="/fleet"><i>Devices online</i><b>${online}<small> / ${devices.length}</small></b><div class="sub">${pending ? `${pending} waiting for approval` : devices.length ? (online === devices.length ? "all reachable" : "some are away") : "claim your first device"}</div></a>
     <a class="stat-tile" href="/sheets"><i>Sheets</i><b>${sheets}</b><div class="sub">across the fleet</div></a>
     <a class="stat-tile" href="/activity"><i>Jobs today</i><b>${jobs}</b><div class="sub">pages put on paper</div></a>
     <a class="stat-tile ${behind ? "warn" : "good"}" href="/updates"><i>Software</i><b>${behind ? behind : "✓"}</b><div class="sub">${behind ? `device${behind === 1 ? "" : "s"} can update` : "everything current"}</div></a>`;
 }
 
-/* the hero chart adapts: with real printing volume it shows pages over time;
-   a quiet fleet shows sheet batteries instead — always-real data, never a sad flatline */
-function fleetChart(devices) {
-  const days = jobsSeries(devices);
-  const total = days.vals.reduce((a, b) => a + b, 0);
-  return total >= 8 ? jobsChart(days) : batteryChart(devices);
-}
+/* the hero: what RePaper saves, and how the fleet is doing right now */
+function hero(fleet) {
+  const devices = fleet.devices;
+  const s14 = jobsSeries(devices);
+  const recent = s14.vals.reduce((a, b) => a + b, 0);
+  const today = s14.vals[s14.vals.length - 1];
+  const total = fleet.pages_total ?? recent;
+  const pages = `<div class="herocard pages-ever">
+    <span class="lbl">Pages printed — all time</span>
+    <b>${total.toLocaleString()}</b>
+    <div class="sub">Every one on reusable e-paper instead of thrown-away printouts.</div>
+    <span class="mono">${recent} in the last 14 days · ${today} today</span>
+  </div>`;
 
-function batteryChart(devices) {
-  const rows = [];
-  for (const d of devices) for (const sh of (d.status || {}).sheets || []) {
-    rows.push({ sheet: sh.name || sh.id, dev: d.name || (d.status || {}).printer || d.kind,
-                mv: sh.battery_volts != null ? sh.battery_volts * 1000 : null, away: sh.online === false });
-  }
-  if (!rows.length) return `<div class="chart-head"><span><span class="lbl">Fleet health</span><b>—</b></span></div>
-    <div class="devmeta">Charts appear here once the first sheets are added to a device.</div>`;
-  rows.sort((a, b) => (a.mv ?? 9e9) - (b.mv ?? 9e9));
-  const low = rows.filter(r => r.mv != null && r.mv < 2700).length;
-  const bars = rows.slice(0, 8).map(r => {
-    const pct = r.mv == null ? 0 : Math.max(4, Math.min(100, (r.mv - 2400) / 6));
-    const cls = r.mv == null ? "none" : r.mv < 2700 ? "low" : "";
-    return `<div class="batrow ${r.away ? "away" : ""}">
-      <span class="batname"><b>${esc(r.sheet)}</b><span class="mono">${esc(r.dev)}${r.away ? " · not in range" : ""}</span></span>
-      <span class="battrack"><span class="batfill ${cls}" style="width:${pct}%"></span></span>
-      <span class="mono batv">${r.mv == null ? "—" : (r.mv / 1000).toFixed(2) + " V"}</span></div>`;
+  const online = devices.filter(d => d.online && d.approved !== false).length;
+  const pending = devices.filter(d => d.approved === false).length;
+  const offline = devices.length - online - pending;
+  const segs = [
+    { n: online, color: "#1EE3A5", label: "Online" },
+    { n: offline, color: "#364139", label: "Offline" },
+    { n: pending, color: "#FFB020", label: "Waiting for approval" },
+  ].filter(x => x.n > 0);
+  const R = 46, C = 2 * Math.PI * R;
+  let acc = 0;
+  const paths = segs.map(x => {
+    const frac = x.n / Math.max(1, devices.length);
+    const p = `<circle class="seg" cx="54" cy="54" r="${R}" stroke="${x.color}"
+      stroke-dasharray="${(frac * C - (segs.length > 1 ? 2 : 0)).toFixed(1)} ${C.toFixed(1)}"
+      stroke-dashoffset="${(-acc * C).toFixed(1)}" transform="rotate(-90 54 54)"/>`;
+    acc += frac; return p;
   }).join("");
-  return `<div class="chart-head">
-      <span><span class="lbl">Sheet batteries</span><b>${rows.length}</b></span>
-      <span class="today">${low ? `${low} need${low === 1 ? "s" : ""} a new cell` : "all healthy"}</span>
-    </div><div class="batrows">${bars}</div>`;
-}
-
-function jobsSeries(devices) {
-  const byDay = new Map(); const keys = [];
-  for (let i = 13; i >= 0; i--) {
-    const d = new Date(); d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
-    keys.push(key); byDay.set(key, 0);
-  }
-  for (const d of devices) for (const s of d.stats || []) {
-    if (byDay.has(s.day)) byDay.set(s.day, byDay.get(s.day) + (s.jobs || 0));
-  }
-  return { keys, vals: keys.map(k => byDay.get(k)) };
+  const donut = `<div class="herocard">
+    <span class="lbl">Devices right now</span>
+    <div class="donutwrap">
+      <svg class="donut" viewBox="0 0 108 108">
+        <circle class="track" cx="54" cy="54" r="${R}"/>${paths}
+        <text x="54" y="52">${devices.length}</text><text class="cap" x="54" y="66">DEVICE${devices.length === 1 ? "" : "S"}</text>
+      </svg>
+      <div class="legend">${segs.length ? segs.map(x =>
+        `<div class="lrow"><span class="ldot" style="background:${x.color}"></span>${x.label}<b>${x.n}</b></div>`).join("")
+        : `<div class="lrow">No devices yet</div>`}</div>
+    </div></div>`;
+  return pages + donut;
 }
 
 /* pages printed across the fleet, last 14 days — one honest area chart */
@@ -174,7 +173,11 @@ async function load() {
   el("hello").textContent = greet((fleet.user || {}).name || ME?.name);
   el("orgName").textContent = fleet.org || "";
   setHTML("tiles", tiles(fleet.devices, rel?.latest));
-  setHTML("chart", fleetChart(fleet.devices));
+  setHTML("hero", hero(fleet));
+  const s14 = jobsSeries(fleet.devices);
+  const busy = s14.vals.reduce((a, b) => a + b, 0) >= 8;
+  el("chart").hidden = !busy;
+  if (busy) setHTML("chart", jobsChart(s14));
   setHTML("devs", fleet.devices.length ? fleet.devices.map(deviceRow).join("")
     : `<div class="devmeta">No devices yet. Claim your first on the <a class="seeall" href="/fleet">Fleet page</a> — or install <a class="seeall" href="/updates">RePaper Go</a> on a phone.</div>`);
   setHTML("feed", feedRows(act?.activity || []));

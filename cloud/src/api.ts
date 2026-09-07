@@ -8,7 +8,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { generateSecret, otpauthUrl, totpCheck } from "./totp.js";
 import {
   addEvent, addOrgEvent, addRecoveryCodes, anyOrgAdmin, bumpLoginPending, claimDevice, createApiKey,
-  approveDevice, createInvite, createLoginPending, createOrg, createReset, createUser, deleteDevice, deleteLoginPending,
+  approveDevice, createInvite, orgPagesTotal, createLoginPending, createOrg, createReset, createUser, deleteDevice, deleteLoginPending,
   deleteOtherSessions, deleteSessionsFor, deleteUser, deviceEvents, deviceStats, disableTotp,
   enableTotp, findClaimable, firstAdmin, getDevice, getOrg, getOrgByName, getUser, getUserByEmail,
   inviteByTokenHash, loginPendingByToken, markInviteUsed, markResetUsed, orgActivity, orgEvents, touchDevice,
@@ -42,8 +42,7 @@ const orgAlerts = (orgId: number) => {
   for (const d of orgDevices(orgId)) {
     const st = JSON.parse(d.status || "{}");
     const name = d.name || st.printer || d.id;
-    if (!isOnline(d.id) && d.last_seen && now - d.last_seen > 600)
-      out.push({ level: "warn", title: `${name} is offline`, text: `Last heard ${Math.round((now - d.last_seen) / 60)} min ago. Printing on site still works — the cloud just can't see it.`, device_id: d.id });
+    // no offline alerts: presence is visible on every page — alerts are for things to FIX
     for (const s of st.sheets || [])
       if (s.battery_volts != null && s.battery_volts * 1000 < LOW_MV)
         out.push({ level: "err", title: `${s.name || s.id} on ${name}: battery low (${s.battery_volts.toFixed(2)} V)`, text: "The Dock refuses to print to it until the cell is replaced — a refresh on a weak cell can leave the sheet half-drawn.", device_id: d.id });
@@ -292,7 +291,8 @@ export const registerApi = (app: FastifyInstance) => {
     f.get("/api/fleet", async (req) => {
       const u = (req as Authed).user;
       const org = getOrg(u.org_id)!;
-      return { org: org.name, user: { email: u.email, name: u.name, role: u.role }, devices: orgDevices(u.org_id).map(publicDevice) };
+      return { org: org.name, user: { email: u.email, name: u.name, role: u.role },
+               pages_total: orgPagesTotal(u.org_id), devices: orgDevices(u.org_id).map(publicDevice) };
     });
 
     // ── account ────────────────────────────────────────────────────────────
