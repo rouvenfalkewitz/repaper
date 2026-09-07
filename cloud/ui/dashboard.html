@@ -63,19 +63,54 @@ function tiles(devices, latest) {
     <a class="stat-tile ${behind ? "warn" : "good"}" href="/updates"><i>Software</i><b>${behind ? behind : "✓"}</b><div class="sub">${behind ? `device${behind === 1 ? "" : "s"} can update` : "everything current"}</div></a>`;
 }
 
-/* pages printed across the fleet, last 14 days — one honest area chart */
-function jobsChart(devices) {
-  const byDay = new Map();
-  const days = [];
+/* the hero chart adapts: with real printing volume it shows pages over time;
+   a quiet fleet shows sheet batteries instead — always-real data, never a sad flatline */
+function fleetChart(devices) {
+  const days = jobsSeries(devices);
+  const total = days.vals.reduce((a, b) => a + b, 0);
+  return total >= 8 ? jobsChart(days) : batteryChart(devices);
+}
+
+function batteryChart(devices) {
+  const rows = [];
+  for (const d of devices) for (const sh of (d.status || {}).sheets || []) {
+    rows.push({ sheet: sh.name || sh.id, dev: d.name || (d.status || {}).printer || d.kind,
+                mv: sh.battery_volts != null ? sh.battery_volts * 1000 : null, away: sh.online === false });
+  }
+  if (!rows.length) return `<div class="chart-head"><span><span class="lbl">Fleet health</span><b>—</b></span></div>
+    <div class="devmeta">Charts appear here once the first sheets are added to a device.</div>`;
+  rows.sort((a, b) => (a.mv ?? 9e9) - (b.mv ?? 9e9));
+  const low = rows.filter(r => r.mv != null && r.mv < 2700).length;
+  const bars = rows.slice(0, 8).map(r => {
+    const pct = r.mv == null ? 0 : Math.max(4, Math.min(100, (r.mv - 2400) / 6));
+    const cls = r.mv == null ? "none" : r.mv < 2700 ? "low" : "";
+    return `<div class="batrow ${r.away ? "away" : ""}">
+      <span class="batname"><b>${esc(r.sheet)}</b><span class="mono">${esc(r.dev)}${r.away ? " · not in range" : ""}</span></span>
+      <span class="battrack"><span class="batfill ${cls}" style="width:${pct}%"></span></span>
+      <span class="mono batv">${r.mv == null ? "—" : (r.mv / 1000).toFixed(2) + " V"}</span></div>`;
+  }).join("");
+  return `<div class="chart-head">
+      <span><span class="lbl">Sheet batteries</span><b>${rows.length}</b></span>
+      <span class="today">${low ? `${low} need${low === 1 ? "s" : ""} a new cell` : "all healthy"}</span>
+    </div><div class="batrows">${bars}</div>`;
+}
+
+function jobsSeries(devices) {
+  const byDay = new Map(); const keys = [];
   for (let i = 13; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
     const key = d.toISOString().slice(0, 10);
-    days.push(key); byDay.set(key, 0);
+    keys.push(key); byDay.set(key, 0);
   }
   for (const d of devices) for (const s of d.stats || []) {
     if (byDay.has(s.day)) byDay.set(s.day, byDay.get(s.day) + (s.jobs || 0));
   }
-  const vals = days.map(k => byDay.get(k));
+  return { keys, vals: keys.map(k => byDay.get(k)) };
+}
+
+/* pages printed across the fleet, last 14 days — one honest area chart */
+function jobsChart(series) {
+  const days = series.keys, vals = series.vals;
   const total = vals.reduce((a, b) => a + b, 0);
   const today = vals[vals.length - 1];
   const W = 600, H = 150, PAD = 6, TOP = 16;
@@ -139,7 +174,7 @@ async function load() {
   el("hello").textContent = greet((fleet.user || {}).name || ME?.name);
   el("orgName").textContent = fleet.org || "";
   setHTML("tiles", tiles(fleet.devices, rel?.latest));
-  setHTML("chart", jobsChart(fleet.devices));
+  setHTML("chart", fleetChart(fleet.devices));
   setHTML("devs", fleet.devices.length ? fleet.devices.map(deviceRow).join("")
     : `<div class="devmeta">No devices yet. Claim your first on the <a class="seeall" href="/fleet">Fleet page</a> — or install <a class="seeall" href="/updates">RePaper Go</a> on a phone.</div>`);
   setHTML("feed", feedRows(act?.activity || []));

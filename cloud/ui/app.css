@@ -352,3 +352,15 @@ a.stat-tile:hover { border-color: var(--border-strong); transform: translateY(-1
   transform: translate(-50%, -50%); box-shadow: 0 0 0 3px var(--accent-tint), 0 0 12px rgba(30,227,165,.6);
   animation: var(--ring-breathe) }
 .chart-days { display: flex; justify-content: space-between; margin-top: 4px; font-family: var(--font-mono); font-size: .6875rem; color: var(--text-3) }
+
+/* dashboard: sheet battery view (the quiet-fleet hero) */
+.batrows { display: grid; gap: 10px; padding-top: 4px }
+.batrow { display: flex; align-items: center; gap: 14px }
+.batrow.away { opacity: .6 }
+.batname { flex: 0 0 34% ; min-width: 0 } .batname b { display: block; font-family: var(--font-display); font-weight: 600; font-size: .9375rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.batname .mono { display: block; font-size: .6875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.battrack { flex: 1; height: 10px; border-radius: 5px; background: var(--surface-2); border: 1px solid var(--border); overflow: hidden }
+.batfill { display: block; height: 100%; border-radius: 5px; background: linear-gradient(90deg, var(--re-700, #0B7259), var(--accent)); box-shadow: 0 0 10px rgba(30,227,165,.35) }
+.batfill.low { background: linear-gradient(90deg, #8f2f24, var(--red)); box-shadow: 0 0 10px rgba(255,92,77,.35) }
+.batfill.none { background: var(--border-strong); box-shadow: none }
+.batv { flex: none; min-width: 52px; text-align: right; font-size: .75rem }
