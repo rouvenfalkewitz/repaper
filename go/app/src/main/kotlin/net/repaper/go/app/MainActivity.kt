@@ -38,6 +38,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (!Prefs.isClaimed(this)) {      // the app belongs to an account — sign in first
+            startActivity(Intent(this, AuthActivity::class.java)); finish(); return
+        }
         registry = Registry(this)
         jobs = JobStore(this)
 

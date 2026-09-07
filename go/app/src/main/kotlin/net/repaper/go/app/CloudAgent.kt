@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit
 
 /** One outbound WebSocket to RePaper Cloud — the Dock's cloud.py in miniature, kind "go".
  *  Printing never depends on it; the cloud sees metadata, never pages. */
-class CloudAgent(private val context: Context, private val url: String = "wss://repaper.schisch.net/ws/device") {
+class CloudAgent(private val context: Context) {
     companion object {
         @Volatile private var instance: CloudAgent? = null
         fun get(context: Context): CloudAgent =
@@ -48,6 +48,7 @@ class CloudAgent(private val context: Context, private val url: String = "wss://
         while (true) {
             val opened = kotlinx.coroutines.CompletableDeferred<Boolean>()
             val closed = kotlinx.coroutines.CompletableDeferred<Unit>()
+            val url = Prefs.cloudBase(context).replaceFirst("http", "ws") + "/ws/device"
             val socket = client.newWebSocket(Request.Builder().url(url).build(), object : WebSocketListener() {
                 override fun onOpen(webSocket: WebSocket, response: Response) {
                     webSocket.send(JSONObject()
@@ -82,8 +83,9 @@ class CloudAgent(private val context: Context, private val url: String = "wss://
             "hello_ok" -> {
                 claimed = msg.optBoolean("claimed", false)
                 org = msg.optString("org").ifEmpty { null }
+                Prefs.setClaimed(context, claimed)   // fleet removed us → the sign-in gate returns
             }
-            "claimed" -> { claimed = true; org = msg.optString("org").ifEmpty { null }; sendStatus(socket) }
+            "claimed" -> { claimed = true; org = msg.optString("org").ifEmpty { null }; Prefs.setClaimed(context, true); sendStatus(socket) }
             "identify" -> {} // a phone has no LED ring; the app could vibrate later
         }
     }

@@ -18,6 +18,7 @@
         android:supportsRtl="true">
 
         <activity android:name=".app.SettingsActivity" android:exported="false" />
+        <activity android:name=".app.AuthActivity" android:exported="false" />
         <activity android:name=".app.MainActivity" android:exported="true" android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

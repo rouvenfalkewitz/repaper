@@ -7,7 +7,7 @@ import org.json.JSONObject
 import java.io.File
 import java.security.SecureRandom
 
-const val GO_VERSION = "0.1.0"
+const val GO_VERSION = "0.2.0"
 
 /** Same shape as the Dock's ~/.repaper/sheets.json: id → {name, transport, address, keys, model}.
  *  The AES key from the QR link lives only here. */
@@ -60,6 +60,22 @@ class Registry(context: Context) {
 /** App-level preferences: the printer name people see in print dialogs.
  *  Defaults to a per-device name so two phones never collide. */
 object Prefs {
+    const val DEFAULT_CLOUD = "https://repaper.schisch.net"
+
+    private fun p(c: android.content.Context) = c.getSharedPreferences("prefs", android.content.Context.MODE_PRIVATE)
+
+    /** The cloud this app belongs to — reconfigurable on the sign-in page for on-prem installs. */
+    fun cloudBase(context: android.content.Context): String =
+        p(context).getString("cloud_base", null)?.trimEnd('/') ?: DEFAULT_CLOUD
+    fun setCloudBase(context: android.content.Context, url: String) {
+        val v = url.trim().trimEnd('/')
+        p(context).edit().putString("cloud_base", v.ifEmpty { DEFAULT_CLOUD }).apply()
+    }
+
+    /** Set once this device was claimed into an account; cleared when the fleet removes it. */
+    fun isClaimed(context: android.content.Context): Boolean = p(context).getBoolean("claimed_once", false)
+    fun setClaimed(context: android.content.Context, v: Boolean) = p(context).edit().putBoolean("claimed_once", v).apply()
+
     fun printerName(context: android.content.Context): String {
         val p = context.getSharedPreferences("prefs", android.content.Context.MODE_PRIVATE)
         return p.getString("printer_name", null) ?: "RePaper Go (${android.os.Build.MODEL})"
