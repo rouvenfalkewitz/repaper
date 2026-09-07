@@ -90,6 +90,85 @@ object Ui {
         setOnClickListener { onTap() }
     }
 
+    // e-paper + signal tokens (tokens.css)
+    const val EPAPER_PANEL = 0xFFE9EBE6.toInt()
+    const val EPAPER_BEZEL = 0xFF1C2320.toInt()
+    const val EPAPER_RED = 0xFFC8102E.toInt()
+    const val EPAPER_YELLOW = 0xFFF2C400.toInt()
+    const val INK = 0xFF131614.toInt()
+    const val BLUE = 0xFF4D8DFF.toInt()
+    const val RED_TINT = 0xFF3A1512.toInt()
+    const val AMBER_TINT = 0xFF3A2A08.toInt()
+    const val BLUE_TINT = 0xFF102340.toInt()
+
+    /** The Dock's ringwrap: rounded square, carbon gradient, hairline border — the device outcut. */
+    fun ringBox(c: Context, sizeDp: Int): android.widget.FrameLayout = android.widget.FrameLayout(c).apply {
+        background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(SURFACE_2, BG)).apply {
+            cornerRadius = c.dp(sizeDp / 4).toFloat()
+            setStroke(c.dp(1), BORDER_STRONG)
+        }
+        layoutParams = LinearLayout.LayoutParams(c.dp(sizeDp), c.dp(sizeDp))
+    }
+
+    /** Status pill, Dock anatomy: dot + Archivo caps, tinted per state; the dot blinks like the LED. */
+    fun pill(c: Context, text: String, fg: Int, bg: Int, blinkMs: Long = 0, check: Boolean = false): LinearLayout =
+        LinearLayout(c).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            background = GradientDrawable().apply { setColor(bg); cornerRadius = 999f }
+            setPadding(c.dp(10), c.dp(4), c.dp(10), c.dp(4))
+            if (check) {
+                addView(TextView(c).apply { this.text = "✓"; textSize = 12f; setTextColor(fg); setPadding(0, 0, c.dp(6), 0) })
+            } else {
+                val d = android.view.View(c).apply {
+                    background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(fg) }
+                    layoutParams = LinearLayout.LayoutParams(c.dp(7), c.dp(7)).apply { rightMargin = c.dp(7) }
+                }
+                addView(d)
+                if (blinkMs > 0) {
+                    val r = object : Runnable {
+                        override fun run() {
+                            if (!d.isAttachedToWindow) return
+                            d.alpha = if (d.alpha > 0.5f) 0.1f else 1f
+                            d.postDelayed(this, blinkMs)
+                        }
+                    }
+                    d.postDelayed(r, blinkMs)
+                }
+            }
+            addView(displayText(c, text.uppercase(), 11f, fg, weight = 700, width = 112).apply { letterSpacing = 0.08f })
+        }
+
+    /** Protocol chips (the Dock's AirPrint · IPP row). */
+    fun chip(c: Context, text: String) = monoText(c, text, 11f, TEXT_3).apply {
+        background = GradientDrawable().apply {
+            setColor(android.graphics.Color.TRANSPARENT); cornerRadius = 999f; setStroke(c.dp(1), BORDER)
+        }
+        setPadding(c.dp(9), c.dp(3), c.dp(9), c.dp(3))
+    }
+
+    /** E-paper frame: carbon bezel around the panel — sheets are shown as sheets. */
+    fun frame(c: Context, panel: android.view.View): LinearLayout = LinearLayout(c).apply {
+        background = GradientDrawable().apply {
+            setColor(EPAPER_BEZEL); cornerRadius = c.dp(10).toFloat(); setStroke(c.dp(1), BORDER_STRONG)
+        }
+        setPadding(c.dp(6), c.dp(6), c.dp(6), c.dp(6))
+        addView(panel)
+    }
+
+    /** The Dock's palette dots: which inks this sheet speaks. */
+    fun palDots(c: Context, palette: String): LinearLayout = LinearLayout(c).apply {
+        orientation = LinearLayout.HORIZONTAL
+        val colors = when (palette) {
+            "BWR" -> intArrayOf(0xFFFFFFFF.toInt(), 0xFF000000.toInt(), EPAPER_RED)
+            "BWRY" -> intArrayOf(0xFFFFFFFF.toInt(), 0xFF000000.toInt(), EPAPER_RED, EPAPER_YELLOW)
+            else -> intArrayOf(0xFFFFFFFF.toInt(), 0xFF000000.toInt())
+        }
+        for (col in colors) addView(android.view.View(c).apply {
+            background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(col); setStroke(c.dp(1), BORDER_STRONG) }
+            layoutParams = LinearLayout.LayoutParams(c.dp(10), c.dp(10)).apply { leftMargin = c.dp(3) }
+        })
+    }
+
     /** The calm status dot (green = good, amber = waiting/off). */
     fun dot(c: Context, color: Int) = android.view.View(c).apply {
         background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(color) }

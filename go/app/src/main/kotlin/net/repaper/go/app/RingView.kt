@@ -37,9 +37,12 @@ class RingView(context: Context) : View(context) {
             Led.BUSY -> if (t % 0.333 < 0.166) 1.0 else 0.08                           // blink 3 Hz
             Led.DONE -> 1.0                                                            // solid
         }
+        // the logo ring's exact geometry: inside its box the ring spans 72/112 of the width,
+        // and the band is (1169-965)/1169 of the outer radius — same as the SVG mark
         val cx = width / 2f; val cy = height / 2f
-        val r = Math.min(width, height) * 0.36f
-        val stroke = r * 0.30f
+        val outer = Math.min(width, height) * 0.321f
+        val r = outer * 0.913f
+        val stroke = outer * 0.175f
         glow.color = color; glow.alpha = (alpha * 70).toInt(); glow.strokeWidth = stroke * 2.2f
         paint.color = color; paint.alpha = (alpha * 255).toInt(); paint.strokeWidth = stroke
         canvas.drawCircle(cx, cy, r, glow)

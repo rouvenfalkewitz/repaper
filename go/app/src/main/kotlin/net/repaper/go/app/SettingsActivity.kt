@@ -73,8 +73,30 @@ class SettingsActivity : AppCompatActivity() {
         for (id in ids) {
             val m = registry.model(id)
             listView.addView(Ui.card(this, ripple = true).apply {
+                // top row: address in mono caps + the palette dots — the Dock's sheet-card anatomy
+                addView(LinearLayout(context).apply {
+                    orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+                    addView(Ui.monoText(this@SettingsActivity, registry.address(id).uppercase(), 11f, Ui.TEXT_2).apply {
+                        letterSpacing = 0.08f
+                    }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                    addView(Ui.palDots(this@SettingsActivity, m.palette))
+                })
+                // the sheet as a sheet: bezel + panel at its real aspect ratio
+                val panel = LinearLayout(context).apply {
+                    gravity = Gravity.CENTER
+                    setBackgroundColor(Ui.EPAPER_PANEL)
+                    val pw = dp(190)
+                    layoutParams = LinearLayout.LayoutParams(pw, (pw * m.height / m.width).coerceIn(dp(28), dp(190)))
+                    addView(Ui.monoText(this@SettingsActivity, "${m.width}×${m.height}", 11f, Ui.INK))
+                }
+                addView(LinearLayout(context).apply {
+                    gravity = Gravity.CENTER_HORIZONTAL
+                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                        .apply { topMargin = dp(10); bottomMargin = dp(8) }
+                    addView(Ui.frame(this@SettingsActivity, panel))
+                })
                 addView(Ui.displayText(this@SettingsActivity, registry.name(id), 16f, Ui.TEXT, weight = 600))
-                addView(Ui.monoText(this@SettingsActivity, "${m.width}×${m.height} ${m.palette} · tap for a test page", 12f).apply {
+                addView(Ui.monoText(this@SettingsActivity, "tap for a test page · hold to rename or remove", 11f).apply {
                     setPadding(0, dp(3), 0, 0)
                 })
                 setOnClickListener { testPrint(id) }
@@ -93,11 +115,18 @@ class SettingsActivity : AppCompatActivity() {
                     else "Connected — waiting to be claimed", 14f, Ui.TEXT))
             })
             if (!cloud.claimed) {
-                addView(Ui.monoText(this@SettingsActivity, "Claim code  ${cloud.claimCode}", 14f, Ui.TEXT).apply {
-                    setPadding(0, dp(8), 0, 0); letterSpacing = 0.08f
-                })
-                addView(Ui.bodyText(this@SettingsActivity, "Enter it in your fleet console under “Claim a device”.", 13f).apply {
-                    setPadding(0, dp(2), 0, 0)
+                addView(LinearLayout(context).apply {
+                    orientation = LinearLayout.VERTICAL
+                    background = android.graphics.drawable.GradientDrawable().apply {
+                        setColor(Ui.BG); cornerRadius = dp(10).toFloat()
+                        setStroke(dp(1), Ui.BORDER_STRONG, dp(5).toFloat(), dp(4).toFloat())
+                    }
+                    setPadding(dp(14), dp(10), dp(14), dp(10))
+                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                        .apply { topMargin = dp(10) }
+                    addView(Ui.displayText(this@SettingsActivity, "CLAIM CODE", 10f, Ui.TEXT_3, weight = 700, width = 112).apply { letterSpacing = 0.12f })
+                    addView(Ui.monoText(this@SettingsActivity, cloud.claimCode, 20f, Ui.TEXT).apply { letterSpacing = 0.1f; setPadding(0, dp(2), 0, dp(2)) })
+                    addView(Ui.bodyText(this@SettingsActivity, "Signing in claims this phone automatically — the code is only for claiming by hand.", 12f))
                 })
             }
         })

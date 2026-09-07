@@ -16,6 +16,23 @@ import java.io.File
 /** The actual printing path, shared by both screens: render → (BLE | mock) → sheet. */
 class PrintFlow(private val activity: Activity, private val registry: Registry) {
 
+    companion object {
+        /** Small first-page preview for job cards. */
+        fun pdfThumb(pdf: File, maxWidthPx: Int): Bitmap? = try {
+            ParcelFileDescriptor.open(pdf, ParcelFileDescriptor.MODE_READ_ONLY).use { pfd ->
+                PdfRenderer(pfd).use { renderer ->
+                    val p = renderer.openPage(0)
+                    val scale = maxWidthPx.toDouble() / p.width
+                    val bm = Bitmap.createBitmap(maxWidthPx, (p.height * scale).toInt().coerceAtLeast(1), Bitmap.Config.ARGB_8888)
+                    bm.eraseColor(Color.WHITE)
+                    p.render(bm, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                    p.close()
+                    bm
+                }
+            }
+        } catch (e: Exception) { null }
+    }
+
     /** Render the first PDF page for a sheet and print it. */
     suspend fun printPdf(pdf: File, sheetId: String, narrate: (String) -> Unit = {}) {
         val model = registry.model(sheetId)
