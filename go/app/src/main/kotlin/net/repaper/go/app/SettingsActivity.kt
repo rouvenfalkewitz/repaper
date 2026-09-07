@@ -32,7 +32,17 @@ class SettingsActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL; setBackgroundColor(Ui.BG)
             setPadding(dp(20), dp(20), dp(20), dp(28))
         }
-        root.addView(Ui.displayText(this, "Settings", 22f, weight = 700, width = 112))
+        root.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            addView(android.widget.ImageView(this@SettingsActivity).apply {
+                setImageResource(net.repaper.go.R.drawable.ic_back)
+                setColorFilter(Ui.TEXT_2)
+                setPadding(dp(8), dp(8), dp(8), dp(8))
+                layoutParams = LinearLayout.LayoutParams(dp(40), dp(40)).apply { rightMargin = dp(8); leftMargin = -dp(8) }
+                setOnClickListener { finish() }
+            })
+            addView(Ui.displayText(this@SettingsActivity, "Settings", 22f, weight = 700, width = 112))
+        })
         root.addView(Ui.button(this, "Add a sheet", primary = true) { addSheetDialog() }.apply {
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
                 .apply { topMargin = dp(16) }
