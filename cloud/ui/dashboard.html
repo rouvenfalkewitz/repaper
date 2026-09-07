@@ -62,6 +62,19 @@ function tiles(devices, latest) {
     <a class="stat-tile ${behind ? "warn" : "good"}" href="/updates"><i>Software</i><b>${behind ? behind : "✓"}</b><div class="sub">${behind ? `device${behind === 1 ? "" : "s"} can update` : "everything current"}</div></a>`;
 }
 
+function jobsSeries(devices) {
+  const byDay = new Map(); const keys = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    keys.push(key); byDay.set(key, 0);
+  }
+  for (const d of devices) for (const s of d.stats || []) {
+    if (byDay.has(s.day)) byDay.set(s.day, byDay.get(s.day) + (s.jobs || 0));
+  }
+  return { keys, vals: keys.map(k => byDay.get(k)) };
+}
+
 /* the hero: what RePaper saves, and how the fleet is doing right now */
 function hero(fleet) {
   const devices = fleet.devices;

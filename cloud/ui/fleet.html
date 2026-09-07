@@ -13,8 +13,7 @@
 <div class="layout">
   <aside class="side" id="side"></aside>
   <main class="main">
-    <div class="pagehead"><h1>Fleet</h1><span class="mono" id="orgName"></span></div>
-    <div class="filters" id="filters"></div>
+    <div class="pagehead"><h1>Fleet</h1><div class="filters" id="filters"></div></div>
     <div id="alerts"></div>
     <div class="fleet" id="fleet"></div>
   </main>
@@ -33,7 +32,7 @@
 <script src="/app.js"></script>
 <script>
 let S = { devices: [] };
-let FILTER = "all";
+let FILTER = (() => { try { return localStorage.getItem("fleetFilter") || "all"; } catch { return "all"; } })();
 const FILTERS = [
   ["all", "All", () => true],
   ["online", "Online", d => d.online],
@@ -42,13 +41,16 @@ const FILTERS = [
 ];
 function renderFilters() {
   const counts = Object.fromEntries(FILTERS.map(([k, , fn]) => [k, S.devices.filter(fn).length]));
+  if (FILTER !== "all" && !counts[FILTER]) FILTER = "all";
   setHTML("filters", FILTERS
     .filter(([k]) => k === "all" || counts[k] > 0)
     .map(([k, label]) => `<button class="fchip ${FILTER === k ? "on" : ""}" data-f="${k}">${label}<span>${counts[k]}</span></button>`).join(""));
 }
 document.addEventListener("click", e => {
   const b = e.target.closest(".fchip"); if (!b) return;
-  FILTER = b.dataset.f; renderFilters(); render();
+  FILTER = b.dataset.f;
+  try { localStorage.setItem("fleetFilter", FILTER); } catch {}
+  renderFilters(); render();
 });
 el("fleet").innerHTML = skeletons("cards", 2);
 
@@ -82,7 +84,6 @@ function card(d, showSite = true) {
 }
 
 function render() {
-  el("orgName").textContent = S.org || "";
   const fn = (FILTERS.find(([k]) => k === FILTER) || FILTERS[0])[2];
   const shown = S.devices.filter(fn);
   const bySite = new Map();
