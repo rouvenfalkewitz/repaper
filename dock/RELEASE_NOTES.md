@@ -1,1 +1,1 @@
-0.0.19 — The ring on the Dock's page now behaves like the real light ring: dim breathing when ready, blinking when a job waits, fast when printing, red when something failed.
+0.0.20 — The printer stays discoverable after Wi-Fi changes, updates verify themselves properly, and waiting jobs keep for an hour by default.

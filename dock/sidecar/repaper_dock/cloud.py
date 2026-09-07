@@ -192,8 +192,19 @@ class CloudAgent(threading.Thread):
             if digest != sha256:
                 log.error("cloud: update %s checksum mismatch — refusing", version); tar.unlink(missing_ok=True); return
             log.info("cloud: update %s downloaded and verified (%d bytes) — handing over to the updater", version, tar.stat().st_size)
-            subprocess.Popen(["/usr/bin/env", "bash", str(script), str(tar), version],
-                             start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            # start_new_session is NOT enough: the updater would still sit in this service's
+            # cgroup, and systemd kills the whole cgroup on `systemctl restart repaper-dockd` —
+            # taking the health check and rollback with it. A transient unit survives us.
+            import os, shutil as _sh
+            if sys.platform.startswith("linux") and _sh.which("systemd-run"):
+                subprocess.Popen(["sudo", "-n", "systemd-run", "--collect", f"--unit=repaper-ota-{int(time.time())}",
+                                  f"--uid={os.getuid()}", f"--gid={os.getgid()}",
+                                  f"--setenv=HOME={os.path.expanduser('~')}",
+                                  "/usr/bin/env", "bash", str(script), str(tar), version],
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else:
+                subprocess.Popen(["/usr/bin/env", "bash", str(script), str(tar), version],
+                                 start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except Exception as e:
             self._updating, self.updating_version = False, None
             log.error("cloud: update %s failed before install: %s", version, e)

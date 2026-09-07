@@ -71,6 +71,7 @@ class WifiOnboarding(threading.Thread):
         gateway and reopens the setup hotspot."""
         con = self._active_con()
         if not con: raise ValueError("no active Wi-Fi connection to configure")
+        self._cfg_at = 0.0
         def work():
             log.info("wifi: applying %s network config on '%s'", method, con)
             if method == "manual":
@@ -126,9 +127,13 @@ class WifiOnboarding(threading.Thread):
         r = _nmcli("-t", "-f", "DEVICE,STATE", "device")
         if not any(l.startswith("wlan0:connected") for l in r.stdout.splitlines()): return False
         # a wrong static config looks "connected" — for manual configs, require the
-        # gateway to actually answer (a few misses in a row, to forgive lost pings)
+        # gateway to actually answer (a few misses in a row, to forgive lost pings).
+        # The config is cached (~5 min): re-reading it every tick spams nmcli + the sudo journal.
         try:
-            cfg = self.net_config()
+            now = time.time()
+            if now - getattr(self, "_cfg_at", 0) > 300:
+                self._cfg_cache, self._cfg_at = self.net_config(), now
+            cfg = getattr(self, "_cfg_cache", {})
             if cfg.get("method") == "manual" and cfg.get("gateway"):
                 ok = subprocess.run(["ping", "-c1", "-W1", cfg["gateway"]], capture_output=True).returncode == 0
                 self._gw_fails = 0 if ok else getattr(self, "_gw_fails", 0) + 1
@@ -184,6 +189,19 @@ class WifiOnboarding(threading.Thread):
         _nmcli("connection", "delete", HOTSPOT_CON)
         self.mode, self._offline_since, self._revert_at = "normal", None, None
         # NetworkManager autoconnects known networks by itself from here
+        self._mdns_refresh()
+
+    def _mdns_refresh(self) -> None:
+        """After interface flaps (hotspot cycles, joins) Avahi can collide with its own
+        ghost records and rename the host (repaper-pilot-2.local) — which strands the
+        printer's AirPrint records. A clean restart of both re-registers everything."""
+        def work():
+            time.sleep(5)                     # let the interface settle first
+            subprocess.run(["sudo", "-n", "systemctl", "restart", "avahi-daemon"], capture_output=True)
+            time.sleep(2)
+            subprocess.run(["sudo", "-n", "systemctl", "restart", "repaper-printer"], capture_output=True)
+            log.info("wifi: refreshed mDNS (avahi + printer) after network change")
+        threading.Thread(target=work, daemon=True).start()
 
     # ── joining a network from the setup page ────────────────────────────────
     def _drop_profiles(self, ssid: str) -> None:
@@ -226,6 +244,7 @@ class WifiOnboarding(threading.Thread):
                 if r.returncode == 0 and self._wifi_connected():
                     log.info("wifi: joined '%s' (attempt %d)", ssid, attempt + 1)
                     self.mode, self.detail, self._offline_since = "normal", "", None
+                    self._mdns_refresh()
                     if static and static.get("address"):
                         try: self.apply_net("manual", static.get("address", ""), static.get("gateway", ""), static.get("dns") or static.get("gateway", ""))
                         except Exception as e: log.warning("wifi: static config after join failed: %s", e)
