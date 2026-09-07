@@ -19,6 +19,12 @@ import java.util.concurrent.TimeUnit
 /** One outbound WebSocket to RePaper Cloud — the Dock's cloud.py in miniature, kind "go".
  *  Printing never depends on it; the cloud sees metadata, never pages. */
 class CloudAgent(private val context: Context, private val url: String = "wss://repaper.schisch.net/ws/device") {
+    companion object {
+        @Volatile private var instance: CloudAgent? = null
+        fun get(context: Context): CloudAgent =
+            instance ?: synchronized(this) { instance ?: CloudAgent(context.applicationContext).also { instance = it } }
+    }
+
     private val identity = Identity(context)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val client = OkHttpClient.Builder().pingInterval(20, TimeUnit.SECONDS).build()

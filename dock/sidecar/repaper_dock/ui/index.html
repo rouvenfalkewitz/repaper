@@ -39,6 +39,7 @@
 const el = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 let last = "";
+const ring = cls => `<div class="ringwrap ledwrap ${cls}"><svg class="ring-hero" viewBox="0 0 2338.6 2338.6" aria-hidden="true"><path class="ring" fill-rule="evenodd" d="M0 1169.3a1169.3 1169.3 0 1 0 2338.6 0a1169.3 1169.3 0 1 0 -2338.6 0ZM203.6 1169.3a965.7 965.7 0 1 0 1931.3 0a965.7 965.7 0 1 0 -1931.3 0Z"/></svg></div>`;
 function pillFor(state) {
   return { "ready": ["", "Ready"], "job-waiting": ["wait", "Waiting for sheet"], "printing": ["busy", "Printing"], "printed": ["done", "Printed"],
            "error": ["err", "Failed"], "setup": ["setup", "Setup"] }[state] || ["", state];
@@ -81,16 +82,16 @@ function render(s) {
   const j = s.job, now = s.now;
   let html;
   if (!j) {
-    html = `<div class="empty"><div class="ringwrap"><svg class="ring-hero" viewBox="0 0 2338.6 2338.6" aria-hidden="true"><path class="ring" fill-rule="evenodd" d="M0 1169.3a1169.3 1169.3 0 1 0 2338.6 0a1169.3 1169.3 0 1 0 -2338.6 0ZM203.6 1169.3a965.7 965.7 0 1 0 1931.3 0a965.7 965.7 0 1 0 -1931.3 0Z"/></svg></div>
+    html = `<div class="empty">${ring("led-ready")}
             <div><span class="pill">Ready</span><div class="title">Ready to print</div>
             <div class="meta">Print to <b>${esc(s.printer)}</b> from any device on this network — the page shows up here.</div>
             <div class="chips"><span>AirPrint</span><span>IPP Everywhere</span><span>Mopria</span></div></div></div>`;
   } else if (s.state === "printing") {
-    html = `<span class="pill busy">Printing</span><div class="title">${esc(j.name)}</div>${pages(j)}
+    html = `<div class="hero">${ring("led-busy")}<div><span class="pill busy">Printing</span><div class="title">${esc(j.name)}</div>${pages(j)}
             ${stepper(s.phase, s.printing_since, now)}
-            <div class="preview">${frame(4, 3, `/preview/${j.id}/${j.next_page || j.pages}`)}</div>`;
+            <div class="preview">${frame(4, 3, `/preview/${j.id}/${j.next_page || j.pages}`)}</div></div></div>`;
   } else if (s.state === "printed") {
-    html = `<span class="pill done">Printed</span><div class="title">${esc(j.name)}</div><div class="meta">${esc(s.message)}</div>`;
+    html = `<div class="hero">${ring("led-done")}<div><span class="pill done">Printed</span><div class="title">${esc(j.name)}</div><div class="meta">${esc(s.message)}</div></div></div>`;
   } else {
     const ids = Object.keys(s.sheets);
     const info = (k, v) => { const mv = v.battery_volts, low = mv != null && mv * 1000 < (v.min_battery_mv || 2700);
@@ -112,7 +113,8 @@ function render(s) {
           <span class="mono ${x.low ? "low" : ""}">${x.bat}</span></label>`; }).join("") + `</div></details>`;
     }
     const err = s.error ? `<div class="notice err"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6m0-6 6 6"/></svg><div><b>Not printed</b><span>${esc(s.error)}</span></div></div>` : "";
-    html = `<div class="card-head"><span class="pill wait">Waiting for sheet</span>
+    html = `<div class="hero">${ring(s.state === "error" ? "led-err" : "led-wait")}<div>
+            <div class="card-head"><span class="pill wait">Waiting for sheet</span>
               <form method="post" action="/cancel"><button class="btn outline small" type="submit" name="job" value="${esc(j.id)}">${ICON.trash}Discard</button></form></div>
             <div class="title">${esc(j.name)}</div>${pages(j)}
             <div class="meta">${j.user ? "from " + esc(j.user) + " · " : ""}${fmtAgo(j.created, now)}</div>
@@ -125,7 +127,7 @@ function render(s) {
                 ${ids.length ? picker : `<div class="meta">No sheets yet — add one in Settings.</div>`}
                 <button class="btn primary big" type="submit" ${ids.length ? "" : "disabled"}>${ICON.print}Print</button>
               </form>
-            </div>`;
+            </div></div></div>`;
   }
   el("job").innerHTML = html;
   el("sheets").innerHTML = Object.entries(s.sheets).map(([k, v]) => {

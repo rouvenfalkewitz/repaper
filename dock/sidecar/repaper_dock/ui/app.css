@@ -284,3 +284,22 @@
   .skl { display: block; height: 13px; border-radius: 7px; background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: shimmer 1.3s linear infinite }
   .skl.thin { height: 10px; margin-top: 7px }
   .skl.btnskl { width: 88px; height: 32px; border-radius: var(--r-control); flex: none }
+
+  /* The LED language (brand guidelines §06) — the virtual ring behaves exactly like the
+     physical one: green go, red stop, blue setup; patterns stepped like the pills. */
+  .ledwrap { --led: #1EE3A5; --led-glow: rgba(30,227,165,.55) }
+  .ledwrap .ring-hero .ring { fill: var(--led) }
+  .ledwrap .ring-hero { animation: none; filter: drop-shadow(0 0 14px var(--led-glow)) }
+  .ledwrap.led-ready .ring-hero { animation: led-breathe-dim 3s ease-in-out infinite }
+  .ledwrap.led-wait .ring-hero { animation: led-blink 1s steps(1) infinite }
+  .ledwrap.led-busy .ring-hero { animation: led-blink .333s steps(1) infinite }
+  .ledwrap.led-done .ring-hero { opacity: 1 }
+  .ledwrap.led-err, .ledwrap.led-setup { --led-glow: rgba(255,92,77,.5) }
+  .ledwrap.led-err { --led: #FF5C4D } .ledwrap.led-err .ring-hero { animation: led-blink 1s steps(1) infinite }
+  .ledwrap.led-setup { --led: #4D8DFF; --led-glow: rgba(77,141,255,.5) } .ledwrap.led-setup .ring-hero { animation: led-blink 1s steps(1) infinite }
+  @keyframes led-breathe-dim { 0%, 100% { opacity: .18 } 50% { opacity: .48 } }
+  @keyframes led-blink { 0%, 49.9% { opacity: 1 } 50%, 100% { opacity: .08 } }
+  /* ring column beside the card body in the busy states */
+  .hero { display: grid; grid-template-columns: 112px 1fr; gap: var(--s-5); align-items: start }
+  .hero > .ringwrap { margin-top: 4px }
+  @media (max-width: 560px) { .hero { grid-template-columns: 1fr } .hero > .ringwrap { display: none } }
