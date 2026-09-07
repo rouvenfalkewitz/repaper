@@ -60,7 +60,7 @@ class CloudAgent(threading.Thread):
         except Exception: pass
         return {"t": "status", "printer": s["printer"], "state": s["state"], "version": __version__,
                 "identifier": s["identifier"], "web": s["address"], "lan": lan,
-                "jobs_today": sum(1 for j in list_jobs() if j.created >= midnight),
+                "jobs_today": sum(1 for j in list_jobs(("done",)) if j.created >= midnight),
                 "sheets": [{"id": k, "name": v["name"], "size": v["size"], "palette": v["palette"],
                             "battery_volts": v.get("battery_volts"), "temperature_c": v.get("temperature_c"),
                             "online": v.get("online"), "seen": v.get("seen"),

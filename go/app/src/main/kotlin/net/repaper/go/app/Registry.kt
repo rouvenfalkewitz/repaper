@@ -80,6 +80,12 @@ object Prefs {
     fun isApproved(context: android.content.Context): Boolean = p(context).getBoolean("approved", true)
     fun setApproved(context: android.content.Context, v: Boolean) = p(context).edit().putBoolean("approved", v).apply()
 
+    /** Printed-today counter (the phone deletes job files after printing, so it counts). */
+    private fun todayKey() = "printed_" + java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+    fun printedToday(context: android.content.Context): Int = p(context).getInt(todayKey(), 0)
+    fun bumpPrinted(context: android.content.Context) =
+        p(context).edit().putInt(todayKey(), printedToday(context) + 1).apply()
+
     fun printerName(context: android.content.Context): String {
         val p = context.getSharedPreferences("prefs", android.content.Context.MODE_PRIVATE)
         return p.getString("printer_name", null) ?: "RePaper Go (${android.os.Build.MODEL})"

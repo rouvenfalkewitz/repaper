@@ -54,6 +54,7 @@ class PrintFlow(private val activity: Activity, private val registry: Registry) 
         val gatt = GattLink.connect(activity, dev)
         try {
             OdDevice(gatt, registry.keyHex(sheetId)?.hexToBytes()).print(page, narrate = narrate)
+            Prefs.bumpPrinted(activity)
         } finally { gatt.close() }
     }
 

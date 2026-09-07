@@ -110,7 +110,7 @@ class CloudAgent(private val context: Context) {
         socket.send(JSONObject()
             .put("t", "status").put("printer", Prefs.printerName(context)).put("state", "ready")
             .put("version", GO_VERSION).put("identifier", "touch")
-            .put("jobs_today", JobStore(context).list().size)
+            .put("jobs_today", Prefs.printedToday(context))
             .put("sheets", sheets).toString())
     }
 }
