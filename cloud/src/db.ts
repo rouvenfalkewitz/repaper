@@ -111,6 +111,8 @@ if (!(db.prepare("PRAGMA table_info(invite)").all() as { name: string }[]).some(
   const dcols = (db.prepare("PRAGMA table_info(device)").all() as { name: string }[]).map((c) => c.name);
   if (!dcols.includes("site")) db.exec("ALTER TABLE device ADD COLUMN site TEXT");
   if (!dcols.includes("target_version")) db.exec("ALTER TABLE device ADD COLUMN target_version TEXT");
+if (!dcols.includes("approved")) db.exec("ALTER TABLE device ADD COLUMN approved INTEGER NOT NULL DEFAULT 1");
+if (!dcols.includes("claimed_by")) db.exec("ALTER TABLE device ADD COLUMN claimed_by INTEGER");
   if (!dcols.includes("diag")) db.exec("ALTER TABLE device ADD COLUMN diag TEXT");
   if (!dcols.includes("diag_at")) db.exec("ALTER TABLE device ADD COLUMN diag_at REAL");
 }
@@ -188,6 +190,7 @@ export type DeviceRow = {
   id: string; org_id: number | null; kind: string; name: string; secret_hash: string;
   claim_code: string; version: string; status: string; created: number; claimed_at: number | null; last_seen: number | null;
   site: string | null; diag: string | null; diag_at: number | null; target_version: string | null;
+  approved: number; claimed_by: number | null;
 };
 
 // ── orgs & users ────────────────────────────────────────────────────────────
@@ -341,8 +344,9 @@ export const publicCounts = () =>
 export const orgDevices = (orgId: number) => db.prepare("SELECT * FROM device WHERE org_id=? ORDER BY created").all(orgId) as DeviceRow[];
 export const findClaimable = (code: string) =>
   db.prepare("SELECT * FROM device WHERE org_id IS NULL AND claim_code=? ORDER BY last_seen DESC").get(code) as DeviceRow | undefined;
-export const claimDevice = (id: string, orgId: number) =>
-  db.prepare("UPDATE device SET org_id=?, claimed_at=? WHERE id=?").run(orgId, now(), id);
+export const claimDevice = (id: string, orgId: number, approved = 1, byUser: number | null = null) =>
+  db.prepare("UPDATE device SET org_id=?, claimed_at=?, approved=?, claimed_by=? WHERE id=?").run(orgId, now(), approved, byUser, id);
+export const approveDevice = (id: string) => db.prepare("UPDATE device SET approved=1 WHERE id=?").run(id);
 export const deleteDevice = (id: string) => db.prepare("DELETE FROM device WHERE id=?").run(id);
 
 // ── events ──────────────────────────────────────────────────────────────────

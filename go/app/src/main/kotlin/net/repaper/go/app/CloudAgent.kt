@@ -32,6 +32,7 @@ class CloudAgent(private val context: Context) {
 
     @Volatile var state: String = "off"; private set
     @Volatile var claimed: Boolean = false; private set
+    @Volatile var approved: Boolean = true; private set
     @Volatile var org: String? = null; private set
     val claimCode: String get() = identity.claimCode
 
@@ -82,10 +83,17 @@ class CloudAgent(private val context: Context) {
         when (msg.optString("t")) {
             "hello_ok" -> {
                 claimed = msg.optBoolean("claimed", false)
+                approved = msg.optBoolean("approved", true)
                 org = msg.optString("org").ifEmpty { null }
                 Prefs.setClaimed(context, claimed)   // fleet removed us → the sign-in gate returns
+                if (claimed) Prefs.setApproved(context, approved)
             }
-            "claimed" -> { claimed = true; org = msg.optString("org").ifEmpty { null }; Prefs.setClaimed(context, true); sendStatus(socket) }
+            "claimed" -> {
+                claimed = true; approved = msg.optBoolean("approved", true)
+                org = msg.optString("org").ifEmpty { null }
+                Prefs.setClaimed(context, true); Prefs.setApproved(context, approved)
+                sendStatus(socket)
+            }
             "identify" -> {} // a phone has no LED ring; the app could vibrate later
         }
     }

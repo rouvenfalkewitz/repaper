@@ -43,6 +43,9 @@ class MainActivity : AppCompatActivity() {
         if (!Prefs.isClaimed(this)) {      // the app belongs to an account — sign in first
             startActivity(Intent(this, AuthActivity::class.java)); finish(); return
         }
+        if (!Prefs.isApproved(this)) {     // a member's phone waits for an admin
+            startActivity(Intent(this, PendingActivity::class.java)); finish(); return
+        }
         registry = Registry(this)
         jobs = JobStore(this)
 
@@ -118,7 +121,13 @@ class MainActivity : AppCompatActivity() {
         CloudAgent.get(this).start()
     }
 
-    override fun onResume() { super.onResume(); refresh() }
+    override fun onResume() {
+        super.onResume()
+        if (!Prefs.isClaimed(this)) {      // removed from the fleet while we were running
+            startActivity(Intent(this, AuthActivity::class.java)); finish(); return
+        }
+        refresh()
+    }
 
     /** The LED language, app edition: Printing > flash (Printed/Failed) > Job waiting > Setup > Ready. */
     private fun refresh() {

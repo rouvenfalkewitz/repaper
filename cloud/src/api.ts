@@ -8,7 +8,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { generateSecret, otpauthUrl, totpCheck } from "./totp.js";
 import {
   addEvent, addOrgEvent, addRecoveryCodes, anyOrgAdmin, bumpLoginPending, claimDevice, createApiKey,
-  createInvite, createLoginPending, createOrg, createReset, createUser, deleteDevice, deleteLoginPending,
+  approveDevice, createInvite, createLoginPending, createOrg, createReset, createUser, deleteDevice, deleteLoginPending,
   deleteOtherSessions, deleteSessionsFor, deleteUser, deviceEvents, deviceStats, disableTotp,
   enableTotp, findClaimable, firstAdmin, getDevice, getOrg, getOrgByName, getUser, getUserByEmail,
   inviteByTokenHash, loginPendingByToken, markInviteUsed, markResetUsed, orgActivity, orgEvents, touchDevice,
@@ -29,6 +29,7 @@ type Authed = FastifyRequest & { user: UserRow };
 
 const publicDevice = (d: DeviceRow) => ({
   id: d.id, kind: d.kind, name: d.name, version: d.version, site: d.site, target_version: d.target_version,
+  approved: !!d.approved,
   online: isOnline(d.id), last_seen: d.last_seen, claimed_at: d.claimed_at,
   status: JSON.parse(d.status || "{}"),
   stats: deviceStats(d.id).reverse(),
@@ -598,6 +599,18 @@ export const registerApi = (app: FastifyInstance) => {
       return { ok: true };
     });
 
+    f.post("/api/devices/:id/approve", async (req, reply) => {
+      const u = (req as Authed).user;
+      if (u.role !== "admin") return reply.code(403).send({ error: "only admins approve devices" });
+      const d = ownDevice(req as Authed);
+      if (!d) return reply.code(404).send({ error: "unknown device" });
+      approveDevice(d.id);
+      const org = getOrg(u.org_id)!;
+      addEvent(d.id, "approved", u.name || u.email);
+      sendToDevice(d.id, { t: "claimed", org: org.name, approved: true });
+      return { ok: true };
+    });
+
     f.post("/api/devices/:id/remove", async (req, reply) => {
       const d = ownDevice(req as Authed);
       if (!d) return reply.code(404).send({ error: "unknown device" });
@@ -613,11 +626,13 @@ export const registerApi = (app: FastifyInstance) => {
       const normalized = code.includes("-") ? code : `${code.slice(0, 4)}-${code.slice(4)}`;
       const d = findClaimable(normalized);
       if (!d) return reply.code(404).send({ error: "no device with this code is waiting — is it connected to the cloud?" });
-      claimDevice(d.id, u.org_id);
+      // members' devices wait for an admin; admins and personal workspaces activate immediately
+      const approved = u.role === "admin" || isPersonal(u.org_id) ? 1 : 0;
+      claimDevice(d.id, u.org_id, approved, u.id);
       const org = getOrg(u.org_id)!;
-      addEvent(d.id, "claimed", org.name);
-      sendToDevice(d.id, { t: "claimed", org: org.name });
-      return { ok: true, device: publicDevice(getDevice(d.id)!) };
+      addEvent(d.id, "claimed", approved ? org.name : `${org.name} — waiting for approval`);
+      sendToDevice(d.id, { t: "claimed", org: org.name, approved: !!approved });
+      return { ok: true, approved: !!approved, org: org.name, device: publicDevice(getDevice(d.id)!) };
     });
   });
 };

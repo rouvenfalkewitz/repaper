@@ -141,28 +141,55 @@ class AuthActivity : AppCompatActivity() {
                     }
                     if (!r.optBoolean("ok")) throw Exception(r.optString("error", "sign in failed"))
                 }
-                note.text = "Adding this phone to your fleet…"
-                claimSelf(base)
-                Prefs.setClaimed(this@AuthActivity, true)
-                startActivity(Intent(this@AuthActivity, MainActivity::class.java)); finish()
+                // who am I → the consent dialog names the workspace this phone would join
+                val meInfo = withContext(Dispatchers.IO) { get("$base/api/me") }
+                val org = meInfo.optString("org", "your fleet")
+                val isAdmin = meInfo.optString("role") == "admin" || meInfo.optBoolean("personal")
+                note.text = ""
+                AlertDialog.Builder(this@AuthActivity)
+                    .setTitle("Add this phone to $org?")
+                    .setMessage("It appears in the fleet as “${Prefs.printerName(this@AuthActivity)}”." +
+                        if (isAdmin) "" else "\n\nAn administrator of $org must approve it before you can print.")
+                    .setPositiveButton("Add this phone") { _, _ -> activate(base) }
+                    .setNegativeButton("Not now") { _, _ -> note.text = "Signed in — the phone was not added." }
+                    .show()
             } catch (e: Exception) { note.text = e.message ?: "sign in failed" }
         }
     }
 
+    private fun activate(base: String) {
+        note.text = "Adding this phone to your fleet…"
+        lifecycleScope.launch {
+            try {
+                val approved = claimSelf(base)
+                Prefs.setClaimed(this@AuthActivity, true)
+                Prefs.setApproved(this@AuthActivity, approved)
+                startActivity(Intent(this@AuthActivity,
+                    if (approved) MainActivity::class.java else PendingActivity::class.java))
+                finish()
+            } catch (e: Exception) { note.text = e.message ?: "claiming failed" }
+        }
+    }
+
     /** The app knows its own claim code — claiming is one call once the device channel is up. */
-    private suspend fun claimSelf(base: String) = withContext(Dispatchers.IO) {
+    private suspend fun claimSelf(base: String): Boolean = withContext(Dispatchers.IO) {
         val agent = CloudAgent.get(this@AuthActivity)
         for (i in 0 until 30) { if (agent.state == "online") break; delay(500) }   // device row must exist
         if (agent.state != "online") throw Exception("can't reach the cloud from this phone — check the connection")
-        if (agent.claimed) return@withContext          // re-login on a device the fleet already knows
+        if (agent.claimed) return@withContext agent.approved   // re-login on a device the fleet already knows
         var lastErr = "claiming failed"
         for (attempt in 0 until 3) {
             val r = post("$base/api/claim", JSONObject().put("code", agent.claimCode))
-            if (r.optBoolean("ok")) return@withContext
+            if (r.optBoolean("ok")) return@withContext r.optBoolean("approved", true)
             lastErr = r.optString("error", lastErr)
             delay(1500)
         }
         throw Exception(lastErr)
+    }
+
+    private fun get(url: String): JSONObject {
+        val resp = http.newCall(Request.Builder().url(url).get().build()).execute()
+        resp.use { return JSONObject(it.body?.string()?.ifEmpty { "{}" } ?: "{}") }
     }
 
     private fun post(url: String, body: JSONObject): JSONObject {

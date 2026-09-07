@@ -76,6 +76,10 @@ object Prefs {
     fun isClaimed(context: android.content.Context): Boolean = p(context).getBoolean("claimed_once", false)
     fun setClaimed(context: android.content.Context, v: Boolean) = p(context).edit().putBoolean("claimed_once", v).apply()
 
+    /** Members' devices wait for an admin; the app stays gated until this turns true. */
+    fun isApproved(context: android.content.Context): Boolean = p(context).getBoolean("approved", true)
+    fun setApproved(context: android.content.Context, v: Boolean) = p(context).edit().putBoolean("approved", v).apply()
+
     fun printerName(context: android.content.Context): String {
         val p = context.getSharedPreferences("prefs", android.content.Context.MODE_PRIVATE)
         return p.getString("printer_name", null) ?: "RePaper Go (${android.os.Build.MODEL})"

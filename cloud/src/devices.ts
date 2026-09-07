@@ -78,7 +78,7 @@ export const handleDeviceSocket = (ws: WebSocket, remote: string) => {
       alive.set(ws, true);
       const d = getDevice(deviceId)!;
       const org = d.org_id ? getOrg(d.org_id) : undefined;
-      ws.send(JSON.stringify({ t: "hello_ok", claimed: !!d.org_id, org: org?.name ?? null }));
+      ws.send(JSON.stringify({ t: "hello_ok", claimed: !!d.org_id, org: org?.name ?? null, approved: !!d.approved }));
       addEvent(deviceId, "online");
       offerUpdate(deviceId);
       return;

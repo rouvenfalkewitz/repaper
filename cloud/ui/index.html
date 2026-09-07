@@ -43,6 +43,7 @@ function card(d) {
       <span class="iconrow"><button class="iconbtn" data-act="name" title="Rename" aria-label="Rename">${ICON.pencil}</button><button class="iconbtn" data-act="details" title="Details" aria-label="Details">${ICON.info}</button><button class="iconbtn danger" data-act="remove" title="Remove" aria-label="Remove">${ICON.trash}</button></span></div>
     <b>${esc(name)}</b>
     <div class="devmeta">${esc(st.printer || "—")} · ${sheetsTxt}</div>
+    ${d.approved === false ? `<div class="notice" style="margin:8px 0 0"><b style="color:var(--amber)">Waiting for approval</b><span>A member added this device.${ME?.role === "admin" ? "" : " An admin activates it."}</span>${ME?.role === "admin" ? `<button class="btn primary small" data-act="approve" style="margin-left:auto">Approve</button>` : ""}</div>` : ""}
     <div class="dev-foot"><span class="presence ${off ? "off" : ""}"><span class="dot"></span><b>${off ? "seen " + ago(d.last_seen) : "online"}</b></span>${spark(d.stats)}<span>${esc(d.version ? "v" + d.version : "")}</span></div>
     <div class="tools"><button class="btn small" data-act="identify" ${off ? "disabled" : ""}>${ICON.ping}Identify</button></div></div>`;
 }
@@ -144,6 +145,12 @@ el("fleet").addEventListener("click", async e => {
   const id = b.closest(".dev").dataset.id, act = b.dataset.act;
   if (act === "details") return openDetails(id);
   if (modals[act]) return openModal(act, id);
+  if (act === "approve") {
+    const done = busy(b, "Approving…");
+    try { await api(`/api/devices/${id}/approve`, {}); done("Approved"); toast("Device approved — it can print now."); load(); }
+    catch (x) { done("Failed", true); toast(x.message, "err"); }
+    return;
+  }
   if (act === "identify") {
     const done = busy(b, "Pinging…");
     try { await api(`/api/devices/${id}/identify`, {}); done("Sent"); toast("The device says hi — watch its ring / log."); }
