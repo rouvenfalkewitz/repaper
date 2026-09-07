@@ -34,9 +34,13 @@
 let S = { devices: [] };
 el("fleet").innerHTML = skeletons("cards", 2);
 
-function card(d) {
+function card(d, showSite = true) {
   const st = d.status || {}, sheets = st.sheets || [], off = !d.online;
   const name = d.name || st.printer || (d.kind === "dock" ? "Dock" : "Go");
+  // no echoes: the printer name only when it differs from the card title,
+  // the site only when the list isn't already grouped by site
+  const sub = [st.printer && st.printer !== name ? st.printer : "", showSite && d.site ? d.site : ""]
+    .filter(Boolean).join(" · ");
   const low = sheets.filter(x => x.battery_volts != null && x.battery_volts * 1000 < 2700).length;
   const away = sheets.filter(x => x.online === false).length;
   const chips = [
@@ -49,7 +53,7 @@ function card(d) {
   return `<div class="dev ${off ? "off" : ""}" data-id="${esc(d.id)}">
     <div class="dev-top">
       <span class="devic ${off ? "off" : ""}">${d.kind === "dock" ? ICON.dock : ICON.phone}</span>
-      <span class="devwho"><b>${esc(name)}</b><span class="mono">${esc(st.printer || "—")}${d.site ? " · " + esc(d.site) : ""}</span></span>
+      <span class="devwho"><b>${esc(name)}</b>${sub ? `<span class="mono">${esc(sub)}</span>` : ""}</span>
     </div>
     ${d.approved === false ? `<div class="notice" style="margin:8px 0 0"><b style="color:var(--amber)">Waiting for approval</b><span>A member added this device.${ME?.role === "admin" ? "" : " An admin activates it."}</span>${ME?.role === "admin" ? `<button class="btn primary small" data-act="approve" style="margin-left:auto">Approve</button>` : ""}</div>` : ""}
     <div class="dchips">${chips}</div>
@@ -66,7 +70,7 @@ function render() {
   let html = "";
   if (bySite.size > 1) {
     for (const [site, devs] of [...bySite.entries()].sort((a, b) => (a[0] || "~").localeCompare(b[0] || "~")))
-      html += `<div class="sitehead">${esc(site || "No site")}</div>` + devs.map(card).join("");
+      html += `<div class="sitehead">${esc(site || "No site")}</div>` + devs.map(d => card(d, false)).join("");
   } else html = S.devices.map(card).join("");
   setHTML("fleet", html
     + `<button class="addcard" type="button" onclick="openModal('claim')"><span class="plus">${ICON.plus}</span><span>${S.devices.length ? "Claim a device" : "Claim your first device"}</span></button>`
