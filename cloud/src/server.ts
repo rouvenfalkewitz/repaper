@@ -31,7 +31,7 @@ const STATIC: Record<string, [string, string]> = {
 
 /* signed-in pages: one route each, same shell */
 const APP_PAGES: Record<string, string> = {
-  "/": "index.html", "/org": "org.html", "/account": "account.html",
+  "/": "dashboard.html", "/fleet": "fleet.html", "/org": "org.html", "/account": "account.html",
   "/billing": "billing.html", "/shop": "shop.html",
   "/sheets": "sheets.html", "/activity": "activity.html", "/updates": "updates.html",
 };

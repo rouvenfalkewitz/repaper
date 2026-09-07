@@ -154,12 +154,6 @@ class SettingsActivity : AppCompatActivity() {
         }
         AlertDialog.Builder(this).setTitle("Add a sheet").setView(input)
             .setPositiveButton("Add") { _, _ -> addSheet(input.text.toString()) }
-            .setNeutralButton("Demo sheet (no hardware)") { _, _ ->
-                val id = "demo-" + (registry.ids().count { it.startsWith("demo-") } + 1)
-                registry.add(id, "Demo 2.9″", "demo", null, SheetModel(296, 128, "BWR"))
-                registry.entry(id).put("transport", "mock"); registry.rename(id, "Demo 2.9″")
-                refresh()
-            }
             .setNegativeButton("Cancel", null).show()
     }
 

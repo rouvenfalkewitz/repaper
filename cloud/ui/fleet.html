@@ -37,15 +37,27 @@ el("fleet").innerHTML = skeletons("cards", 2);
 function card(d) {
   const st = d.status || {}, sheets = st.sheets || [], off = !d.online;
   const name = d.name || st.printer || (d.kind === "dock" ? "Dock" : "Go");
-  const sheetsTxt = sheets.length ? `${sheets.length} sheet${sheets.length === 1 ? "" : "s"}` : "no sheets yet";
+  const low = sheets.filter(x => x.battery_volts != null && x.battery_volts * 1000 < 2700).length;
+  const away = sheets.filter(x => x.online === false).length;
+  const chips = [
+    d.version ? `<span class="dchip mono">v${esc(d.version)}</span>` : "",
+    `<span class="dchip mono">${sheets.length ? `${sheets.length} sheet${sheets.length === 1 ? "" : "s"}` : "no sheets"}</span>`,
+    st.jobs_today ? `<span class="dchip mono">${st.jobs_today} job${st.jobs_today === 1 ? "" : "s"} today</span>` : "",
+    low ? `<span class="dchip mono warn">${low} low battery</span>` : "",
+    away && !low ? `<span class="dchip mono dim">${away} out of range</span>` : "",
+  ].filter(Boolean).join("");
   return `<div class="dev ${off ? "off" : ""}" data-id="${esc(d.id)}">
-    <div class="dev-top"><span class="kind">${d.kind === "dock" ? ICON.dock : ICON.phone}<span>${esc(d.kind)}</span></span>
-      <span class="iconrow"><button class="iconbtn" data-act="name" title="Rename" aria-label="Rename">${ICON.pencil}</button><button class="iconbtn" data-act="details" title="Details" aria-label="Details">${ICON.info}</button><button class="iconbtn danger" data-act="remove" title="Remove" aria-label="Remove">${ICON.trash}</button></span></div>
-    <b>${esc(name)}</b>
-    <div class="devmeta">${esc(st.printer || "—")} · ${sheetsTxt}</div>
+    <div class="dev-top">
+      <span class="devic ${off ? "off" : ""}">${d.kind === "dock" ? ICON.dock : ICON.phone}</span>
+      <span class="devwho"><b>${esc(name)}</b><span class="mono">${esc(st.printer || "—")}${d.site ? " · " + esc(d.site) : ""}</span></span>
+      <span class="presence ${off ? "off" : ""}" title="${off ? "seen " + ago(d.last_seen) : "online"}"><span class="dot"></span></span>
+    </div>
     ${d.approved === false ? `<div class="notice" style="margin:8px 0 0"><b style="color:var(--amber)">Waiting for approval</b><span>A member added this device.${ME?.role === "admin" ? "" : " An admin activates it."}</span>${ME?.role === "admin" ? `<button class="btn primary small" data-act="approve" style="margin-left:auto">Approve</button>` : ""}</div>` : ""}
-    <div class="dev-foot"><span class="presence ${off ? "off" : ""}"><span class="dot"></span><b>${off ? "seen " + ago(d.last_seen) : "online"}</b></span>${spark(d.stats)}<span>${esc(d.version ? "v" + d.version : "")}</span></div>
-    <div class="tools"><button class="btn small" data-act="identify" ${off ? "disabled" : ""}>${ICON.ping}Identify</button></div></div>`;
+    <div class="dchips">${chips}</div>
+    <div class="dev-foot">
+      <span class="mono">${off ? "seen " + ago(d.last_seen) : "online now"}</span>${spark(d.stats)}
+      <span class="iconrow"><button class="iconbtn" data-act="identify" title="Identify" aria-label="Identify" ${off ? "disabled" : ""}>${ICON.ping}</button><button class="iconbtn" data-act="name" title="Rename" aria-label="Rename">${ICON.pencil}</button><button class="iconbtn" data-act="details" title="Details" aria-label="Details">${ICON.info}</button><button class="iconbtn danger" data-act="remove" title="Remove" aria-label="Remove">${ICON.trash}</button></span>
+    </div></div>`;
 }
 
 function render() {
@@ -152,9 +164,10 @@ el("fleet").addEventListener("click", async e => {
     return;
   }
   if (act === "identify") {
-    const done = busy(b, "Pinging…");
-    try { await api(`/api/devices/${id}/identify`, {}); done("Sent"); toast("The device says hi — watch its ring / log."); }
-    catch (x) { done("Failed", true); toast(x.message, "err"); }
+    b.disabled = true;
+    try { await api(`/api/devices/${id}/identify`, {}); toast("The device says hi — watch its ring / log."); }
+    catch (x) { toast(x.message, "err"); }
+    b.disabled = false;
   }
 });
 load().catch(x => { if (x.message !== "signed out") toast(x.message, "err"); });

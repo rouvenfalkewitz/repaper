@@ -300,3 +300,36 @@ dialog.modal::backdrop { background: rgba(12,16,15,.72); backdrop-filter: blur(4
 .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--border) }
 a.btn { text-decoration: none }
 .backline { margin: 0; text-align: center; font-size: .875rem }
+
+/* fleet: richer device cards */
+.devic { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--accent-tint); color: var(--accent-text); flex: none }
+.devic svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round }
+.devic.off { background: var(--surface-2); color: var(--text-3) }
+.devwho { flex: 1; min-width: 0 } .devwho > b { display: block; font-family: var(--font-display); font-weight: 600; font-size: 1.0625rem; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.devwho .mono { display: block; font-size: .75rem; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.dev { transition: border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out) }
+.dev:hover { border-color: var(--border-strong); transform: translateY(-1px) }
+.dev .dev-top { gap: 12px; align-items: center }
+.dchips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px }
+.dchip { font-size: .6875rem; color: var(--text-2); border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px }
+.dchip.warn { color: var(--amber); border-color: var(--amber-tint); background: var(--amber-tint) }
+.dchip.dim { color: var(--text-3) }
+.dev .dev-foot { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px }
+.dev .dev-foot > .mono { flex: 1; font-size: .75rem }
+
+/* dashboard */
+.stat-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--s-3); margin-bottom: var(--s-5) }
+a.stat-tile { display: block; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); padding: 14px 16px; text-decoration: none; color: inherit; transition: border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out) }
+a.stat-tile:hover { border-color: var(--border-strong); transform: translateY(-1px) }
+.stat-tile i { display: block; font-style: normal; font-family: var(--font-display); font-stretch: 112%; font-weight: 700; font-size: .625rem; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3) }
+.stat-tile b { display: block; font-family: var(--font-display); font-weight: 800; font-size: 1.75rem; letter-spacing: -.02em; margin-top: 2px }
+.stat-tile b small { font-size: .875rem; font-weight: 600; color: var(--text-3); letter-spacing: 0 }
+.stat-tile .sub { font-size: .75rem; color: var(--text-2); margin-top: 1px }
+.stat-tile.good b { color: var(--accent-text) } .stat-tile.warn b { color: var(--amber) }
+.dash-cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); align-items: start }
+@media (max-width: 860px) { .dash-cols { grid-template-columns: 1fr } }
+.dash-cols h2 { margin-top: 0 }
+.seeall { font-size: .8125rem; color: var(--accent-text); text-decoration: none } .seeall:hover { text-decoration: underline }
+.h2row { display: flex; align-items: baseline; justify-content: space-between; margin: var(--s-6) 0 var(--s-3) }
+.h2row h2, .dash-cols .h2row { margin: 0 }
+.dash-cols .h2row { margin-bottom: var(--s-3) }

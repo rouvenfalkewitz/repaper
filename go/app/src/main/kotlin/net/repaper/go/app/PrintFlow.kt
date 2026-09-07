@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
-import androidx.appcompat.app.AlertDialog
 import net.repaper.go.core.OdDevice
 import net.repaper.go.core.Page
 import net.repaper.go.core.Render
@@ -48,10 +47,6 @@ class PrintFlow(private val activity: Activity, private val registry: Registry) 
     }
 
     suspend fun printPage(sheetId: String, page: Page, narrate: (String) -> Unit = {}) {
-        if (registry.entry(sheetId).optString("transport") == "mock") {
-            activity.runOnUiThread { showMockResult(page) }
-            return
-        }
         narrate("looking for the sheet")
         val dev = GattLink.find(activity, registry.address(sheetId), registry.bleAddress(sheetId))
             ?: throw Exception("couldn't find the sheet — wake it and try again")
@@ -86,19 +81,4 @@ class PrintFlow(private val activity: Activity, private val registry: Registry) 
         }
     }
 
-    /** What the e-paper would show: the dithered page, pixel-exact, scaled for the screen. */
-    private fun showMockResult(page: Page) {
-        val m = page.model
-        val bm = Bitmap.createBitmap(m.width, m.height, Bitmap.Config.ARGB_8888)
-        val colors = m.colors.colors.map { (0xFF shl 24) or (it[0] shl 16) or (it[1] shl 8) or it[2] }
-        val px = IntArray(m.width * m.height) { colors[page.indexes[it]] }
-        bm.setPixels(px, 0, m.width, 0, 0, m.width, m.height)
-        val scaled = Bitmap.createScaledBitmap(bm, m.width * 3, m.height * 3, false)
-        val iv = android.widget.ImageView(activity).apply {
-            setImageBitmap(scaled); setBackgroundColor(Ui.SURFACE_2)
-            val d = (12 * activity.resources.displayMetrics.density).toInt(); setPadding(d, d, d, d)
-        }
-        AlertDialog.Builder(activity).setTitle("Printed on the demo sheet").setView(iv)
-            .setPositiveButton("Nice", null).show()
-    }
 }

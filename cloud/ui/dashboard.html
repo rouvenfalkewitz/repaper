@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark light"><meta name="theme-color" content="#0C100F">
+<meta name="robots" content="noindex">
+<title>RePaper Cloud</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,600;62..125,700;62..125,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/tokens.css"><link rel="stylesheet" href="/app.css">
+</head>
+<body data-page="dashboard">
+<div class="layout">
+  <aside class="side" id="side"></aside>
+  <main class="main">
+    <div class="pagehead"><h1 id="hello">Welcome</h1><span class="mono" id="orgName"></span></div>
+
+    <div id="alerts"></div>
+
+    <div class="stat-tiles" id="tiles"></div>
+
+    <div class="dash-cols">
+      <div>
+        <div class="h2row"><h2>Fleet</h2><a class="seeall" href="/fleet">Open fleet →</a></div>
+        <div class="card" id="devs"></div>
+      </div>
+      <div>
+        <div class="h2row"><h2>Activity</h2><a class="seeall" href="/activity">Everything →</a></div>
+        <div class="card" id="feed"></div>
+      </div>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status"><span class="ic"></span><span class="tx"></span></div>
+
+<script src="/app.js"></script>
+<script>
+el("tiles").innerHTML = `<span class="skl" style="height:72px;border-radius:16px"></span>`.repeat(4);
+el("devs").innerHTML = skeletons("rows", 2);
+el("feed").innerHTML = skeletons("rows", 3);
+
+const isDock = d => d.kind === "dock";
+
+function greet(name) {
+  const h = new Date().getHours();
+  const g = h < 5 ? "Good night" : h < 11 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  return name ? `${g}, ${name.split(" ")[0]}` : g;
+}
+
+function tiles(devices, latest) {
+  const docks = devices.filter(isDock);
+  const online = devices.filter(d => d.online).length;
+  const sheets = devices.reduce((n, d) => n + ((d.status || {}).sheets || []).length, 0);
+  const jobs = devices.reduce((n, d) => n + ((d.status || {}).jobs_today || 0), 0);
+  const behind = docks.filter(d => latest && d.version !== latest && !(d.target_version && d.target_version !== d.version)).length;
+  const pending = devices.filter(d => d.approved === false).length;
+  return `
+    <a class="stat-tile ${online === devices.length && devices.length ? "good" : ""}" href="/fleet"><i>Devices online</i><b>${online}<small> / ${devices.length}</small></b><div class="sub">${pending ? `${pending} waiting for approval` : devices.length ? (online === devices.length ? "all reachable" : "some are away") : "claim your first device"}</div></a>
+    <a class="stat-tile" href="/sheets"><i>Sheets</i><b>${sheets}</b><div class="sub">across the fleet</div></a>
+    <a class="stat-tile" href="/activity"><i>Jobs today</i><b>${jobs}</b><div class="sub">pages put on paper</div></a>
+    <a class="stat-tile ${behind ? "warn" : "good"}" href="/updates"><i>Software</i><b>${behind ? behind : "✓"}</b><div class="sub">${behind ? `device${behind === 1 ? "" : "s"} can update` : "everything current"}</div></a>`;
+}
+
+function deviceRow(d) {
+  const st = d.status || {}, off = !d.online;
+  const name = d.name || st.printer || d.kind;
+  return `<div class="member"><span class="mrow">
+      <span class="devic ${off ? "off" : ""}" style="width:34px;height:34px;border-radius:10px">${isDock(d) ? ICON.dock : ICON.phone}</span>
+      <span class="who2"><b>${esc(name)}</b><span class="mono">${off ? "seen " + ago(d.last_seen) : "online"}${d.version ? " · v" + esc(d.version) : ""}${d.approved === false ? " · waiting for approval" : ""}</span></span></span>
+    <span class="presence ${off ? "off" : ""}"><span class="dot"></span></span></div>`;
+}
+
+function feedRows(activity) {
+  if (!activity.length) return `<div class="devmeta">Quiet so far — activity from your devices and team lands here.</div>`;
+  const label = { updated: "updated to", claimed: "claimed into", approved: "approved by", identify: "was asked to say hi", reboot: "was restarted", registered: "connected for the first time", joined: "joined", invited: "invited" };
+  return activity.slice(0, 8).map(e => {
+    const when = new Date(e.at * 1000);
+    const t = when.toLocaleDateString() === new Date().toLocaleDateString()
+      ? when.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      : when.toLocaleDateString([], { day: "numeric", month: "short" });
+    const who = esc(e.device_name || e.actor || e.device_id?.slice(0, 8) || "");
+    return `<div class="evt"><span class="mono">${t}</span><span><b>${who}</b> ${esc(label[e.type] || e.type)}${e.data ? " " + esc(e.data) : ""}</span></div>`;
+  }).join("");
+}
+
+async function load() {
+  const [fleet, al, rel, act] = await Promise.all([
+    api("/api/fleet"), api("/api/alerts").catch(() => null),
+    api("/api/releases").catch(() => null), api("/api/activity").catch(() => null),
+  ]);
+  el("hello").textContent = greet((fleet.user || {}).name || ME?.name);
+  el("orgName").textContent = fleet.org || "";
+  setHTML("tiles", tiles(fleet.devices, rel?.latest));
+  setHTML("devs", fleet.devices.length ? fleet.devices.map(deviceRow).join("")
+    : `<div class="devmeta">No devices yet. Claim your first on the <a class="seeall" href="/fleet">Fleet page</a> — or install <a class="seeall" href="/updates">RePaper Go</a> on a phone.</div>`);
+  setHTML("feed", feedRows(act?.activity || []));
+  if (al && al.alerts?.length && typeof renderAlerts === "function") renderAlerts(al.alerts);
+  else if (al && al.alerts?.length) {
+    setHTML("alerts", al.alerts.map(a => `<div class="notice ${a.level === "err" ? "err" : ""}" style="margin-bottom:10px">${ICON.warn}<div><b>${esc(a.title)}</b><span>${esc(a.text)}</span></div></div>`).join(""));
+  } else setHTML("alerts", "");
+}
+
+document.addEventListener("me-ready", () => load().catch(() => {}));
+load().catch(x => { if (x.message !== "signed out") toast(x.message, "err"); });
+setInterval(() => load().catch(() => {}), 10000);
+</script>
+</body>
+</html>
