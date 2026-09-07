@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The bare RePaper ring, accent on transparent (header logo). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="28dp" android:height="28dp"
+    android:viewportWidth="48" android:viewportHeight="48">
+    <path android:fillColor="#1EE3A5" android:pathData="M24,4a20,20 0 1,0 0.001,0z M24,8.2a15.8,15.8 0 1,1 -0.001,0z" />
+</vector>

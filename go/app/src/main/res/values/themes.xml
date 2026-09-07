@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Paper palette: dark carbon ground, RePaper green accent — matches the Dock's web UI. -->
-    <style name="Theme.RePaperGo" parent="Theme.Material3.DayNight.NoActionBar">
+    <!-- Paper palette, always dark — matches the Dock's web UI and the cloud console. -->
+    <style name="Theme.RePaperGo" parent="Theme.Material3.Dark.NoActionBar">
         <item name="colorPrimary">#1EE3A5</item>
         <item name="colorOnPrimary">#0C100F</item>
+        <item name="colorSecondary">#1EE3A5</item>
         <item name="android:colorBackground">#0C100F</item>
-        <item name="colorSurface">#141A18</item>
+        <item name="colorSurface">#151A18</item>
+        <item name="colorSurfaceContainerHigh">#1C2320</item>
         <item name="colorOnSurface">#EFF1EE</item>
+        <item name="colorOnSurfaceVariant">#9AA5A0</item>
+        <item name="colorOutline">#364139</item>
+        <item name="android:windowBackground">#0C100F</item>
         <item name="android:statusBarColor">#0C100F</item>
+        <item name="android:navigationBarColor">#0C100F</item>
     </style>
 </resources>

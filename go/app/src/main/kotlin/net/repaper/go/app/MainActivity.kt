@@ -24,6 +24,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import net.repaper.go.R
 import net.repaper.go.core.LandingUrl
 import net.repaper.go.core.OdDevice
 import net.repaper.go.core.Render
@@ -44,21 +45,33 @@ class MainActivity : AppCompatActivity() {
         registry = Registry(this)
         jobs = JobStore(this)
 
-        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(20), dp(20), dp(20)) }
-        root.addView(TextView(this).apply { text = "RePaper Go"; textSize = 24f; setTextColor(Color.WHITE) })
-        root.addView(TextView(this).apply {
-            text = "Print from any app — pick “RePaper Go” in the print dialog, then choose a sheet here."
-            setTextColor(Color.parseColor("#9AA5A0")); setPadding(0, dp(4), 0, dp(12))
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(Ui.BG)
+            setPadding(dp(20), dp(20), dp(20), dp(28))
+        }
+        root.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            addView(android.widget.ImageView(this@MainActivity).apply {
+                setImageResource(R.drawable.ic_ring)
+                layoutParams = LinearLayout.LayoutParams(dp(26), dp(26)).apply { rightMargin = dp(10) }
+            })
+            addView(Ui.displayText(this@MainActivity, "RePaper Go", 22f, weight = 700, width = 112))
         })
-        val addBtn = Button(this).apply { text = "Add a sheet"; setOnClickListener { addSheetDialog() } }
-        root.addView(addBtn)
-        root.addView(Button(this).apply {
-            text = "Print a sample page"
-            setOnClickListener { printSample() }   // the full illusion: system dialog → RePaper Go → sheet
+        root.addView(Ui.bodyText(this, "Print from any app — pick “RePaper Go” in the print dialog, then choose a sheet here.", 14f).apply {
+            setPadding(0, dp(6), 0, 0)
+        })
+        root.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(16) }
+            addView(Ui.button(this@MainActivity, "Add a sheet", primary = true) { addSheetDialog() },
+                LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { rightMargin = dp(8) })
+            addView(Ui.button(this@MainActivity, "Sample page", primary = false) { printSample() },
+                LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
         })
         listView = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(listView)
-        setContentView(ScrollView(this).apply { addView(root) })
+        setContentView(ScrollView(this).apply { setBackgroundColor(Ui.BG); addView(root) })
 
         requestBlePermissions()
         cloud.start()
@@ -71,32 +84,51 @@ class MainActivity : AppCompatActivity() {
 
         val waiting = jobs.list()
         if (waiting.isNotEmpty()) {
-            listView.addView(header("Waiting to print"))
+            listView.addView(Ui.sectionHeader(this, "Waiting to print"))
             for (job in waiting) {
-                listView.addView(row(job.name.substringAfter('-').removeSuffix(".pdf"), "tap to choose a sheet") {
-                    pickSheetFor(job)
-                })
+                listView.addView(sheetCard(job.name.substringAfter('-').removeSuffix(".pdf"),
+                    "tap to choose a sheet", accent = true) { pickSheetFor(job) })
             }
         }
 
-        listView.addView(header("Sheets"))
+        listView.addView(Ui.sectionHeader(this, "Sheets"))
         val ids = registry.ids()
         if (ids.isEmpty()) {
-            listView.addView(TextView(this).apply {
-                text = "No sheets yet. Scan the QR on a label with your camera and paste the link here."
-                setTextColor(Color.parseColor("#9AA5A0")); setPadding(0, dp(6), 0, 0)
-            })
+            listView.addView(Ui.bodyText(this, "No sheets yet. Scan the QR on a label with your camera and paste the link here.", 14f))
         }
         for (id in ids) {
             val m = registry.model(id)
-            listView.addView(row(registry.name(id), "${m.width}×${m.height} ${m.palette}",
+            listView.addView(sheetCard(registry.name(id), "${m.width}×${m.height} ${m.palette}",
                 onLong = { sheetActions(id); true }) { testPrint(id) })
         }
-        listView.addView(TextView(this).apply {
-            text = "Cloud: ${cloud.state}${if (cloud.claimed) " · ${cloud.org ?: ""}" else " · claim code ${cloud.claimCode}"}\nRePaper Go $GO_VERSION"
-            setTextColor(Color.parseColor("#5E6A64")); textSize = 12f; setPadding(0, dp(24), 0, 0)
+
+        val online = cloud.state == "online"
+        listView.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(28) }
+            addView(Ui.dot(this@MainActivity, if (online) Ui.ACCENT else Ui.AMBER))
+            addView(Ui.monoText(this@MainActivity,
+                if (cloud.claimed) "Cloud · ${cloud.org ?: "claimed"}"
+                else "Cloud ${cloud.state} · ${cloud.claimCode}", 11f))
+        })
+        listView.addView(Ui.monoText(this, "RePaper Go $GO_VERSION", 11f).apply {
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(4) }
         })
     }
+
+    private fun sheetCard(title: String, sub: String, accent: Boolean = false,
+                          onLong: (() -> Boolean)? = null, onTap: () -> Unit): LinearLayout =
+        Ui.card(this, ripple = true).apply {
+            addView(LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+                if (accent) addView(Ui.dot(this@MainActivity, Ui.ACCENT))
+                addView(Ui.displayText(this@MainActivity, title, 16f, Ui.TEXT, weight = 600))
+            })
+            addView(Ui.monoText(this@MainActivity, sub, 12f, Ui.TEXT_3).apply { setPadding(0, dp(3), 0, 0) })
+            setOnClickListener { onTap() }
+            if (onLong != null) setOnLongClickListener { onLong() }
+        }
 
     // ── add a sheet (QR link → BLE describe → registry) ──────────────────────
 
@@ -111,8 +143,7 @@ class MainActivity : AppCompatActivity() {
                 // the Dock's mock transport, phone edition: prints render to an image instead of BLE
                 val id = "demo-" + (registry.ids().count { it.startsWith("demo-") } + 1)
                 registry.add(id, "Demo 2.9\u2033", "demo", null, SheetModel(296, 128, "BWR"))
-                registry.updateKey(id, "transport", "")   // no-op, keeps entry shape
-                registry.entry(id).put("transport", "mock"); registry.rename(id, "Demo 2.9\u2033")
+                registry.entry(id).put("transport", "mock"); registry.rename(id, "Demo 2.9\u2033")   // rename persists it
                 refresh()
             }
             .setNegativeButton("Cancel", null).show()
@@ -232,7 +263,7 @@ class MainActivity : AppCompatActivity() {
         bm.setPixels(px, 0, m.width, 0, 0, m.width, m.height)
         val scaled = Bitmap.createScaledBitmap(bm, m.width * 3, m.height * 3, false)
         val iv = android.widget.ImageView(this).apply {
-            setImageBitmap(scaled); setBackgroundColor(Color.parseColor("#2A2F2D")); setPadding(dp(12), dp(12), dp(12), dp(12))
+            setImageBitmap(scaled); setBackgroundColor(Ui.SURFACE_2); setPadding(dp(12), dp(12), dp(12), dp(12))
         }
         AlertDialog.Builder(this).setTitle("Printed on the demo sheet").setView(iv)
             .setPositiveButton("Nice", null).show()
@@ -302,24 +333,6 @@ class MainActivity : AppCompatActivity() {
         val missing = wanted.filter { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
         if (missing.isNotEmpty()) ActivityCompat.requestPermissions(this, missing.toTypedArray(), 1)
     }
-
-    private fun header(text: String) = TextView(this).apply {
-        this.text = text.uppercase(); textSize = 12f; setTextColor(Color.parseColor("#5E6A64"))
-        setPadding(0, dp(20), 0, dp(6)); letterSpacing = 0.1f
-    }
-
-    private fun row(title: String, sub: String, onLong: (() -> Boolean)? = null, onTap: () -> Unit) =
-        LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(Color.parseColor("#141A18"))
-            setPadding(dp(14), dp(12), dp(14), dp(12))
-            val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-            lp.topMargin = dp(8); layoutParams = lp
-            addView(TextView(context).apply { text = title; setTextColor(Color.WHITE); textSize = 16f })
-            addView(TextView(context).apply { text = sub; setTextColor(Color.parseColor("#9AA5A0")); textSize = 13f })
-            setOnClickListener { onTap() }
-            if (onLong != null) setOnLongClickListener { onLong() }
-        }
 
     private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
     private fun toastLong(msg: String): Toast = Toast.makeText(this, msg, Toast.LENGTH_LONG).also { it.show() }
