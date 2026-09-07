@@ -32,7 +32,7 @@ class GoPrintService : PrintService() {
                 .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
                 .build()
             addPrinters(listOf(
-                PrinterInfo.Builder(id, getString(R.string.app_name), PrinterInfo.STATUS_IDLE)
+                PrinterInfo.Builder(id, Prefs.printerName(this@GoPrintService), PrinterInfo.STATUS_IDLE)
                     .setCapabilities(caps).build()))
         }
         override fun onStopPrinterDiscovery() {}

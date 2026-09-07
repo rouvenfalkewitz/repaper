@@ -46,6 +46,25 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun refresh() {
         listView.removeAllViews()
+
+        listView.addView(Ui.sectionHeader(this, "Printer"))
+        listView.addView(Ui.card(this, ripple = true).apply {
+            addView(Ui.displayText(this@SettingsActivity, Prefs.printerName(this@SettingsActivity), 16f, Ui.TEXT, weight = 600))
+            addView(Ui.monoText(this@SettingsActivity, "what people see in their print dialog · tap to rename", 12f).apply {
+                setPadding(0, dp(3), 0, 0)
+            })
+            setOnClickListener {
+                val input = EditText(this@SettingsActivity).apply { setText(Prefs.printerName(this@SettingsActivity)) }
+                AlertDialog.Builder(this@SettingsActivity).setTitle("Printer name").setView(input)
+                    .setPositiveButton("Save") { _, _ ->
+                        Prefs.setPrinterName(this@SettingsActivity, input.text.toString())
+                        toast("Saved — the new name shows the next time a print dialog opens.")
+                        refresh()
+                    }
+                    .setNegativeButton("Cancel", null).show()
+            }
+        })
+
         listView.addView(Ui.sectionHeader(this, "Sheets"))
         val ids = registry.ids()
         if (ids.isEmpty()) {

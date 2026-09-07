@@ -98,7 +98,7 @@ class CloudAgent(private val context: Context, private val url: String = "wss://
                 .put("size", "${m.width}×${m.height} ${m.palette}").put("palette", m.palette))
         }
         socket.send(JSONObject()
-            .put("t", "status").put("printer", "RePaper Go").put("state", "ready")
+            .put("t", "status").put("printer", Prefs.printerName(context)).put("state", "ready")
             .put("version", GO_VERSION).put("identifier", "touch")
             .put("jobs_today", JobStore(context).list().size)
             .put("sheets", sheets).toString())

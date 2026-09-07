@@ -57,6 +57,19 @@ class Registry(context: Context) {
     fun address(id: String): String = entry(id).getString("address")
 }
 
+/** App-level preferences: the printer name people see in print dialogs.
+ *  Defaults to a per-device name so two phones never collide. */
+object Prefs {
+    fun printerName(context: android.content.Context): String {
+        val p = context.getSharedPreferences("prefs", android.content.Context.MODE_PRIVATE)
+        return p.getString("printer_name", null) ?: "RePaper Go (${android.os.Build.MODEL})"
+    }
+    fun setPrinterName(context: android.content.Context, name: String) {
+        context.getSharedPreferences("prefs", android.content.Context.MODE_PRIVATE)
+            .edit().putString("printer_name", name.trim().ifEmpty { "RePaper Go (${android.os.Build.MODEL})" }).apply()
+    }
+}
+
 /** Cloud identity, generated once — mirrors the Dock's ~/.repaper/cloud.json. */
 class Identity(context: Context) {
     private val prefs = context.getSharedPreferences("cloud", Context.MODE_PRIVATE)
