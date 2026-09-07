@@ -53,23 +53,13 @@ class AuthActivity : AppCompatActivity() {
         }
 
         root.addView(LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-            addView(android.view.View(this@AuthActivity), LinearLayout.LayoutParams(dp(40), 1))   // balances the gear
-            addView(LinearLayout(this@AuthActivity).apply {
-                orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
-                addView(ImageView(this@AuthActivity).apply {
-                    setImageResource(R.drawable.ic_ring)
-                    layoutParams = LinearLayout.LayoutParams(dp(26), dp(26)).apply { rightMargin = dp(10) }
-                })
-                addView(Ui.displayText(this@AuthActivity, "RePaper Go", 22f, weight = 700, width = 112))
-            }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
             addView(ImageView(this@AuthActivity).apply {
-                setImageResource(R.drawable.ic_gear); setColorFilter(Ui.TEXT_3)
-                setPadding(dp(8), dp(8), dp(8), dp(8))
-                layoutParams = LinearLayout.LayoutParams(dp(40), dp(40))
-                setOnClickListener { cloudDialog() }
+                setImageResource(R.drawable.ic_ring)
+                layoutParams = LinearLayout.LayoutParams(dp(26), dp(26)).apply { rightMargin = dp(10) }
             })
+            addView(Ui.displayText(this@AuthActivity, "RePaper Go", 22f, weight = 700, width = 112))
         })
 
         root.addView(Ui.bodyText(this, "Sign in with your RePaper account — this phone joins your fleet automatically.", 14f).apply {
@@ -99,10 +89,14 @@ class AuthActivity : AppCompatActivity() {
                 .apply { topMargin = dp(8) }
         })
 
+        // the footer line doubles as the on-prem entry point: tapping the server name
+        // opens the reconfigure dialog — invisible to everyone who doesn't need it
         root.addView(Ui.monoText(this, cloudLabel(), 11f).apply {
             gravity = Gravity.CENTER
+            setPadding(dp(16), dp(10), dp(16), dp(10))
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-                .apply { topMargin = dp(22) }
+                .apply { topMargin = dp(14) }
+            setOnClickListener { cloudDialog() }
         })
 
         setContentView(ScrollView(this).apply { setBackgroundColor(Ui.BG); addView(root) })
@@ -160,6 +154,7 @@ class AuthActivity : AppCompatActivity() {
         val agent = CloudAgent.get(this@AuthActivity)
         for (i in 0 until 30) { if (agent.state == "online") break; delay(500) }   // device row must exist
         if (agent.state != "online") throw Exception("can't reach the cloud from this phone — check the connection")
+        if (agent.claimed) return@withContext          // re-login on a device the fleet already knows
         var lastErr = "claiming failed"
         for (attempt in 0 until 3) {
             val r = post("$base/api/claim", JSONObject().put("code", agent.claimCode))
