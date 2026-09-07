@@ -20,6 +20,9 @@
     <h2>Your devices</h2>
     <div class="card" id="devs"></div>
 
+    <h2>Get the app</h2>
+    <div class="card" id="apk"><div class="devmeta">Loading…</div></div>
+
     <h2>What's new</h2>
     <div class="card" id="news"></div>
 
@@ -102,9 +105,19 @@ function render() {
   if (ME) { el("uploadBtn").hidden = !ME.vendor; el("uploadBtn").innerHTML = ICON.plus + "<span>Upload release</span>"; }
 }
 
+function apkCard(a) {
+  if (!a || !a.version) return `<div class="devmeta">The Android app appears here with the next deploy.</div>`;
+  return `<div class="twofa"><span class="okic">${ICON.phone}</span>
+    <div style="flex:1"><b>RePaper Go for Android</b>
+    <span>Print to sheets straight from a phone — no Dock needed. Sign in with this account and the phone joins your fleet. App updates arrive here.</span>
+    <span class="mono" style="display:block;margin-top:4px">v${esc(a.version)} · ${(a.size / 1024 / 1024).toFixed(1)} MB · Android 8.0+</span></div>
+    <a class="btn primary" href="/dl/repaper-go.apk" download>${ICON.download}<span>Download</span></a></div>`;
+}
+
 async function load() {
-  const [rel, fleet] = await Promise.all([api("/api/releases"), api("/api/fleet")]);
+  const [rel, fleet, apk] = await Promise.all([api("/api/releases"), api("/api/fleet"), api("/api/app-release").catch(() => null)]);
   R = rel; DEVICES = fleet.devices;
+  setHTML("apk", apkCard(apk));
   render();
 }
 

@@ -1,6 +1,6 @@
 /* Console API: everything a signed-in user does. Device-facing traffic lives in devices.ts. */
 import { createHash, randomBytes } from "node:crypto";
-import { copyFileSync, createReadStream, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, createReadStream, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import QRCode from "qrcode";
@@ -62,8 +62,10 @@ const VENDOR_ORG = 1;   // pilot: the RePaper org uploads releases; a proper ven
 /* Releases publish themselves: the Docker image bundles the Dock software at the
    version in the repo, and startup registers it if the store doesn't have it yet.
    The console upload stays as a manual fallback. */
+const BUNDLED = join(dirname(fileURLToPath(import.meta.url)), "..", "bundled");
+
 export const publishBundledRelease = (log: { info: (s: string) => void; warn: (s: string) => void }) => {
-  const bundled = join(dirname(fileURLToPath(import.meta.url)), "..", "bundled");
+  const bundled = BUNDLED;
   try {
     if (!existsSync(join(bundled, "VERSION"))) return;
     const version = readFileSync(join(bundled, "VERSION"), "utf8").trim();
@@ -110,6 +112,16 @@ export const registerApi = (app: FastifyInstance) => {
     const rel = getRelease(t.version)!;
     return reply.header("Content-Type", "application/gzip").header("Content-Length", String(rel.size))
       .send(createReadStream(join(RELEASES_DIR, `${rel.version}.tar.gz`)));
+  });
+
+  /* the Android app, served straight from the image (like the bundled Dock release) */
+  app.get("/dl/repaper-go.apk", async (_req, reply) => {
+    const apk = join(BUNDLED, "repaper-go.apk");
+    if (!existsSync(apk)) return reply.code(404).send({ error: "no app bundled" });
+    return reply.header("Content-Type", "application/vnd.android.package-archive")
+      .header("Content-Disposition", 'attachment; filename="repaper-go.apk"')
+      .header("Content-Length", String(statSync(apk).size))
+      .send(createReadStream(apk));
   });
 
   /* the pull path: devices check in over plain HTTPS — short requests survive
@@ -530,6 +542,13 @@ export const registerApi = (app: FastifyInstance) => {
     f.get("/api/alerts", async (req) => ({ alerts: orgAlerts((req as Authed).user.org_id) }));
 
     // ── software releases & OTA ────────────────────────────────────────────
+    f.get("/api/app-release", async () => {
+      try {
+        return { version: readFileSync(join(BUNDLED, "APP_VERSION"), "utf8").trim(),
+                 size: statSync(join(BUNDLED, "repaper-go.apk")).size };
+      } catch { return { version: null }; }
+    });
+
     f.get("/api/releases", async () => ({ releases: listReleases(), latest: latestRelease()?.version ?? null }));
 
     f.post("/api/releases", { bodyLimit: 80 * 1024 * 1024 }, async (req, reply) => {
