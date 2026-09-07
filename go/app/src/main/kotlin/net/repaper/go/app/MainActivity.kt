@@ -107,6 +107,14 @@ class MainActivity : AppCompatActivity() {
         }
         AlertDialog.Builder(this).setTitle("Add a sheet").setView(input)
             .setPositiveButton("Add") { _, _ -> addSheet(input.text.toString()) }
+            .setNeutralButton("Demo sheet (no hardware)") { _, _ ->
+                // the Dock's mock transport, phone edition: prints render to an image instead of BLE
+                val id = "demo-" + (registry.ids().count { it.startsWith("demo-") } + 1)
+                registry.add(id, "Demo 2.9\u2033", "demo", null, SheetModel(296, 128, "BWR"))
+                registry.updateKey(id, "transport", "")   // no-op, keeps entry shape
+                registry.entry(id).put("transport", "mock"); registry.rename(id, "Demo 2.9\u2033")
+                refresh()
+            }
             .setNegativeButton("Cancel", null).show()
     }
 
@@ -203,12 +211,31 @@ class MainActivity : AppCompatActivity() {
     }
 
     private suspend fun printPage(sheetId: String, page: net.repaper.go.core.Page) {
+        if (registry.entry(sheetId).optString("transport") == "mock") {
+            withContext(Dispatchers.Main) { showMockResult(page) }
+            return
+        }
         val dev = GattLink.find(this, registry.address(sheetId), registry.bleAddress(sheetId))
             ?: throw Exception("couldn't find the sheet — wake it and try again")
         val gatt = GattLink.connect(this, dev)
         try {
             OdDevice(gatt, registry.keyHex(sheetId)?.hexToBytes()).print(page)
         } finally { gatt.close() }
+    }
+
+    /** What the e-paper would show: the dithered page, pixel-exact, scaled up for the screen. */
+    private fun showMockResult(page: net.repaper.go.core.Page) {
+        val m = page.model
+        val bm = Bitmap.createBitmap(m.width, m.height, Bitmap.Config.ARGB_8888)
+        val colors = m.colors.colors.map { (0xFF shl 24) or (it[0] shl 16) or (it[1] shl 8) or it[2] }
+        val px = IntArray(m.width * m.height) { colors[page.indexes[it]] }
+        bm.setPixels(px, 0, m.width, 0, 0, m.width, m.height)
+        val scaled = Bitmap.createScaledBitmap(bm, m.width * 3, m.height * 3, false)
+        val iv = android.widget.ImageView(this).apply {
+            setImageBitmap(scaled); setBackgroundColor(Color.parseColor("#2A2F2D")); setPadding(dp(12), dp(12), dp(12), dp(12))
+        }
+        AlertDialog.Builder(this).setTitle("Printed on the demo sheet").setView(iv)
+            .setPositiveButton("Nice", null).show()
     }
 
     private fun renderPdfPage(pdf: File, model: SheetModel): Bitmap {
