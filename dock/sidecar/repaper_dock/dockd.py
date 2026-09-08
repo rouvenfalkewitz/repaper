@@ -30,6 +30,7 @@ class Dock:
         self.message = ""
         self.phase = ""                                 # live sub-status while printing ("connecting", "sending", ...)
         self._announced: set[str] = set()
+        self._auto_tried: set[str] = set()   # one-sheet auto-print: one attempt per job page
         self.sheet_status: dict[str, dict] = {}         # sheet id → {battery_volts, temperature_c, online, seen, at}
         self._status_lock = threading.Lock()
         for sid in self.registry.ids():                 # last known readings survive a restart; "online" is unknown until the first scan
@@ -92,6 +93,14 @@ class Dock:
             key = f"{job.id}:{page_no}"
             if key not in self._announced:
                 log.info("job %s (%s) page %d/%d waiting — hold a sheet", job.id, job.name, page_no, job.pages); self._announced.add(key)
+            # exactly one registered sheet: the choice is made — print without a tap.
+            # One attempt per page: a failure stays visible and waits for a manual retry.
+            only = self.registry.ids()
+            if len(only) == 1 and key not in self._auto_tried:
+                self._auto_tried.add(key)
+                log.info("only one sheet registered — printing on %s without a tap", only[0])
+                self.print_page(job, page_no, only[0])
+                continue
             sheet_id = self.identifier.wait_for_tap(timeout=2.0)
             if not sheet_id: continue
             self.print_page(job, page_no, sheet_id)

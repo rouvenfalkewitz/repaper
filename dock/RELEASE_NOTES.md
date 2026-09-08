@@ -1,1 +1,1 @@
-0.0.22 — Six-colour, seven-colour and grayscale sheets are now supported.
+0.0.23 — With a single sheet, printing needs no tap — the page goes straight onto it.

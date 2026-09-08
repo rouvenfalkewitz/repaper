@@ -37,6 +37,7 @@ class MainActivity : AppCompatActivity() {
     private val printFlow by lazy { PrintFlow(this, registry) }
     private var busy = false                   // a BLE print is running
     private var flash: RingView.Led? = null    // DONE/ERR held briefly, then back to the state machine
+    private val autoTried = HashSet<String>()  // one-sheet auto-print: one attempt per job
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -174,6 +175,12 @@ class MainActivity : AppCompatActivity() {
     private fun refresh() {
         val waiting = jobs.list()
         val f = flash
+        // exactly one sheet registered: the waiting job prints on it without asking.
+        // One attempt each — a failure shows red and waits for a manual tap on the job.
+        if (!busy && f == null && waiting.isNotEmpty() && registry.ids().size == 1) {
+            val job = waiting.first()
+            if (autoTried.add(job.name)) { printJob(job, registry.ids()[0]); return }
+        }
         when {
             busy -> setState(RingView.Led.BUSY, "Printing…", "Keep the sheet nearby.")
             f == RingView.Led.DONE -> setState(f, "Printed", "Take a look at the sheet.")
