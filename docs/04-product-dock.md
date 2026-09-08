@@ -64,3 +64,23 @@ Two layers, both from day one in the architecture but shipped in order:
 ## Bill of materials target (production, rough)
 
 Compute module + NFC + radio + LED + enclosure + PSU: aim for a hardware cost that allows a sub-€200 device price in small volume. To be refined once the radio/sheet decision is made.
+
+## Open question: what should the print dialog offer? (noted 8 Sep 2026)
+
+Field observation from the Go app: Android's print dialog naturally offers color
+mode, paper size (our custom "Label 2.9″" media), orientation and so on — because
+`PrintService` lets us declare capabilities per printer. The Dock's AirPrint/IPP
+side doesn't model any of this yet: `ippeveprinter` advertises one generic set
+(`-f image/urf,image/pwg-raster,…`), so a Mac/iPhone shows a plain dialog and the
+Dock's renderer makes all the real decisions (auto-rotate, contain, dither).
+
+To decide at some point — with the counter-argument built in: **the Dock's whole
+point is speaking regular printer language with zero integration**, and the
+current "print anything, the Dock figures it out" behavior may be exactly right.
+If we ever do more:
+- per-sheet media sizes in the IPP attributes (so page setup matches the sheet
+  someone intends to tap) — probably means moving from ippeveprinter to PAPPL,
+  where media, color modes and job attributes are properly declarable;
+- honor requested orientation instead of always auto-rotating;
+- color mode: declare `color` vs `monochrome` based on the fleet's palettes.
+Also keep Go and Dock consistent with each other once decided.
