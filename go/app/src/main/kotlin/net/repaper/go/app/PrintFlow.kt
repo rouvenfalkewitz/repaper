@@ -48,13 +48,19 @@ class PrintFlow(private val activity: Activity, private val registry: Registry) 
 
     suspend fun printPage(sheetId: String, page: Page, narrate: (String) -> Unit = {}) {
         narrate("looking for the sheet")
+        DiagLog.log("print → $sheetId (${page.model.width}×${page.model.height} ${page.model.palette})")
         val dev = GattLink.find(activity, registry.address(sheetId), registry.bleAddress(sheetId))
-            ?: throw Exception("couldn't find the sheet — wake it and try again")
+            ?: run { DiagLog.log("print: sheet not found in scan"); throw Exception("couldn't find the sheet — wake it and try again") }
         narrate("connecting")
         val gatt = GattLink.connect(activity, dev)
         try {
-            OdDevice(gatt, registry.keyHex(sheetId)?.hexToBytes()).print(page, narrate = narrate)
+            OdDevice(gatt, registry.keyHex(sheetId)?.hexToBytes()).print(page) { phase ->
+                DiagLog.log("print: $phase"); narrate(phase)
+            }
             Prefs.bumpPrinted(activity)
+            DiagLog.log("print: done")
+        } catch (e: Exception) {
+            DiagLog.log("print FAILED: ${e.message}"); throw e
         } finally { gatt.close() }
     }
 

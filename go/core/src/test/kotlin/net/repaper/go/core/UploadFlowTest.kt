@@ -132,6 +132,7 @@ class UploadFlowTest {
         }
         val caps = OdDevice(sheet).interrogate()
         assertEquals(250, caps.width)
-        assertEquals(ColorScheme.BWR, caps.scheme)
+        assertEquals(ColorScheme.BWRY, caps.scheme)
+        assertEquals(0x001D, caps.panelIc)
     }
 }

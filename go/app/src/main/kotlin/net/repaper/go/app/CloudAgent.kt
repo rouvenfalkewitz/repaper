@@ -95,6 +95,7 @@ class CloudAgent(private val context: Context) {
                 sendStatus(socket)
             }
             "identify" -> {} // a phone has no LED ring; the app could vibrate later
+            "diag" -> socket.send(JSONObject().put("t", "diag").put("log", DiagLog.dump()).toString())
         }
     }
 

@@ -150,15 +150,18 @@ def packet(num, ptype, body):
 system = struct.pack("<HBBB", 0x0004, 0x01, 0, 0) + b"\0" * 15 + b"\0\0"
 manuf = struct.pack("<HH", 0x1001, 0) + b"\0" * 12 + b"\0" * 6
 power = bytes([1]) + (2400).to_bytes(3, "little") + struct.pack("<HBBBBBBHIH", 5000, 4, 0, 2, 3, 0, 1, 1000, 5, 60) + struct.pack("<BBBHB", 0, 0, 0, 10, 0) + b"\0" * 4
-display = struct.pack("<BBHHHHHHBBBBBBBBBB", 0, 1, 0x0001, 250, 122, 48, 23, 3, 1, 1, 2, 3, 4, 5, 1, 1, 0x01, 6) + b"\0" * 7 + (1500).to_bytes(2, "little") + b"\0" * 13
+# adversarial values: every field differs from its neighbours, so an off-by-one
+# in any parser CANNOT accidentally pass (this exact bug shipped once)
+display = struct.pack("<BBHHHHHHBBBBBBBBBB", 0, 7, 0x001D, 250, 122, 48, 23, 9, 1, 11, 12, 13, 14, 15, 0, 3, 0x18, 6) + b"\0" * 7 + (1500).to_bytes(2, "little") + b"\0" * 13
 security = struct.pack("<H", 300) + b"\0" * 62
 packets = packet(0, 0x01, system) + packet(1, 0x02, manuf) + packet(2, 0x04, power) + packet(3, 0x20, display) + packet(4, 0x27, security)
 tlv = struct.pack("<H", len(packets)) + bytes([1]) + packets + b"\0\0"
 cfg = parse_config_response(tlv)
 d = cfg.displays[0]
-assert (d.pixel_width, d.pixel_height, d.color_scheme, d.rotation) == (250, 122, 1, 1), (d.pixel_width, d.pixel_height, d.color_scheme, d.rotation)
+assert (d.pixel_width, d.pixel_height, d.color_scheme, d.rotation, d.panel_ic_type) == (250, 122, 3, 1, 0x001D), \
+    (d.pixel_width, d.pixel_height, d.color_scheme, d.rotation, d.panel_ic_type)
 (OUT / "config.json").write_text(json.dumps({
-    "tlv": hx(tlv), "width": 250, "height": 122, "scheme": "BWR", "rotation_degrees": 90,
+    "tlv": hx(tlv), "width": 250, "height": 122, "scheme": "BWRY", "rotation_degrees": 90, "panel_ic": 0x001D,
     "session_timeout": cfg.security_config.session_timeout_seconds if cfg.security_config else 0,
 }, indent=1))
 

@@ -130,6 +130,7 @@ class GoldenTest {
         assertEquals(g.getInt("height"), caps.height)
         assertEquals(g.getString("scheme"), caps.scheme.name)
         assertEquals(g.getInt("rotation_degrees"), caps.rotation)
+        assertEquals(g.getInt("panel_ic"), caps.panelIc)
         assertEquals(122, caps.viewedWidth)     // 90° mount: viewed size swaps
         assertEquals(250, caps.viewedHeight)
         assertTrue(caps.sessionTimeoutSeconds == 0)

@@ -118,12 +118,14 @@ object OdConfig {
             off += size
             when (type) {
                 0x20 -> if (caps == null) {
-                    // <BBHHHHHHBB…B…>: instance, tech, panel_ic u16, w u16, h u16, mm, mm, tag u16,
-                    // rotation index, 5 pins, partial, color_scheme, trans_modes, clk — all little-endian
+                    // <BBHHHHHHBBBBBBBBBB> little-endian: instance(0) tech(1) panel_ic(2-3)
+                    // width(4-5) height(6-7) mm_w(8-9) mm_h(10-11) tag_type(12-13)
+                    // rotation(14) reset(15) busy(16) dc(17) cs(18) data(19)
+                    // partial(20) color_scheme(21) trans_modes(22) clk(23)
                     val panelIc = le16(p, 2)
                     val w = le16(p, 4); val h = le16(p, 6)
-                    val rotIdx = p[15].toInt() and 0xFF
-                    val scheme = ColorScheme.fromWire(p[22].toInt() and 0xFF)
+                    val rotIdx = p[14].toInt() and 0xFF
+                    val scheme = ColorScheme.fromWire(p[21].toInt() and 0xFF)
                     caps = Capabilities(w, h, scheme, (rotIdx % 4) * 90, panelIc)
                 }
             }

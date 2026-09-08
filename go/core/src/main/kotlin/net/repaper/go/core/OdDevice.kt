@@ -18,6 +18,7 @@ class OdDevice(private val link: OdLink, private val masterKey: ByteArray? = nul
     private var nonceCounter: Long = 0
 
     var capabilities: Capabilities? = null; private set
+    var lastConfigHex: String? = null; private set   // raw TLV of the last interrogate, for diagnostics
 
     companion object {
         const val TIMEOUT_ACK = 5_000L
@@ -73,7 +74,9 @@ class OdDevice(private val link: OdLink, private val masterKey: ByteArray? = nul
             if (chunk.size <= 2) throw OdError("config read stalled at ${tlv.size}/$total bytes")
             for (i in 2 until chunk.size) tlv.add(chunk[i])   // skip the 2-byte chunk number
         }
-        return OdConfig.parse(tlv.toByteArray()).also { capabilities = it }
+        val bytes = tlv.toByteArray()
+        lastConfigHex = bytes.toHexLower()
+        return OdConfig.parse(bytes).also { capabilities = it }
     }
 
     /** Upload an already-rendered page and refresh. [narrate] gets human-readable phases. */

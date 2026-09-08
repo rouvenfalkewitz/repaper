@@ -182,6 +182,7 @@ class SettingsActivity : AppCompatActivity() {
                         val od = OdDevice(gatt, landing.keyHex?.hexToBytes())
                         if (landing.keyHex != null) od.authenticate()
                         val c = od.interrogate()
+                        DiagLog.log("add ${landing.name}: caps=${c} tlv=${od.lastConfigHex}")
                         registry.add(landing.name, landing.name, landing.name, landing.keyHex,
                             SheetModel(c.viewedWidth, c.viewedHeight, c.scheme.paletteKey))
                         registry.updateKey(landing.name, "ble_address", dev.address)
