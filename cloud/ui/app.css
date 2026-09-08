@@ -423,3 +423,5 @@ a.stat-tile:hover { border-color: var(--border-strong); transform: translateY(-1
 
 .chips { display: flex; flex-wrap: wrap; gap: 6px }
 .chips span { font-family: var(--font-mono); font-size: .6875rem; color: var(--text-3); border: 1px solid var(--border); border-radius: 999px; padding: 3px 9px }
+
+#hero { margin-bottom: var(--s-6) }

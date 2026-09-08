@@ -544,8 +544,15 @@ export const registerApi = (app: FastifyInstance) => {
     // ── software releases & OTA ────────────────────────────────────────────
     f.get("/api/app-release", async () => {
       try {
+        let notes: { version: string; date: string; note: string }[] = [];
+        try {
+          notes = readFileSync(join(BUNDLED, "CHANGELOG.md"), "utf8").split("\n")
+            .map((l) => l.match(/^(\d+\.\d+\.\d+)\s*(?:\(([^)]*)\))?\s*[—-]\s*(.*)$/))
+            .filter((m): m is RegExpMatchArray => !!m)
+            .map((m) => ({ version: m[1], date: m[2] || "", note: m[3] }));
+        } catch { /* older image without a changelog */ }
         return { version: readFileSync(join(BUNDLED, "APP_VERSION"), "utf8").trim(),
-                 size: statSync(join(BUNDLED, "repaper-go.apk")).size };
+                 size: statSync(join(BUNDLED, "repaper-go.apk")).size, notes };
       } catch { return { version: null }; }
     });
 

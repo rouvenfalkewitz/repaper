@@ -89,7 +89,7 @@ const FIXTURES = {
   "/api/alerts": { alerts: [{ level: "err", title: "battery", text: "low" }] },
   "/api/releases": { latest: "0.0.21", releases: [{ version: "0.0.21", created: 1, notes: "x", channel: "stable", size: 1000, sha256: "aa" }] },
   "/api/activity": { activity: [{ at: Date.now() / 1000, type: "updated", data: "0.0.21", device_id: "d1", device_name: "Pilot", kind: "device" }] },
-  "/api/app-release": { version: "0.2.0", size: 1000000 },
+  "/api/app-release": { version: "0.2.0", size: 1000000, notes: [{ version: "0.2.0", date: "7 Sep 2026", note: "test note" }] },
   "/api/me": { name: "Test", role: "admin" },
 };
 
@@ -112,7 +112,10 @@ await runPage("fleet.html", FIXTURES, {
 
 await runPage("updates.html", FIXTURES, {
   "app card renders": () => (out.apk || "").includes("RePaper Go for Android"),
-  "device rows render": () => (out.devs || "").includes("Pilot"),
+  "dock rows show docks only": () => (out.devs || "").includes("Pilot") && !(out.devs || "").includes("Pixel"),
+  "phones live in the mobile card": () => (out.apk || "").includes("Pixel"),
+  "ios teaser present": () => (out.apk || "").includes("TestFlight"),
+  "android changelog renders": () => (out.appnews || "").includes("test note"),
 });
 
 if (failures) { console.error(`\n${failures} failure(s)`); process.exit(1); }

@@ -31,7 +31,7 @@ COPY cloud/assets ./assets
 COPY --from=dockrel /rel/dock-release.tar.gz /rel/VERSION ./bundled/
 COPY dock/RELEASE_NOTES.md ./bundled/RELEASE_NOTES.md
 # the Android app, downloadable from the Updates page (go/dist is refreshed per app release)
-COPY go/dist/repaper-go.apk go/dist/APP_VERSION ./bundled/
+COPY go/dist/repaper-go.apk go/dist/APP_VERSION go/CHANGELOG.md ./bundled/
 VOLUME /app/data
 EXPOSE 3000
 CMD ["node", "dist/server.js"]
