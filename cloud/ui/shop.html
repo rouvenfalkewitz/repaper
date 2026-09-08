@@ -14,7 +14,51 @@
   <aside class="side" id="side"></aside>
   <main class="main">
     <div class="pagehead"><h1>Shop</h1><span class="pill amber">preview — nothing is for sale yet</span></div>
-    <p class="devmeta" style="max-width:56ch;margin:0 0 20px">Hardware for your fleet, shipped ready to claim. While the pilot runs, Docks are hand-built — get in touch if you want one early.</p>
+
+    <div class="duohead">
+      <h2>Two ways to print</h2>
+      <span class="devmeta">Same sheets, same fleet, same account — mix them freely.</span>
+    </div>
+    <div class="vs">
+      <div class="vscard">
+        <div class="vsart"><span class="dockring"></span></div>
+        <b class="vstitle">RePaper Dock</b>
+        <span class="vssub">The printer for the whole network</span>
+        <ul class="vslist">
+          <li>Everyone on the Wi-Fi can print — no app, no drivers, no setup</li>
+          <li>Always on: jobs wait for a sheet, the cloud keeps watch</li>
+          <li>Tap a sheet on the Dock and the page is on it</li>
+          <li>Updates itself over the cloud</li>
+        </ul>
+        <div class="chips"><span>AirPrint</span><span>IPP Everywhere</span><span>Mopria</span></div>
+        <div class="vsact"><a class="btn primary" href="/fleet">Claim a Dock</a><span class="mono">hardware below ↓</span></div>
+      </div>
+      <div class="vscard">
+        <div class="vsart"><span class="phoneart"><i class="pring"></i></span></div>
+        <b class="vstitle">RePaper Go</b>
+        <span class="vssub">The printer in your pocket</span>
+        <ul class="vslist">
+          <li>Print from any app on an Android phone or tablet</li>
+          <li>Talks to sheets directly over Bluetooth — no Dock needed</li>
+          <li>Tap a sheet with the phone to print it (NFC)</li>
+          <li>Sign in once and it joins your fleet by itself</li>
+        </ul>
+        <div class="chips"><span>Android Print</span><span>Bluetooth LE</span><span>NFC tap</span></div>
+        <div class="vsact"><a class="btn primary" href="/dl/repaper-go.apk" download>Download for Android</a><span class="mono" id="apkmeta"></span></div>
+      </div>
+    </div>
+
+    <div class="vstable">
+      <div class="vrow head"><span></span><b>Dock</b><b>Go</b></div>
+      <div class="vrow"><span>Who can print</span><i>everyone on the network</i><i>this device</i></div>
+      <div class="vrow"><span>Availability</span><i>always on</i><i>while the app is open</i></div>
+      <div class="vrow"><span>Reaches sheets via</span><i>Bluetooth + tap reader</i><i>the phone's own radios</i></div>
+      <div class="vrow"><span>Speaks</span><i>AirPrint · IPP · Mopria</i><i>the Android print system</i></div>
+      <div class="vrow"><span>Best for</span><i>teams, shared spaces, production</i><i>individuals &amp; field work</i></div>
+    </div>
+
+    <h2>Hardware</h2>
+    <p class="devmeta" style="max-width:56ch;margin:0 0 20px">Shipped ready to claim. While the pilot runs, Docks are hand-built — get in touch if you want one early.</p>
 
     <div class="shopgrid">
       <div class="prod">
@@ -46,5 +90,8 @@
 </div>
 <div class="toast" id="toast" role="status"><span class="ic"></span><span class="tx"></span></div>
 <script src="/app.js"></script>
+<script>
+api("/api/app-release").then(a => { if (a && a.version) el("apkmeta").textContent = `v${a.version} · Android 8+`; }).catch(() => {});
+</script>
 </body>
 </html>

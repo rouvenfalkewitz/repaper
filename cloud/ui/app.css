@@ -392,3 +392,31 @@ a.stat-tile:hover { border-color: var(--border-strong); transform: translateY(-1
 .legend .lrow { display: flex; align-items: center; gap: 9px; font-size: .875rem; color: var(--text-2) }
 .legend .lrow b { color: var(--text); font-family: var(--font-mono); font-size: .8125rem; margin-left: auto }
 .legend .ldot { width: 9px; height: 9px; border-radius: 50%; flex: none }
+
+/* shop: the Dock-vs-Go showcase */
+.duohead { margin: 6px 0 var(--s-4) } .duohead h2 { margin: 0 0 2px }
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); align-items: stretch }
+@media (max-width: 820px) { .vs { grid-template-columns: 1fr } }
+.vscard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--s-5); display: flex; flex-direction: column; gap: 8px; min-width: 0 }
+.vsart { height: 148px; border-radius: var(--r-control); border: 1px solid var(--border); display: grid; place-items: center; background:
+  radial-gradient(circle at 30% 20%, var(--carbon-3), var(--carbon) 70%) }
+.dockring { width: 74px; height: 74px; border-radius: 50%; border: 6px solid var(--accent); box-shadow: 0 0 24px rgba(30,227,165,.55), inset 0 0 18px rgba(30,227,165,.3); animation: var(--ring-breathe) }
+.phoneart { position: relative; width: 66px; height: 112px; border-radius: 14px; background: var(--carbon); border: 2px solid var(--carbon-5); box-shadow: 0 8px 24px rgba(0,0,0,.45); display: grid; place-items: center }
+.phoneart::before { content: ""; position: absolute; top: 7px; left: 50%; transform: translateX(-50%); width: 16px; height: 3px; border-radius: 2px; background: var(--carbon-5) }
+.phoneart .pring { width: 30px; height: 30px; border-radius: 50%; border: 3.5px solid var(--accent); box-shadow: 0 0 12px rgba(30,227,165,.55); animation: var(--ring-breathe) }
+.vstitle { font-family: var(--font-display); font-weight: 700; font-size: 1.375rem; letter-spacing: -.02em; margin-top: 6px }
+.vssub { color: var(--text-2); margin-top: -4px }
+.vslist { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 8px }
+.vslist li { position: relative; padding-left: 26px; color: var(--text-2); font-size: .9375rem }
+.vslist li::before { content: "✓"; position: absolute; left: 0; top: 0; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--accent-tint); color: var(--accent-text); font-size: .75rem; line-height: 18px; text-align: center; font-weight: 700 }
+.vscard .chips { margin-top: 2px }
+.vsact { margin-top: auto; padding-top: 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap }
+.vsact .mono { font-size: .75rem }
+.vstable { margin: var(--s-5) 0 var(--s-7); border: 1px solid var(--border); border-radius: var(--r-card); overflow: hidden; background: var(--surface) }
+.vrow { display: grid; grid-template-columns: 160px 1fr 1fr; gap: 12px; padding: 11px 16px; border-bottom: 1px solid var(--border); align-items: baseline }
+.vrow:last-child { border-bottom: 0 }
+.vrow.head { background: var(--surface-2) } .vrow.head b { font-family: var(--font-display); font-stretch: 112%; font-size: .6875rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent-text) }
+.vrow > span { font-family: var(--font-mono); font-size: .75rem; color: var(--text-3) }
+.vrow i { font-style: normal; font-size: .875rem; color: var(--text-2) }
+@media (max-width: 640px) { .vrow { grid-template-columns: 110px 1fr 1fr } }
