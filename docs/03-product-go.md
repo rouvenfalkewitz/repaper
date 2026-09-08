@@ -60,3 +60,22 @@ Recommendation: build the core once (see `05-architecture.md`), ship it as an An
 - No cloud printing from outside the LAN (ask a Dock for that).
 - No colour management beyond dithering.
 - No user accounts required — works fully offline.
+
+## Share-first? (noted 8 Sep 2026)
+
+iOS Go will be share-first by necessity (no print-dialog API). Rouven's thought:
+maybe Android should be share-first too — "printing kinda only makes sense when
+it's across multiple devices" — with *exposing the system printer* as an option
+("expose printer" toggle) rather than the default. Would unify the mental model
+across both apps: Share → RePaper Go everywhere, printer integration where the
+platform allows and the user wants it. Discuss before iOS UX freezes.
+
+## iOS distribution plan
+
+1. **Now (pilot)**: build with Xcode, run on Rouven's iPhone with a free Apple ID
+   (7-day signing, re-install weekly via cable) — fine while iterating.
+2. **Proper pilot**: Apple Developer Program (€99/y) → **TestFlight**: install
+   link/QR on the cloud's Updates page next to the APK, 90-day builds, up to
+   10k testers, over-the-air updates. This is the "download the app" story for iOS.
+3. **Later**: App Store release (needs review; the BLE/NFC usage is standard).
+The cloud Shop/Updates pages link the TestFlight invite once it exists.
