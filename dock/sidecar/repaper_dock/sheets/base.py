@@ -23,9 +23,12 @@ class Palette:
 
 # Pure colours on purpose: transports/SDKs map them to the panel's inks; the renderer never emits anything else.
 PALETTES: dict[str, Palette] = {
-    "BW":   Palette("BW",   ((255, 255, 255), (0, 0, 0))),
-    "BWR":  Palette("BWR",  ((255, 255, 255), (0, 0, 0), (255, 0, 0))),
-    "BWRY": Palette("BWRY", ((255, 255, 255), (0, 0, 0), (255, 0, 0), (255, 255, 0))),
+    "BW":     Palette("BW",     ((255, 255, 255), (0, 0, 0))),
+    "BWR":    Palette("BWR",    ((255, 255, 255), (0, 0, 0), (255, 0, 0))),
+    "BWRY":   Palette("BWRY",   ((255, 255, 255), (0, 0, 0), (255, 0, 0), (255, 255, 0))),
+    "BWGBRY": Palette("BWGBRY", ((255, 255, 255), (0, 0, 0), (255, 0, 0), (255, 255, 0), (0, 0, 255), (0, 255, 0))),
+    "7COLOR": Palette("7COLOR", ((255, 255, 255), (0, 0, 0), (255, 0, 0), (255, 255, 0), (0, 0, 255), (0, 255, 0), (255, 128, 0))),
+    "GRAY4":  Palette("GRAY4",  ((255, 255, 255), (170, 170, 170), (85, 85, 85), (0, 0, 0))),
 }
 
 

@@ -84,7 +84,7 @@ class OdDevice(private val link: OdLink, private val masterKey: ByteArray? = nul
             throw OdError("sheet shows ${caps.viewedWidth}×${caps.viewedHeight}, page is ${page.model.width}×${page.model.height} — re-register the sheet")
         }
         val native = OdEncoding.rotateToNative(page.indexes, page.model.width, page.model.height, caps.rotation)
-        val data = OdEncoding.encode(native, caps.width, caps.height, caps.scheme)
+        val data = OdEncoding.encode(native, caps.width, caps.height, caps.scheme, caps.panelIc)
 
         narrate("connected — sending")
         write(Od.directWriteStartUncompressed())

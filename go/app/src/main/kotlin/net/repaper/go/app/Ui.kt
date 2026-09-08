@@ -158,10 +158,14 @@ object Ui {
     /** The Dock's palette dots: which inks this sheet speaks. */
     fun palDots(c: Context, palette: String): LinearLayout = LinearLayout(c).apply {
         orientation = LinearLayout.HORIZONTAL
+        val W = 0xFFFFFFFF.toInt(); val B = 0xFF000000.toInt()
         val colors = when (palette) {
-            "BWR" -> intArrayOf(0xFFFFFFFF.toInt(), 0xFF000000.toInt(), EPAPER_RED)
-            "BWRY" -> intArrayOf(0xFFFFFFFF.toInt(), 0xFF000000.toInt(), EPAPER_RED, EPAPER_YELLOW)
-            else -> intArrayOf(0xFFFFFFFF.toInt(), 0xFF000000.toInt())
+            "BWR" -> intArrayOf(W, B, EPAPER_RED)
+            "BWRY" -> intArrayOf(W, B, EPAPER_RED, EPAPER_YELLOW)
+            "BWGBRY" -> intArrayOf(W, B, EPAPER_RED, EPAPER_YELLOW, 0xFF2255DD.toInt(), 0xFF1FA84D.toInt())
+            "7COLOR" -> intArrayOf(W, B, EPAPER_RED, EPAPER_YELLOW, 0xFF2255DD.toInt(), 0xFF1FA84D.toInt(), 0xFFEE7712.toInt())
+            "GRAY4", "GRAY16" -> intArrayOf(W, 0xFFAAAAAA.toInt(), 0xFF555555.toInt(), B)
+            else -> intArrayOf(W, B)
         }
         for (col in colors) addView(android.view.View(c).apply {
             background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(col); setStroke(c.dp(1), BORDER_STRONG) }

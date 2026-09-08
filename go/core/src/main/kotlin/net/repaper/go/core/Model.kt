@@ -8,10 +8,21 @@ data class Palette(val name: String, val colors: List<IntArray>) {
         private val B = intArrayOf(0, 0, 0)
         private val R = intArrayOf(255, 0, 0)
         private val Y = intArrayOf(255, 255, 0)
+        private val G = intArrayOf(0, 255, 0)
+        private val U = intArrayOf(0, 0, 255)
+        private val O = intArrayOf(255, 128, 0)
+        private fun gray(v: Int) = intArrayOf(v, v, v)
         val ALL = mapOf(
+            // classic RePaper order (white first) — matches the Dock
             "BW" to Palette("BW", listOf(W, B)),
             "BWR" to Palette("BWR", listOf(W, B, R)),
             "BWRY" to Palette("BWRY", listOf(W, B, R, Y)),
+            // extended schemes keep the SDK's own index order (black first) so the
+            // wire encodings are direct LUTs — see OdEncoding
+            "BWGBRY" to Palette("BWGBRY", listOf(B, W, Y, R, U, G)),
+            "7COLOR" to Palette("7COLOR", listOf(B, W, Y, R, U, G, O)),
+            "GRAY4" to Palette("GRAY4", listOf(B, gray(85), gray(170), W)),
+            "GRAY16" to Palette("GRAY16", (0..15).map { gray(it * 17) }),
         )
     }
 }
@@ -35,7 +46,9 @@ class Page(val indexes: IntArray, val model: SheetModel) {
 
 /** OpenDisplay wire color schemes (firmware byte values). */
 enum class ColorScheme(val wire: Int, val paletteKey: String) {
-    MONO(0, "BW"), BWR(1, "BWR"), BWY(2, "BWR"), BWRY(3, "BWRY");
+    MONO(0, "BW"), BWR(1, "BWR"), BWY(2, "BWR"), BWRY(3, "BWRY"),
+    BWGBRY(4, "BWGBRY"), GRAY4(5, "GRAY4"), GRAY16(6, "GRAY16"),
+    SEVEN_COLOR(7, "7COLOR"), BWGBRY_SPLIT(8, "BWGBRY");
 
     companion object {
         fun fromWire(v: Int): ColorScheme = entries.firstOrNull { it.wire == v }
@@ -49,6 +62,7 @@ data class Capabilities(
     val height: Int,
     val scheme: ColorScheme,
     val rotation: Int,       // mounting rotation in degrees; viewed size swaps at 90/270
+    val panelIc: Int = 0,    // panel IC type — some BWRY/4-gray panels use different wire codes
     val sessionTimeoutSeconds: Int = 0,
 ) {
     val viewedWidth: Int get() = if (rotation == 90 || rotation == 270) height else width

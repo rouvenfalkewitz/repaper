@@ -154,7 +154,19 @@ class SettingsActivity : AppCompatActivity() {
         }
         AlertDialog.Builder(this).setTitle("Add a sheet").setView(input)
             .setPositiveButton("Add") { _, _ -> addSheet(input.text.toString()) }
+            .setNeutralButton("Scan the QR") { _, _ -> scanQr() }
             .setNegativeButton("Cancel", null).show()
+    }
+
+    /** Point the camera at the QR on the label — Play Services does the scanning UI. */
+    private fun scanQr() {
+        val options = com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions.Builder()
+            .setBarcodeFormats(com.google.mlkit.vision.barcode.common.Barcode.FORMAT_QR_CODE)
+            .build()
+        com.google.mlkit.vision.codescanner.GmsBarcodeScanning.getClient(this, options).startScan()
+            .addOnSuccessListener { code -> code.rawValue?.let { addSheet(it) } ?: toast("That QR carried no link.") }
+            .addOnCanceledListener { }
+            .addOnFailureListener { toast("Scanning isn't available on this device — paste the link instead.") }
     }
 
     private fun addSheet(link: String) {

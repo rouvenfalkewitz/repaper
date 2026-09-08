@@ -1,1 +1,1 @@
-0.0.21 — The cloud now counts printed pages correctly.
+0.0.22 — Six-colour, seven-colour and grayscale sheets are now supported.

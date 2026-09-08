@@ -82,6 +82,51 @@ p1, p2 = encode_bitplanes(p_image(ColorScheme.BWY), ColorScheme.BWY)
 enc["bwy"] = hx(p1 + p2)
 enc["bwry"] = hx(encode_2bpp(p_image(ColorScheme.BWRY)))
 enc["bwry_logical_to_code"] = sdk_indexes(ColorScheme.BWRY)
+
+# ── the full scheme family, straight from the SDK's own encoders ─────────────
+from opendisplay.encoding.images import encode_4bpp
+from opendisplay.encoding.bitplanes import encode_gray4_bitplanes
+from opendisplay.display_palettes import get_bwry_codes, get_gray4_codes
+from PIL import Image as PILImage
+
+# extended grid with green (G), blue (U), orange (O) and grays (0-3 for 4-gray levels)
+XGRID = ["WBRYGU", "GUWBRY", "OWBRYG", "WWWWWW", "BBBBBB", "RYGUOW"]
+XW, XH = len(XGRID[0]), len(XGRID)
+
+def x_image(letter_to_idx):
+    img = PILImage.new("P", (XW, XH))
+    img.putdata([letter_to_idx.get(c, 0) for row in XGRID for c in row])
+    return img
+
+# SDK palette index orders (from epaper_dithering): BWGBRY/SPLIT: b,w,y,r,blue,green; SEVEN adds orange
+bwgbry_idx = {"B": 0, "W": 1, "Y": 2, "R": 3, "U": 4, "G": 5, "O": 3}
+seven_idx = {"B": 0, "W": 1, "Y": 2, "R": 3, "U": 4, "G": 5, "O": 6}
+enc["xgrid"] = XGRID
+enc["bwgbry"] = hx(encode_4bpp(x_image(bwgbry_idx), bwgbry_mapping=True))
+enc["bwgbry_split"] = hx(encode_4bpp(x_image(bwgbry_idx), bwgbry_mapping=True, half_planes=True))
+enc["seven"] = hx(encode_4bpp(x_image(seven_idx)))
+
+GRAYGRID = ["0123", "3210", "0000", "3333", "1122"]
+def g_image():
+    img = PILImage.new("P", (4, 5))
+    img.putdata([int(c) for row in GRAYGRID for c in row])
+    return img
+enc["graygrid"] = GRAYGRID
+for name, panel in (("gray4_base", 0x0008), ("gray4_v2", 0x0028)):
+    p0, p1_ = encode_gray4_bitplanes(g_image(), get_gray4_codes(panel))
+    enc[name] = hx(p0 + p1_)
+enc["gray4_codes_base"] = list(get_gray4_codes(0x0008))
+enc["gray4_codes_v2"] = list(get_gray4_codes(0x0028))
+
+G16GRID = [[0, 5, 10, 15], [15, 10, 5, 0], [1, 2, 3, 4]]
+img16 = PILImage.new("P", (4, 3)); img16.putdata([v for row in G16GRID for v in row])
+enc["gray16_grid"] = G16GRID
+enc["gray16"] = hx(encode_4bpp(img16))
+
+# per-panel BWRY wire codes (0x001D/0x001E swap yellow/red)
+enc["bwry_codes_default"] = list(get_bwry_codes(0x0001))
+enc["bwry_codes_swapped"] = list(get_bwry_codes(0x001D))
+enc["bwry_swapped"] = hx(encode_2bpp(p_image(ColorScheme.BWRY), codes=tuple(get_bwry_codes(0x001D))))
 (OUT / "encoding.json").write_text(json.dumps(enc, indent=1))
 
 # ── landing URLs ─────────────────────────────────────────────────────────────

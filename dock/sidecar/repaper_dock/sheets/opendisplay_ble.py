@@ -15,7 +15,9 @@ import asyncio, base64, re, time
 from typing import Optional
 from .base import SheetTransport, SheetRef, SheetModel, SheetStatus, Page, PrintResult, TransportError
 
-_SCHEME_TO_PALETTE = {"MONO": "BW", "BWR": "BWR", "BWY": "BWR", "BWRY": "BWRY", "GRAYSCALE_4": "BW", "GRAYSCALE_16": "BW"}
+_SCHEME_TO_PALETTE = {"MONO": "BW", "BWR": "BWR", "BWY": "BWR", "BWRY": "BWRY",
+                      "BWGBRY": "BWGBRY", "BWGBRY_SPLIT": "BWGBRY", "SEVEN_COLOR": "7COLOR",
+                      "GRAYSCALE_4": "GRAY4", "GRAYSCALE_16": "GRAY4", "GRAYSCALE_8": "GRAY4"}
 LANDING_PREFIX = "https://opendisplay.org/l/?"
 
 

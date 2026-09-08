@@ -71,6 +71,43 @@ class GoldenTest {
         assertEquals(g.getString("bwry"), OdEncoding.encode(indexes(false), w, h, ColorScheme.BWRY).toHexLower())
     }
 
+    @Test fun extendedEncodingsMatchSdk() {
+        val g = golden("encoding")
+        val xg = g.getJSONArray("xgrid")
+        val h = xg.length(); val w = xg.getString(0).length
+        // letters → OUR palette indexes: BWGBRY/7COLOR palettes are in SDK order (B,W,Y,R,U,G[,O])
+        val six = mapOf('B' to 0, 'W' to 1, 'Y' to 2, 'R' to 3, 'U' to 4, 'G' to 5)
+        fun idx(seven: Boolean): IntArray = IntArray(w * h) { i ->
+            val c = xg.getString(i / w)[i % w]
+            if (c == 'O') (if (seven) 6 else 3) else six.getValue(c)
+        }
+        assertEquals(g.getString("bwgbry"), OdEncoding.encode(idx(false), w, h, ColorScheme.BWGBRY).toHexLower())
+        assertEquals(g.getString("bwgbry_split"), OdEncoding.encode(idx(false), w, h, ColorScheme.BWGBRY_SPLIT).toHexLower())
+        assertEquals(g.getString("seven"), OdEncoding.encode(idx(true), w, h, ColorScheme.SEVEN_COLOR).toHexLower())
+
+        val gg = g.getJSONArray("graygrid")
+        val gidx = IntArray(4 * gg.length()) { i -> gg.getString(i / 4)[i % 4].digitToInt() }
+        assertEquals(g.getString("gray4_base"), OdEncoding.encode(gidx, 4, gg.length(), ColorScheme.GRAY4, panelIc = 0x0008).toHexLower())
+        assertEquals(g.getString("gray4_v2"), OdEncoding.encode(gidx, 4, gg.length(), ColorScheme.GRAY4, panelIc = 0x0028).toHexLower())
+
+        val g16 = g.getJSONArray("gray16_grid")
+        val vals = ArrayList<Int>()
+        for (r in 0 until g16.length()) { val row = g16.getJSONArray(r); for (c in 0 until row.length()) vals.add(row.getInt(c)) }
+        assertEquals(g.getString("gray16"), OdEncoding.encode(vals.toIntArray(), 4, g16.length(), ColorScheme.GRAY16).toHexLower())
+
+        // per-panel BWRY: 0x001D swaps yellow/red on the wire
+        val grid = g.getJSONArray("grid")
+        val bh = grid.length(); val bw = grid.getString(0).length
+        val rep = mapOf('W' to 0, 'B' to 1, 'R' to 2, 'Y' to 3)
+        val bidx = IntArray(bw * bh) { i -> rep.getValue(grid.getString(i / bw)[i % bw]) }
+        assertEquals(g.getString("bwry_swapped"), OdEncoding.encode(bidx, bw, bh, ColorScheme.BWRY, panelIc = 0x001D).toHexLower())
+    }
+
+    @Test fun schemeEightResolves() {
+        assertEquals(ColorScheme.BWGBRY_SPLIT, ColorScheme.fromWire(8))
+        assertEquals("BWGBRY", ColorScheme.fromWire(8).paletteKey)
+    }
+
     @Test fun landingUrlsMatchSdk() {
         val g = golden("landing")
         val withKey = g.getJSONObject("with_key")

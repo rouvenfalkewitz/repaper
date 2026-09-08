@@ -74,7 +74,9 @@ function fig(v, src) {
   return `<div class="fig"><div class="fig-top mono"><span class="dim">${v.width} px</span></div>
     <div class="fig-row">${frame(v.width, v.height, src)}<span class="dim dim-h mono">${v.height} px</span></div></div>`;
 }
-function dots(palette) { const c = {BW: ["#FFFFFF", "#000000"], BWR: ["#FFFFFF", "#000000", "#C8102E"], BWRY: ["#FFFFFF", "#000000", "#C8102E", "#F2C400"]}[palette] || ["#FFFFFF", "#000000"]; return `<span class="dots" title="${palette}">${c.map(x => `<i style="background:${x}"></i>`).join("")}</span>`; }
+function dots(palette) { const c = {BW: ["#FFFFFF", "#000000"], BWR: ["#FFFFFF", "#000000", "#C8102E"], BWRY: ["#FFFFFF", "#000000", "#C8102E", "#F2C400"],
+  BWGBRY: ["#FFFFFF", "#000000", "#C8102E", "#F2C400", "#2255DD", "#1FA84D"], "7COLOR": ["#FFFFFF", "#000000", "#C8102E", "#F2C400", "#2255DD", "#1FA84D", "#EE7712"],
+  GRAY4: ["#FFFFFF", "#AAAAAA", "#555555", "#000000"]}[palette] || ["#FFFFFF", "#000000"]; return `<span class="dots" title="${palette}">${c.map(x => `<i style="background:${x}"></i>`).join("")}</span>`; }
 function render(s) {
   el("printer").textContent = s.printer; el("addr").textContent = s.address || "";
   const n = (s.notifications || []).length, g = document.querySelector(".gear"); if (g) { g.classList.toggle("has-badge", n > 0); g.setAttribute("data-count", n); g.title = n ? `${n} notification${n > 1 ? "s" : ""}` : "Settings"; }
