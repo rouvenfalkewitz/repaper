@@ -123,6 +123,51 @@ class MainActivity : AppCompatActivity() {
         }
         registry = Registry(this)          // Settings may have added/removed sheets meanwhile
         refresh()
+        // tap-to-print: the labels' built-in NFC tag carries the same landing link as the QR
+        android.nfc.NfcAdapter.getDefaultAdapter(this)?.enableReaderMode(this, { tag ->
+            val ndef = android.nfc.tech.Ndef.get(tag) ?: return@enableReaderMode
+            val uri = try {
+                ndef.connect()
+                (ndef.ndefMessage ?: ndef.cachedNdefMessage)?.records
+                    ?.firstNotNullOfOrNull { r -> r.toUri()?.toString() }
+            } catch (e: Exception) { null } finally { runCatching { ndef.close() } }
+            if (uri != null) runOnUiThread { onSheetTap(uri) }
+        }, android.nfc.NfcAdapter.FLAG_READER_NFC_A or android.nfc.NfcAdapter.FLAG_READER_NFC_B or
+           android.nfc.NfcAdapter.FLAG_READER_NFC_F or android.nfc.NfcAdapter.FLAG_READER_NFC_V, null)
+    }
+
+    override fun onPause() {
+        android.nfc.NfcAdapter.getDefaultAdapter(this)?.disableReaderMode(this)
+        super.onPause()
+    }
+
+    /** A sheet touched the phone: that IS the sheet choice — the Dock's tap, phone edition. */
+    private fun onSheetTap(uri: String) {
+        val landing = runCatching { net.repaper.go.core.LandingUrl.parse(uri) }.getOrNull()
+            ?: run { toast("That tag doesn't look like a RePaper sheet."); return }
+        DiagLog.log("nfc tap: ${landing.name}")
+        val known = SheetOps.findRegistered(registry, landing)
+        val job = jobs.list().firstOrNull()
+        when {
+            known != null && job != null -> printJob(job, known)
+            known != null -> toast("That's ${registry.name(known)} — nothing waiting to print.")
+            else -> AlertDialog.Builder(this)
+                .setTitle("New sheet ${landing.name}")
+                .setMessage("Add it to this phone${if (job != null) " and print the waiting job on it" else ""}?")
+                .setPositiveButton("Add") { _, _ ->
+                    lifecycleScope.launch {
+                        try {
+                            toast("Reading the sheet — keep it nearby…")
+                            withContext(Dispatchers.IO) { SheetOps.describeAndRegister(this@MainActivity, registry, landing) }
+                            registry = Registry(this@MainActivity); refresh()
+                            val j = jobs.list().firstOrNull()
+                            val id = SheetOps.findRegistered(registry, landing)
+                            if (j != null && id != null) printJob(j, id) else toast("Added ${landing.name}.")
+                        } catch (e: Exception) { toast(e.message ?: "could not add the sheet") }
+                    }
+                }
+                .setNegativeButton("Not now", null).show()
+        }
     }
 
     /** The LED language, app edition: Printing > flash (Printed/Failed) > Job waiting > Setup > Ready. */
@@ -134,7 +179,9 @@ class MainActivity : AppCompatActivity() {
             f == RingView.Led.DONE -> setState(f, "Printed", "Take a look at the sheet.")
             f == RingView.Led.ERR -> setState(f, "Not printed", "Hold on — then just try again.")
             waiting.isNotEmpty() -> setState(RingView.Led.WAIT, "Job waiting",
-                if (registry.ids().isEmpty()) "Add a sheet in Settings first." else "Choose the sheet to print it on.")
+                if (registry.ids().isEmpty()) "Add a sheet in Settings first."
+                else if (android.nfc.NfcAdapter.getDefaultAdapter(this) != null) "Tap the sheet with this phone — or choose it below."
+                else "Choose the sheet to print it on.")
             registry.ids().isEmpty() -> setState(RingView.Led.SETUP, "Set me up",
                 "Add your first sheet in Settings — the gear, top right.")
             else -> setState(RingView.Led.READY, "Ready to print",

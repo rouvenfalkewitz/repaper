@@ -14,9 +14,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.repaper.go.core.LandingUrl
-import net.repaper.go.core.OdDevice
-import net.repaper.go.core.SheetModel
-import net.repaper.go.core.hexToBytes
 
 /** Sheets and account plumbing live here — the main screen stays the printer, like the Dock. */
 class SettingsActivity : AppCompatActivity() {
@@ -175,21 +172,7 @@ class SettingsActivity : AppCompatActivity() {
             try {
                 val landing = LandingUrl.parse(link)
                 val caps = withContext(Dispatchers.IO) {
-                    val dev = GattLink.find(this@SettingsActivity, landing.name, null)
-                        ?: throw Exception("couldn't find ${landing.name} nearby — wake the sheet and try again")
-                    val gatt = GattLink.connect(this@SettingsActivity, dev)
-                    try {
-                        val od = OdDevice(gatt, landing.keyHex?.hexToBytes())
-                        if (landing.keyHex != null) od.authenticate()
-                        val c = od.interrogate()
-                        DiagLog.log("add ${landing.name}: caps=${c} tlv=${od.lastConfigHex}")
-                        registry.add(landing.name, landing.name, landing.name, landing.keyHex,
-                            SheetModel(c.viewedWidth, c.viewedHeight, c.scheme.paletteKey))
-                        registry.updateKey(landing.name, "ble_address", dev.address)
-                        registry.updateKey(landing.name, "native", "${c.width}x${c.height}")
-                        registry.updateKey(landing.name, "rotation", c.rotation.toString())
-                        c
-                    } finally { gatt.close() }
+                    SheetOps.describeAndRegister(this@SettingsActivity, registry, landing)
                 }
                 toast("Added ${landing.name} · ${caps.viewedWidth}×${caps.viewedHeight}")
                 refresh()
