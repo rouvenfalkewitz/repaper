@@ -114,8 +114,8 @@ await runPage("updates.html", FIXTURES, {
   "app card renders": () => (out.apk || "").includes("RePaper Go for Android"),
   "dock rows show docks only": () => (out.devs || "").includes("Pilot") && !(out.devs || "").includes("Pixel"),
   "phones live in the mobile card": () => (out.apk || "").includes("Pixel"),
-  "ios teaser present": () => (out.apk || "").includes("TestFlight"),
-  "android changelog renders": () => (out.appnews || "").includes("test note"),
+  "android changelog inside the android card": () => (out.apk || "").includes("test note"),
+  "ios has its own card": () => (out.ios || "").includes("TestFlight"),
 });
 
 if (failures) { console.error(`\n${failures} failure(s)`); process.exit(1); }

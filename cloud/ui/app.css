@@ -431,3 +431,5 @@ a.stat-tile:hover { border-color: var(--border-strong); transform: translateY(-1
   #devs .member, #apk .member { flex-wrap: wrap }
   #devs .member > .row, #devs .member > .stat, #apk .member > .stat { width: 100%; justify-content: flex-end; display: flex; margin-top: 4px }
 }
+
+.appnews { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border) }

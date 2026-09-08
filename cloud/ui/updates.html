@@ -25,7 +25,7 @@
 
     <h2>Mobile apps</h2>
     <div class="card" id="apk"><div class="devmeta">Loading…</div></div>
-    <div class="card" id="appnews" hidden></div>
+    <div class="card" id="ios"></div>
 
     <p class="trustline">Updates are verified before anything changes, install next to the running software, and undo themselves if a device doesn't come back healthy. Printing never depends on an update.</p>
   </main>
@@ -106,44 +106,46 @@ function render() {
   if (ME) { el("uploadBtn").hidden = !ME.vendor; el("uploadBtn").innerHTML = ICON.plus + "<span>Upload release</span>"; }
 }
 
-function apkCard(a, phones) {
+/* Android and iOS ship on their own cadences — each platform card carries
+   its own version stream and changelog. */
+function androidCard(a, phones) {
   const phoneRows = phones.map(d => {
     const name = esc(d.name || (d.status || {}).printer || d.id);
-    return `<div class="member"><span class="mrow"><span class="okic ${d.online ? "" : "off"}" style="width:32px;height:32px">${ICON.phone}</span>
+    return `<div class="member"><span class="mrow"><span class="okic ${d.online ? "" : "off"}" style="width:32px;height:32px">${ICON.android}</span>
       <span class="who2"><b>${name}</b><span class="mono">${d.online ? "online" : "seen " + ago(d.last_seen)}${d.version ? " · v" + esc(d.version) : ""}</span></span></span>
       <span class="stat ${d.version === a?.version ? "ok" : "mute"}">${d.version === a?.version ? ICON.check + "Up to date" : ICON.phone + "Update via the app"}</span></div>`;
   }).join("");
   const dl = (!a || !a.version)
     ? `<div class="devmeta">The Android app appears here with the next deploy.</div>`
-    : `<div class="twofa"><span class="okic">${ICON.phone}</span>
+    : `<div class="twofa"><span class="okic">${ICON.android}</span>
     <div style="flex:1"><b>RePaper Go for Android</b>
     <span>Print to sheets straight from a phone — no Dock needed. Sign in with this account and the phone joins your fleet.</span>
     <span class="mono" style="display:block;margin-top:4px">v${esc(a.version)} · ${(a.size / 1024 / 1024).toFixed(1)} MB · Android 8.0+</span></div>
     <a class="btn primary" href="/dl/repaper-go.apk" download>${ICON.download}<span>Download</span></a></div>`;
-  const ios = `<div class="twofa" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-    <span class="okic off">${ICON.phone}</span>
-    <div style="flex:1"><b>RePaper Go for iPhone &amp; iPad</b>
-    <span>In the works — arriving via TestFlight. Until then, iPhones print through any Dock.</span></div></div>`;
-  return dl + (phoneRows ? `<div style="margin-top:12px">${phoneRows}</div>` : "") + ios;
+  return dl + (phoneRows ? `<div style="margin-top:12px">${phoneRows}</div>` : "") + appNews(a?.notes);
 }
 
-function appNews(a) {
-  const notes = a?.notes || [];
-  if (!notes.length) return "";
+function iosCard() {
+  return `<div class="twofa"><span class="okic off">${ICON.apple}</span>
+    <div style="flex:1"><b>RePaper Go for iPhone &amp; iPad</b>
+    <span>In the works — arriving via TestFlight, with its own updates and changelog here. Until then, iPhones print through any Dock.</span></div></div>`;
+}
+
+function appNews(notes) {
+  if (!notes || !notes.length) return "";
   const item = (r, big) => `<div class="newsitem${big ? " big" : ""}">
     <div class="newshead"><b>${big ? "Version " : ""}${esc(r.version)}</b><span class="mono">${esc(r.date)}</span></div>
     <p>${esc(r.note)}</p></div>`;
-  return item(notes[0], true)
-    + (notes.length > 1 ? `<details class="oldnews"><summary>Earlier versions</summary>${notes.slice(1).map(r => item(r, false)).join("")}</details>` : "");
+  return `<div class="appnews">` + item(notes[0], true)
+    + (notes.length > 1 ? `<details class="oldnews"><summary>Earlier versions</summary>${notes.slice(1).map(r => item(r, false)).join("")}</details>` : "")
+    + `</div>`;
 }
 
 async function load() {
   const [rel, fleet, apk] = await Promise.all([api("/api/releases"), api("/api/fleet"), api("/api/app-release").catch(() => null)]);
   R = rel; DEVICES = fleet.devices;
-  setHTML("apk", apkCard(apk, fleet.devices.filter(d => !isDock(d))));
-  const an = appNews(apk);
-  el("appnews").hidden = !an;
-  if (an) setHTML("appnews", an);
+  setHTML("apk", androidCard(apk, fleet.devices.filter(d => !isDock(d))));
+  setHTML("ios", iosCard());
   render();
 }
 
