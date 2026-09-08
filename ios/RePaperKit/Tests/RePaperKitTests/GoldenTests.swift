@@ -136,14 +136,12 @@ final class UploadFlowTests: XCTestCase {
         var sessionKey: Data?
         let serverNonce = Data(repeating: 0x42, count: 16)
         var chunksReceived = 0
-        let lock = NSLock()
 
         init(masterKey: Data? = nil) { self.masterKey = masterKey }
 
         func ack(_ code: Int) -> Data { Data([UInt8(code >> 8), UInt8(code & 0xFF)]) }
 
         func write(_ data: Data, withResponse: Bool) async throws {
-            lock.lock(); defer { lock.unlock() }
             var plain = data
             if let sk = sessionKey, data.count >= 31 {
                 let (cmd, payload) = try OdCrypto.decryptResponse(sessionKey: sk, raw: data)
@@ -160,7 +158,6 @@ final class UploadFlowTests: XCTestCase {
         }
 
         func read(timeoutMs: Int) async throws -> Data {
-            lock.lock(); defer { lock.unlock() }
             guard !toRead.isEmpty else { throw OdError.timeout("no response") }
             return toRead.removeFirst()
         }

@@ -1,0 +1,750 @@
+{
+  "builtTestProducts" : [
+    {
+      "binaryPath" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitPackageTests.xctest/Contents/MacOS/RePaperKitPackageTests",
+      "packagePath" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit",
+      "productName" : "RePaperKitPackageTests"
+    }
+  ],
+  "copyCommands" : {
+    "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit_RePaperKitTests.bundle/golden" : {
+      "inputs" : [
+        {
+          "kind" : "directory",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Tests/RePaperKitTests/golden"
+        }
+      ],
+      "outputs" : [
+        {
+          "kind" : "directory",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit_RePaperKitTests.bundle/golden"
+        }
+      ]
+    }
+  },
+  "explicitTargetDependencyImportCheckingMode" : {
+    "none" : {
+
+    }
+  },
+  "generatedSourceTargetSet" : [
+
+  ],
+  "pluginDescriptions" : [
+
+  ],
+  "swiftCommands" : {
+    "C.RePaperKit-arm64-apple-macosx26.0-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/sources",
+      "importPath" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/Model.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/OdCrypto.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/OdDevice.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/OdEncoding.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/OdProtocol.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/sources"
+        }
+      ],
+      "isLibrary" : true,
+      "moduleName" : "RePaperKit",
+      "moduleOutputPath" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/Modules/RePaperKit.swiftmodule",
+      "objects" : [
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/Model.swift.o",
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdCrypto.swift.o",
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdDevice.swift.o",
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdEncoding.swift.o",
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdProtocol.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx12.0",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-index-store-path",
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-j14",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-parse-as-library",
+        "-emit-objc-header",
+        "-emit-objc-header-path",
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/include/RePaperKit-Swift.h",
+        "-swift-version",
+        "6",
+        "-plugin-path",
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "repaperkit"
+      ],
+      "outputFileMapPath" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/Model.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdCrypto.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdDevice.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdEncoding.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdProtocol.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/Modules/RePaperKit.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/Model.swift",
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/OdCrypto.swift",
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/OdDevice.swift",
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/OdEncoding.swift",
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/OdProtocol.swift"
+      ],
+      "tempsPath" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build",
+      "wholeModuleOptimization" : false
+    },
+    "C.RePaperKitPackageTests-arm64-apple-macosx26.0-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitPackageTests.build/sources",
+      "importPath" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitPackageTests.derived/runner.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/Modules/RePaperKitTests.swiftmodule"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitPackageTests.build/sources"
+        }
+      ],
+      "isLibrary" : true,
+      "moduleName" : "RePaperKitPackageTests",
+      "moduleOutputPath" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/Modules/RePaperKitPackageTests.swiftmodule",
+      "objects" : [
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitPackageTests.build/runner.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx12.0",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-index-store-path",
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-Xfrontend",
+        "-enable-cross-import-overlays",
+        "-j14",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-parse-as-library",
+        "-emit-objc-header",
+        "-emit-objc-header-path",
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitPackageTests.build/include/RePaperKitPackageTests-Swift.h",
+        "-plugin-path",
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "repaperkit"
+      ],
+      "outputFileMapPath" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitPackageTests.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitPackageTests.build/runner.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/Modules/RePaperKitPackageTests.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitPackageTests.derived/runner.swift"
+      ],
+      "tempsPath" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitPackageTests.build",
+      "wholeModuleOptimization" : false
+    },
+    "C.RePaperKitTests-arm64-apple-macosx26.0-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitTests.build/sources",
+      "importPath" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Tests/RePaperKitTests/GoldenTests.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitTests.build/DerivedSources/resource_bundle_accessor.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "virtual",
+          "name" : "<RePaperKitTests-arm64-apple-macosx26.0-debug.module-resources>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/Modules/RePaperKit.swiftmodule"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitTests.build/sources"
+        }
+      ],
+      "isLibrary" : true,
+      "moduleName" : "RePaperKitTests",
+      "moduleOutputPath" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/Modules/RePaperKitTests.swiftmodule",
+      "objects" : [
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitTests.build/GoldenTests.swift.o",
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitTests.build/resource_bundle_accessor.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx14.0",
+        "-incremental",
+        "-enable-batch-mode",
+        "-serialize-diagnostics",
+        "-index-store-path",
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-Xfrontend",
+        "-enable-cross-import-overlays",
+        "-j14",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_AVAILABLE",
+        "-module-cache-path",
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-parse-as-library",
+        "-swift-version",
+        "6",
+        "-plugin-path",
+        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "repaperkit"
+      ],
+      "outputFileMapPath" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitTests.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitTests.build/GoldenTests.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitTests.build/resource_bundle_accessor.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/Modules/RePaperKitTests.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Tests/RePaperKitTests/GoldenTests.swift",
+        "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitTests.build/DerivedSources/resource_bundle_accessor.swift"
+      ],
+      "tempsPath" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitTests.build",
+      "wholeModuleOptimization" : false
+    }
+  },
+  "swiftFrontendCommands" : {
+
+  },
+  "swiftTargetScanArgs" : {
+    "RePaperKit" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "RePaperKit",
+      "-package-name",
+      "repaperkit",
+      "-c",
+      "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/Model.swift",
+      "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/OdCrypto.swift",
+      "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/OdDevice.swift",
+      "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/OdEncoding.swift",
+      "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/OdProtocol.swift",
+      "-I",
+      "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx12.0",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-index-store-path",
+      "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-j14",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-parse-as-library",
+      "-emit-objc-header",
+      "-emit-objc-header-path",
+      "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/include/RePaperKit-Swift.h",
+      "-swift-version",
+      "6",
+      "-plugin-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "repaperkit",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ],
+    "RePaperKitPackageTests" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "RePaperKitPackageTests",
+      "-package-name",
+      "repaperkit",
+      "-c",
+      "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitPackageTests.derived/runner.swift",
+      "-I",
+      "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx12.0",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-index-store-path",
+      "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-Xfrontend",
+      "-enable-cross-import-overlays",
+      "-j14",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-parse-as-library",
+      "-emit-objc-header",
+      "-emit-objc-header-path",
+      "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitPackageTests.build/include/RePaperKitPackageTests-Swift.h",
+      "-plugin-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "repaperkit",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ],
+    "RePaperKitTests" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "RePaperKitTests",
+      "-package-name",
+      "repaperkit",
+      "-c",
+      "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Tests/RePaperKitTests/GoldenTests.swift",
+      "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitTests.build/DerivedSources/resource_bundle_accessor.swift",
+      "-I",
+      "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx14.0",
+      "-incremental",
+      "-enable-batch-mode",
+      "-serialize-diagnostics",
+      "-index-store-path",
+      "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-Xfrontend",
+      "-enable-cross-import-overlays",
+      "-j14",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_AVAILABLE",
+      "-module-cache-path",
+      "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-parse-as-library",
+      "-swift-version",
+      "6",
+      "-plugin-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.2.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "repaperkit",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ]
+  },
+  "targetDependencyMap" : {
+    "RePaperKit" : [
+
+    ],
+    "RePaperKitPackageTests" : [
+      "RePaperKitTests",
+      "RePaperKit"
+    ],
+    "RePaperKitTests" : [
+      "RePaperKit"
+    ]
+  },
+  "testDiscoveryCommands" : {
+
+  },
+  "testEntryPointCommands" : {
+    "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitPackageTests.derived/runner.swift" : {
+      "inputs" : [
+
+      ],
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitPackageTests.derived/runner.swift"
+        }
+      ]
+    }
+  },
+  "traitConfiguration" : {
+    "default" : {
+
+    }
+  },
+  "writeCommands" : {
+    "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/Model.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/OdCrypto.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/OdDevice.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/OdEncoding.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/OdProtocol.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/sources"
+    },
+    "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitPackageTests.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitPackageTests.derived/runner.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitPackageTests.build/sources"
+    },
+    "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitPackageTests.product/Objects.LinkFileList" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<link-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/Model.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdCrypto.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdDevice.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdEncoding.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdProtocol.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitPackageTests.build/runner.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitTests.build/GoldenTests.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitTests.build/resource_bundle_accessor.swift.o"
+        }
+      ],
+      "outputFilePath" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitPackageTests.product/Objects.LinkFileList"
+    },
+    "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitTests.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Tests/RePaperKitTests/GoldenTests.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitTests.build/DerivedSources/resource_bundle_accessor.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKitTests.build/sources"
+    },
+    "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt" : {
+      "alwaysOutOfDate" : true,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<swift-get-version>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+        }
+      ],
+      "outputFilePath" : "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+    }
+  }
+}

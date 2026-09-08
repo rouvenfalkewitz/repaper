@@ -6,9 +6,9 @@ quirks, landing links, the async OdDevice upload actor) — is written as a line
 of the proven Kotlin core, against the **same golden fixtures** (`Tests/RePaperKitTests/golden`,
 shared with `go/core`).
 
-⚠️ **Not yet compiled**: this Mac's Command Line Tools are broken (compiler/SDK build
-mismatch on the macOS beta), so unlike everything else in this repo the Swift code has not
-been machine-verified yet. First Xcode session must start with the golden tests.
+✅ **Verified (8 Sep 2026)**: with Xcode 26.3 installed, `swift test` passes — 8/8, including
+the hand-rolled CMAC/CCM crypto matching py-opendisplay byte-for-byte and the full encrypted
+upload flow against a fake sheet running firmware-side crypto.
 
 ## Next steps (needs Xcode from the App Store, ~12 GB)
 

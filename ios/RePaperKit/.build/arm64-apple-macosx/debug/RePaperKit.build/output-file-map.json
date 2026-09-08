@@ -1,0 +1,40 @@
+{
+  "": {
+    "swift-dependencies": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/master.swiftdeps"
+  },
+  "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/Model.swift": {
+    "dependencies": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/Model.d",
+    "object": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/Model.swift.o",
+    "swiftmodule": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/Model~partial.swiftmodule",
+    "swift-dependencies": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/Model.swiftdeps",
+    "diagnostics": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/Model.dia"
+  },
+  "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/OdCrypto.swift": {
+    "dependencies": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdCrypto.d",
+    "object": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdCrypto.swift.o",
+    "swiftmodule": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdCrypto~partial.swiftmodule",
+    "swift-dependencies": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdCrypto.swiftdeps",
+    "diagnostics": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdCrypto.dia"
+  },
+  "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/OdDevice.swift": {
+    "dependencies": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdDevice.d",
+    "object": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdDevice.swift.o",
+    "swiftmodule": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdDevice~partial.swiftmodule",
+    "swift-dependencies": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdDevice.swiftdeps",
+    "diagnostics": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdDevice.dia"
+  },
+  "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/OdEncoding.swift": {
+    "dependencies": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdEncoding.d",
+    "object": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdEncoding.swift.o",
+    "swiftmodule": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdEncoding~partial.swiftmodule",
+    "swift-dependencies": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdEncoding.swiftdeps",
+    "diagnostics": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdEncoding.dia"
+  },
+  "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/Sources/RePaperKit/OdProtocol.swift": {
+    "dependencies": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdProtocol.d",
+    "object": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdProtocol.swift.o",
+    "swiftmodule": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdProtocol~partial.swiftmodule",
+    "swift-dependencies": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdProtocol.swiftdeps",
+    "diagnostics": "/Users/rouvenfalkewitz/Projects/Rouven/Repaper/ios/RePaperKit/.build/arm64-apple-macosx/debug/RePaperKit.build/OdProtocol.dia"
+  }
+}
