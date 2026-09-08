@@ -23,3 +23,5 @@ go/local.properties
 # iOS (regenerate with xcodegen)
 ios/App/RePaperGo.xcodeproj/
 ios/RePaperKit/.build/
+ios/App/build/
+ios/App/Sources/Info.plist
