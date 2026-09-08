@@ -7,7 +7,7 @@ import org.json.JSONObject
 import java.io.File
 import java.security.SecureRandom
 
-const val GO_VERSION = "0.2.5"
+const val GO_VERSION = "0.2.6"
 
 /** Same shape as the Dock's ~/.repaper/sheets.json: id → {name, transport, address, keys, model}.
  *  The AES key from the QR link lives only here. */
@@ -79,6 +79,12 @@ object Prefs {
     /** Members' devices wait for an admin; the app stays gated until this turns true. */
     fun isApproved(context: android.content.Context): Boolean = p(context).getBoolean("approved", true)
     fun setApproved(context: android.content.Context, v: Boolean) = p(context).edit().putBoolean("approved", v).apply()
+
+    /** With several sheets: print on each in turn instead of asking. */
+    fun cycleSheets(context: android.content.Context): Boolean = p(context).getBoolean("sheet_cycle", false)
+    fun setCycleSheets(context: android.content.Context, v: Boolean) = p(context).edit().putBoolean("sheet_cycle", v).apply()
+    fun cycleIx(context: android.content.Context): Int = p(context).getInt("cycle_ix", 0)
+    fun bumpCycleIx(context: android.content.Context) = p(context).edit().putInt("cycle_ix", cycleIx(context) + 1).apply()
 
     /** Printed-today counter (the phone deletes job files after printing, so it counts). */
     private fun todayKey() = "printed_" + java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())

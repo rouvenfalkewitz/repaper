@@ -175,11 +175,16 @@ class MainActivity : AppCompatActivity() {
     private fun refresh() {
         val waiting = jobs.list()
         val f = flash
-        // exactly one sheet registered: the waiting job prints on it without asking.
-        // One attempt each — a failure shows red and waits for a manual tap on the job.
-        if (!busy && f == null && waiting.isNotEmpty() && registry.ids().size == 1) {
+        // automatic sheet choice: one sheet decides itself; with "cycle through sheets" on,
+        // several take turns. One attempt each — a failure shows red and waits for a tap.
+        val ids = registry.ids()
+        val auto = ids.size == 1 || (Prefs.cycleSheets(this) && ids.size > 1)
+        if (!busy && f == null && waiting.isNotEmpty() && auto && ids.isNotEmpty()) {
             val job = waiting.first()
-            if (autoTried.add(job.name)) { printJob(job, registry.ids()[0]); return }
+            if (autoTried.add(job.name)) {
+                val pick = if (ids.size == 1) ids[0] else ids[Prefs.cycleIx(this) % ids.size]
+                printJob(job, pick, advanceCycle = ids.size > 1); return
+            }
         }
         when {
             busy -> setState(RingView.Led.BUSY, "Printing…", "Keep the sheet nearby.")
@@ -255,7 +260,7 @@ class MainActivity : AppCompatActivity() {
             .setNegativeButton("Cancel", null).show()
     }
 
-    private fun printJob(job: File, sheetId: String) {
+    private fun printJob(job: File, sheetId: String, advanceCycle: Boolean = false) {
         lifecycleScope.launch {
             busy = true; refresh()
             try {
@@ -263,6 +268,7 @@ class MainActivity : AppCompatActivity() {
                     printFlow.printPdf(job, sheetId) { phase -> runOnUiThread { statusSub.text = phase } }
                 }
                 job.delete()
+                if (advanceCycle) Prefs.bumpCycleIx(this@MainActivity)
                 busy = false; flashState(RingView.Led.DONE, 3000)
             } catch (e: Exception) {
                 busy = false; flashState(RingView.Led.ERR, 6000); toast(e.message ?: "print failed")

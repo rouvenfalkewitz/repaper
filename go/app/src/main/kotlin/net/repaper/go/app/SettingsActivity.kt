@@ -72,6 +72,21 @@ class SettingsActivity : AppCompatActivity() {
             }
         })
 
+        listView.addView(Ui.card(this).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            addView(LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(Ui.displayText(this@SettingsActivity, "Cycle through sheets", 15f, Ui.TEXT, weight = 600))
+                addView(Ui.bodyText(this@SettingsActivity, "With several sheets, jobs print on each in turn.", 12f).apply {
+                    setPadding(0, dp(2), 0, 0)
+                })
+            }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(android.widget.Switch(this@SettingsActivity).apply {
+                isChecked = Prefs.cycleSheets(this@SettingsActivity)
+                setOnCheckedChangeListener { _, v -> Prefs.setCycleSheets(this@SettingsActivity, v) }
+            })
+        })
+
         listView.addView(Ui.sectionHeader(this, "Sheets"))
         val ids = registry.ids()
         if (ids.isEmpty()) {

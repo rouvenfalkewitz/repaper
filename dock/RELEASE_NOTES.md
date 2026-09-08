@@ -1,1 +1,1 @@
-0.0.23 — With a single sheet, printing needs no tap — the page goes straight onto it.
+0.0.24 — New setting: cycle through sheets — jobs print on each sheet in turn, no picking needed.

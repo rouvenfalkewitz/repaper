@@ -31,6 +31,8 @@
           <option value="600">10 minutes</option><option value="1800">30 minutes</option><option value="3600">1 hour</option>
           <option value="14400">4 hours</option><option value="86400">1 day</option>
         </select><div class="hint">A print job waits this long for someone to pick a sheet — then it's quietly discarded.</div></div>
+        <label class="tgl"><input type="checkbox" id="cycle" name="sheet_cycle"><span class="knob"></span><span>Cycle through sheets</span></label>
+        <div class="hint" style="margin-top:-6px">With several sheets, jobs print on each in turn — no picking. A single sheet always prints directly.</div>
         <div class="row end"><button class="btn primary" id="saveBtn" type="submit" disabled>Save</button></div>
       </form>
     </section>
@@ -141,6 +143,7 @@ async function load() {
   el("pname").value = s.printer_name;
   const opts = [...el("timeout").options].map(o => Number(o.value));
   el("timeout").value = opts.reduce((a, b) => Math.abs(b - s.job_timeout_seconds) < Math.abs(a - s.job_timeout_seconds) ? b : a);
+  el("cycle").checked = !!s.sheet_cycle;
   el("addr").textContent = s.address; dirty();
   el("sheets").innerHTML = Object.entries(s.sheets).map(([k, v]) => card(k, v)).join("") + `<button class="sheet addcard" type="button" onclick="openAdd()"><span class="plus">${ICON.plus}</span><span>${Object.keys(s.sheets).length ? "Add a sheet" : "Add your first sheet"}</span></button>`;
   const notes = s.notifications || [];
@@ -311,12 +314,12 @@ function testHotspot() {
 }
 initWifi();
 /* printer form: Save only lights up when something changed */
-function dirty() { const d = el("pname").value.trim() !== S.printer_name || Number(el("timeout").value) !== S.job_timeout_seconds; const b = el("saveBtn"); if (!b.classList.contains("busy") && !b.classList.contains("ok")) b.disabled = !d; b.dataset.stayDisabled = d ? "0" : "1"; }
+function dirty() { const d = el("pname").value.trim() !== S.printer_name || Number(el("timeout").value) !== S.job_timeout_seconds || el("cycle").checked !== !!S.sheet_cycle; const b = el("saveBtn"); if (!b.classList.contains("busy") && !b.classList.contains("ok")) b.disabled = !d; b.dataset.stayDisabled = d ? "0" : "1"; }
 async function savePrinter(e) {
   e.preventDefault(); const name = el("pname").value.trim(), b = el("saveBtn");
   if (!name || name.length > 63) { shake(el("pname")); toast("Give the printer a name (1–63 characters).", "err"); return false; }
   const renamed = name !== S.printer_name, done = busy(b, "Saving…");
-  try { await api("/api/settings", {printer_name: name, job_timeout_seconds: Number(el("timeout").value)}); S.printer_name = name; S.job_timeout_seconds = Number(el("timeout").value); b.dataset.stayDisabled = "1"; done("Saved"); toast(renamed ? "Saved — the new name shows up once the printer restarts." : "Saved."); }
+  try { await api("/api/settings", {printer_name: name, job_timeout_seconds: Number(el("timeout").value), sheet_cycle: el("cycle").checked}); S.printer_name = name; S.job_timeout_seconds = Number(el("timeout").value); S.sheet_cycle = el("cycle").checked; b.dataset.stayDisabled = "1"; done("Saved"); toast(renamed ? "Saved — the new name shows up once the printer restarts." : "Saved."); }
   catch (x) { done("Not saved", true); toast(x.message, "err"); }
   return false;
 }

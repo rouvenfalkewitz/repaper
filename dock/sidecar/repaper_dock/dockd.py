@@ -30,7 +30,8 @@ class Dock:
         self.message = ""
         self.phase = ""                                 # live sub-status while printing ("connecting", "sending", ...)
         self._announced: set[str] = set()
-        self._auto_tried: set[str] = set()   # one-sheet auto-print: one attempt per job page
+        self._auto_tried: set[str] = set()   # auto-print: one attempt per job page
+        self._cycle_ix = 0                   # round-robin pointer for sheet_cycle
         self.sheet_status: dict[str, dict] = {}         # sheet id → {battery_volts, temperature_c, online, seen, at}
         self._status_lock = threading.Lock()
         for sid in self.registry.ids():                 # last known readings survive a restart; "online" is unknown until the first scan
@@ -93,13 +94,17 @@ class Dock:
             key = f"{job.id}:{page_no}"
             if key not in self._announced:
                 log.info("job %s (%s) page %d/%d waiting — hold a sheet", job.id, job.name, page_no, job.pages); self._announced.add(key)
-            # exactly one registered sheet: the choice is made — print without a tap.
-            # One attempt per page: a failure stays visible and waits for a manual retry.
-            only = self.registry.ids()
-            if len(only) == 1 and key not in self._auto_tried:
+            # automatic sheet choice: a single sheet decides itself; with sheet_cycle on,
+            # several sheets take turns. One attempt per page — a failure stays visible
+            # and waits for a manual retry; the rotation only advances on success.
+            ids = self.registry.ids()
+            auto = len(ids) == 1 or (self.cfg.get("sheet_cycle") and len(ids) > 1)
+            if auto and ids and key not in self._auto_tried:
                 self._auto_tried.add(key)
-                log.info("only one sheet registered — printing on %s without a tap", only[0])
-                self.print_page(job, page_no, only[0])
+                pick = ids[0] if len(ids) == 1 else ids[self._cycle_ix % len(ids)]
+                log.info("automatic sheet choice — printing on %s without a tap", pick)
+                self.print_page(job, page_no, pick)
+                if self.state == "printed" and len(ids) > 1: self._cycle_ix += 1
                 continue
             sheet_id = self.identifier.wait_for_tap(timeout=2.0)
             if not sheet_id: continue
@@ -151,7 +156,8 @@ class Dock:
                       "size": f'{e["model"]["width"]}×{e["model"]["height"]} {e["model"]["palette"]}', "inset": list(e["model"].get("inset", (0, 0, 0, 0))),
                       "hw": e.get("keys", {}).get("hw", {})}
                   for k, e in self.registry.all().items()}
-        return {"printer_name": self.cfg["printer_name"], "job_timeout_seconds": self.cfg["job_timeout_seconds"], "notifications": self.notifications(self.snapshot()["sheets"]),
+        return {"printer_name": self.cfg["printer_name"], "job_timeout_seconds": self.cfg["job_timeout_seconds"],
+                "sheet_cycle": bool(self.cfg.get("sheet_cycle")), "notifications": self.notifications(self.snapshot()["sheets"]),
                 "wifi_supported": self.wifi.supported,
                 "address": f"http://{socket.gethostname()}:{self.cfg['web_port']}/", "sheets": sheets, "cloud": self.cloud.info(),
                 "network": {"Hostname": socket.gethostname(), "IP address": ", ".join(sorted(set(ips))) or "—",
@@ -176,12 +182,12 @@ class Dock:
 
     def save_settings(self, data: dict) -> None:
         from .config import CONFIG
-        allowed = {"printer_name": str, "job_timeout_seconds": int, "status_refresh_seconds": int}
+        allowed = {"printer_name": str, "job_timeout_seconds": int, "status_refresh_seconds": int, "sheet_cycle": bool}
         if "printer_name" in data and not (1 <= len(str(data["printer_name"]).strip()) <= 63): raise ValueError("printer name must be 1–63 characters")
         for k, typ in allowed.items():
             if k in data and data[k] is not None:
                 v = typ(data[k])
-                if k != "printer_name" and v < 30: raise ValueError(f"{k} must be at least 30")
+                if typ is int and v < 30: raise ValueError(f"{k} must be at least 30")
                 self.cfg[k] = v.strip() if isinstance(v, str) else v
         if "cloud_url" in data:
             u = str(data["cloud_url"] or "").strip()
@@ -189,6 +195,7 @@ class Dock:
             self.cfg["cloud_url"] = u
         cur = json.loads(CONFIG.read_text()) if CONFIG.exists() else {}
         cur.update({k: self.cfg[k] for k in (*allowed, "cloud_url") if k in self.cfg}); CONFIG.write_text(json.dumps(cur, indent=2) + "\n")
+        self._auto_tried.clear()             # a changed setting may unlock waiting jobs
 
     def add_sheet(self, text: str, name: str = "", serial: str = "") -> dict:
         """text = QR landing URL, OD name, BLE address, or 'WxH' for the mock transport. Reads size/colours from the sheet."""
