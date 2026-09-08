@@ -425,3 +425,9 @@ a.stat-tile:hover { border-color: var(--border-strong); transform: translateY(-1
 .chips span { font-family: var(--font-mono); font-size: .6875rem; color: var(--text-3); border: 1px solid var(--border); border-radius: 999px; padding: 3px 9px }
 
 #hero { margin-bottom: var(--s-6) }
+
+/* updates: on narrow screens the status/action drops to its own line instead of overlapping */
+@media (max-width: 560px) {
+  #devs .member, #apk .member { flex-wrap: wrap }
+  #devs .member > .row, #devs .member > .stat, #apk .member > .stat { width: 100%; justify-content: flex-end; display: flex; margin-top: 4px }
+}
