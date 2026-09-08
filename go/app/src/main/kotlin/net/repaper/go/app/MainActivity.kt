@@ -121,6 +121,7 @@ class MainActivity : AppCompatActivity() {
         if (!Prefs.isClaimed(this)) {      // removed from the fleet while we were running
             startActivity(Intent(this, AuthActivity::class.java)); finish(); return
         }
+        registry = Registry(this)          // Settings may have added/removed sheets meanwhile
         refresh()
     }
 
@@ -218,9 +219,11 @@ class MainActivity : AppCompatActivity() {
     // ── plumbing ─────────────────────────────────────────────────────────────
 
     private fun requestBlePermissions() {
-        val wanted = if (Build.VERSION.SDK_INT >= 31)
-            arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
-        else arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+        val wanted = buildList {
+            if (Build.VERSION.SDK_INT >= 31) { add(Manifest.permission.BLUETOOTH_SCAN); add(Manifest.permission.BLUETOOTH_CONNECT) }
+            else add(Manifest.permission.ACCESS_FINE_LOCATION)
+            if (Build.VERSION.SDK_INT >= 33) add(Manifest.permission.POST_NOTIFICATIONS)   // job notifications
+        }.toTypedArray()
         val missing = wanted.filter { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
         if (missing.isNotEmpty()) ActivityCompat.requestPermissions(this, missing.toTypedArray(), 1)
     }
