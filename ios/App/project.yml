@@ -1,10 +1,10 @@
 # XcodeGen spec for the RePaper Go iOS app.
-# Once Xcode is installed:  brew install xcodegen && cd ios/App && xcodegen && open RePaperGo.xcodeproj
+# brew install xcodegen && cd ios/App && xcodegen && open RePaperGo.xcodeproj
 name: RePaperGo
 options:
   bundleIdPrefix: net.repaper
   deploymentTarget:
-    iOS: "15.0"
+    iOS: "16.0"
 packages:
   RePaperKit:
     path: ../RePaperKit
@@ -12,14 +12,16 @@ targets:
   RePaperGo:
     type: application
     platform: iOS
-    sources: [Sources]
+    sources: [Sources, Resources]
     dependencies:
       - package: RePaperKit
     info:
       path: Sources/Info.plist
       properties:
         CFBundleDisplayName: RePaper Go
+        CFBundleShortVersionString: "0.1.0"
         UILaunchScreen: {}
+        UIAppFonts: [Archivo.ttf, Figtree.ttf]
         NSBluetoothAlwaysUsageDescription: RePaper Go talks to your e-paper sheets over Bluetooth to print on them.
         NFCReaderUsageDescription: Tap a sheet with your iPhone to print on it.
         com.apple.developer.nfc.readersession.formats: [NDEF]

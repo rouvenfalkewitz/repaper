@@ -1,0 +1,130 @@
+import SwiftUI
+import RePaperKit
+
+/// Settings, Android parity: device name, sheet cycling, the sheet library, cloud state.
+struct SettingsView: View {
+    @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var cloud: CloudAgent
+    @EnvironmentObject var sheets: SheetStore
+    @State private var printerName = Prefs.printerName
+    @State private var cycle = Prefs.cycleSheets
+    @State private var addLink = ""
+    @State private var addNote = ""
+    @State private var adding = false
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                HStack(spacing: 6) {
+                    Button { dismiss() } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 18, weight: .semibold)).foregroundColor(Ui.text2)
+                            .padding(8)
+                    }
+                    Text("Settings").font(Ui.display(20, weight: 700, width: 112)).foregroundColor(Ui.text)
+                    Spacer()
+                }
+
+                SectionHeader(text: "This device")
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Printer name").font(Ui.body(14, weight: 600)).foregroundColor(Ui.text)
+                    TextField("RePaper Go", text: $printerName)
+                        .font(Ui.body(15)).foregroundColor(Ui.text)
+                        .onSubmit { Prefs.printerName = printerName; printerName = Prefs.printerName }
+                    Text("How this device appears in your fleet.")
+                        .font(Ui.mono(11)).foregroundColor(Ui.text3)
+                }.card()
+                HStack {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Cycle through sheets").font(Ui.body(14, weight: 600)).foregroundColor(Ui.text)
+                        Text("With several sheets, print on each in turn.")
+                            .font(Ui.mono(11)).foregroundColor(Ui.text3)
+                    }
+                    Spacer()
+                    Toggle("", isOn: $cycle).labelsHidden().tint(Ui.accent)
+                        .onChange(of: cycle) { Prefs.cycleSheets = $0 }
+                }.card().padding(.top, 8)
+
+                SectionHeader(text: "Sheets")
+                ForEach(sheets.sheets) { s in
+                    HStack(spacing: 12) {
+                        // e-paper frame: carbon bezel around the panel — sheets are shown as sheets
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Ui.epaperPanel)
+                            .frame(width: 44, height: 30)
+                            .padding(6)
+                            .background(RoundedRectangle(cornerRadius: 10).fill(Ui.epaperBezel))
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Ui.borderStrong, lineWidth: 1))
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(s.name).font(Ui.body(15, weight: 600)).foregroundColor(Ui.text)
+                            HStack(spacing: 8) {
+                                Text("\(s.model.width)×\(s.model.height)").font(Ui.mono(11)).foregroundColor(Ui.text3)
+                                PalDots(palette: s.model.palette)
+                            }
+                        }
+                        Spacer()
+                    }
+                    .card().padding(.top, 8)
+                    .contextMenu {
+                        Button(role: .destructive) { sheets.remove(s.id) } label: { Label("Remove", systemImage: "trash") }
+                    }
+                }
+                if sheets.sheets.isEmpty {
+                    Text("No sheets yet — add the first one below.")
+                        .font(Ui.body(13)).foregroundColor(Ui.text3)
+                        .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 4)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Add a sheet").font(Ui.body(14, weight: 600)).foregroundColor(Ui.text)
+                    Text("Paste the link from the QR code on the sheet. Scanning by camera and NFC tap arrive with the next build.")
+                        .font(Ui.mono(11)).foregroundColor(Ui.text3)
+                    TextField("https://…", text: $addLink)
+                        .font(Ui.mono(12)).foregroundColor(Ui.text)
+                        .textInputAutocapitalization(.never).autocorrectionDisabled()
+                        .padding(.horizontal, 10).padding(.vertical, 8)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Ui.bg))
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Ui.borderStrong, lineWidth: 1))
+                    if !addNote.isEmpty {
+                        Text(addNote).font(Ui.body(12)).foregroundColor(Ui.amber)
+                    }
+                    UiButton(label: adding ? "Reading the sheet…" : "Add sheet", primary: true) {
+                        Task { await addSheet() }
+                    }.disabled(adding)
+                }.card().padding(.top, 8)
+
+                SectionHeader(text: "Cloud")
+                HStack(spacing: 8) {
+                    Circle().fill(cloud.state == "online" ? Ui.accent : Ui.amber).frame(width: 8, height: 8)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(cloud.state == "online" ? "Connected" : "Connecting…")
+                            .font(Ui.body(14, weight: 600)).foregroundColor(Ui.text)
+                        Text(cloud.org.map { "Part of \($0)" } ?? "RePaper Cloud")
+                            .font(Ui.mono(11)).foregroundColor(Ui.text3)
+                    }
+                    Spacer()
+                    Text("v\(GO_IOS_VERSION)").font(Ui.mono(11)).foregroundColor(Ui.text3)
+                }.card()
+            }
+            .padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 28)
+        }
+        .background(Ui.bg.ignoresSafeArea())
+        .onDisappear { Prefs.printerName = printerName }
+    }
+
+    private func addSheet() async {
+        let link = addLink.trimmingCharacters(in: .whitespaces)
+        guard !link.isEmpty else { addNote = "Paste the sheet's link first."; return }
+        let landing: Landing
+        do { landing = try Landing.parse(link) }
+        catch { addNote = "That doesn't look like a RePaper sheet link."; return }
+        adding = true; addNote = "Looking for \(landing.name) nearby — wake the sheet…"
+        do {
+            _ = try await SheetOps.describeAndRegister(landing)
+            addNote = ""; addLink = ""
+        } catch {
+            addNote = error.localizedDescription
+        }
+        adding = false
+    }
+}
