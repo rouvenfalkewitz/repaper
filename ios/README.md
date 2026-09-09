@@ -15,12 +15,19 @@
   Bundled Archivo/Figtree variable fonts, Paper tokens throughout.
   ✅ All three routes (auth / pending / main) verified on the iOS 26.3 simulator.
 
+Share-to-print is in: RePaperKit's `Render.swift` (the go/core dither pipeline, tested),
+`PrintFlow` (CoreGraphics rasterizing of PDFs/images), the `RePaperGoShare` extension
+spooling into the app-group jobs folder, and MainView's job cards with auto-print/cycle
+and the full LED state machine. ✅ Verified in the simulator end to end minus BLE.
+Note: simulator builds must be ad-hoc signed (default) — `CODE_SIGNING_ALLOWED=NO`
+strips the app-group entitlement and the extension↔app handoff silently breaks.
+
 ## What still needs a real iPhone
 
 - BLE (simulator has no CoreBluetooth): add-sheet + printing paths are written but
   field-untested. First device session: register a sheet by pasted link, then print.
-- **Share extension** as the content intake (share-first — see docs/03-product-go.md),
-  then QR scanning (DataScanner) and NFC tap-to-print (CoreNFC).
+- Share-sheet UI flow (extension is built; tapping through Safari/Photos share needs hands).
+- QR scanning (DataScanner) and NFC tap-to-print (CoreNFC) — not built yet.
 
 ## Build & run
 
