@@ -25,3 +25,6 @@ ios/App/RePaperGo.xcodeproj/
 ios/RePaperKit/.build/
 ios/App/build/
 ios/App/Sources/Info.plist
+ios/App/RePaperGo.entitlements
+ios/App/RePaperGoShare.entitlements
+ios/App/ShareExt/Info.plist

@@ -12,9 +12,14 @@ targets:
   RePaperGo:
     type: application
     platform: iOS
-    sources: [Sources, Resources]
+    sources: [Sources, Shared, Resources]
     dependencies:
       - package: RePaperKit
+      - target: RePaperGoShare
+    entitlements:
+      path: RePaperGo.entitlements
+      properties:
+        com.apple.security.application-groups: [group.net.repaper.go]
     info:
       path: Sources/Info.plist
       properties:
@@ -29,4 +34,29 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: net.repaper.go.ios
         TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_VERSION: "5.9"
+
+  # the share-sheet intake: spools PDFs/images into the app group's jobs folder
+  RePaperGoShare:
+    type: app-extension
+    platform: iOS
+    sources: [ShareExt, Shared]
+    entitlements:
+      path: RePaperGoShare.entitlements
+      properties:
+        com.apple.security.application-groups: [group.net.repaper.go]
+    info:
+      path: ShareExt/Info.plist
+      properties:
+        CFBundleDisplayName: RePaper Go
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsFileWithMaxCount: 1
+              NSExtensionActivationSupportsImageWithMaxCount: 1
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: net.repaper.go.ios.share
         SWIFT_VERSION: "5.9"
