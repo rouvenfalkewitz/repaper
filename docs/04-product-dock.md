@@ -84,3 +84,43 @@ If we ever do more:
 - honor requested orientation instead of always auto-rotating;
 - color mode: declare `color` vs `monochrome` based on the fleet's palettes.
 Also keep Go and Dock consistent with each other once decided.
+
+## Idea: Dock Light (noted 10 Sep 2026 — not building yet)
+
+A third family member between Dock and Go, captured verbatim from a good shower
+thought:
+
+**What it is.** A Dock Light exposes a network printer exactly like the regular
+Dock — same AirPrint/IPP face, same Wi-Fi onboarding, same settings UX — but it
+knows nothing about sheets. No BLE, no NFC, no sheet registry, no renderer for
+panels. That makes the hardware markedly simpler and cheaper (radio + CPU
+requirements drop; no OpenDisplay stack on the device).
+
+**How it prints.** A Dock Light REQUIRES the cloud: every job it accepts is
+forwarded to RePaper Cloud. In the fleet console you "mirror" the Dock Light to
+one or more RePaper Go devices — maybe even to regular Docks. When someone
+prints on the Dock Light, all mirrored devices get a push; whichever is first
+to actually start the job does the printing (its sheets, its BLE, its choice
+logic — auto/cycle/tap as usual).
+
+**v1 simplification.** Allow exactly ONE mirror target per Dock Light to start
+with — no race, no claiming protocol, trivially predictable for the user.
+
+**Why it's attractive.**
+- Cheapest possible "make this room printable" box; the phone in someone's
+  pocket becomes the actual print head.
+- An office can put Dock Lights everywhere and keep the few real
+  Docks/phones-with-sheets roaming.
+- Clean upsell path: Dock Light (cloud-dependent) → Dock (standalone).
+
+**Design consequences to think through before building.**
+- Today's privacy stance is "the cloud sees metadata, never pages"
+  (docs/05-architecture). Dock Light necessarily ships page content through the
+  cloud — that needs an explicit carve-out in the story (e.g. jobs are
+  end-to-end encrypted to the mirror target, cloud stores nothing at rest, or
+  simply an honest "Dock Light jobs transit the cloud" label).
+- Push-to-print on Go means background wake on phones: iOS needs real push
+  (APNs) or the job waits until the app opens — the "first one to start wins"
+  race only matters once multiple mirrors exist.
+- The mirror concept wants a home in the fleet console UI (device page of the
+  Dock Light: "Mirrors to: …").
