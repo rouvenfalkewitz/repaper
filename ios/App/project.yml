@@ -12,7 +12,7 @@ targets:
   RePaperGo:
     type: application
     platform: iOS
-    sources: [Sources, Shared, Resources]
+    sources: [Sources, Shared, Resources, Assets.xcassets]
     dependencies:
       - package: RePaperKit
       - target: RePaperGoShare
@@ -20,6 +20,7 @@ targets:
       path: RePaperGo.entitlements
       properties:
         com.apple.security.application-groups: [group.net.repaper.go]
+        com.apple.developer.nfc.readersession.formats: [NDEF]
         # lets iOS password managers offer repaper.schisch.net credentials in the app;
         # ?mode=developer makes dev builds validate instantly (ignored in distribution)
         com.apple.developer.associated-domains:
@@ -34,12 +35,12 @@ targets:
         NSBluetoothAlwaysUsageDescription: RePaper Go talks to your e-paper sheets over Bluetooth to print on them.
         NSCameraUsageDescription: RePaper Go scans the QR code on a sheet to add it.
         NFCReaderUsageDescription: Tap a sheet with your iPhone to print on it.
-        com.apple.developer.nfc.readersession.formats: [NDEF]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: net.repaper.go.ios
         TARGETED_DEVICE_FAMILY: "1,2"
         SWIFT_VERSION: "5.9"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         DEVELOPMENT_TEAM: 8DPLCLHB27
         CODE_SIGN_STYLE: Automatic
 

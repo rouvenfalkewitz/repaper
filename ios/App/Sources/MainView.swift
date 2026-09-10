@@ -16,6 +16,9 @@ struct MainView: View {
     @State private var pickFor: URL?
     @State private var autoTried: Set<String> = []   // one-sheet auto-print: one attempt per job
     @State private var errorNote = ""
+    @State private var nfc = NfcReader()
+    @State private var info = ""                     // transient tap-result message
+    @State private var pendingAdd: Landing?          // unknown sheet tapped → offer to add
 
     var body: some View {
         ScrollView {
@@ -48,6 +51,13 @@ struct MainView: View {
                         Chip(text: "OpenDisplay BLE")
                     }.padding(.top, 12)
                 }
+                // tap-to-print: iOS reads NFC only in an explicit session, so the tap
+                // gets a button where Android listens passively
+                if NfcReader.available, led == .wait || led == .ready || led == .setup {
+                    UiButton(label: jobs.isEmpty ? "Tap a sheet to add it" : "Tap the sheet to print",
+                             primary: led == .wait) { tapSheet() }
+                        .padding(.top, 16)
+                }
 
                 if !jobs.isEmpty {
                     SectionHeader(text: "Waiting to print")
@@ -73,8 +83,59 @@ struct MainView: View {
             }
             Button("Cancel", role: .cancel) { pickFor = nil }
         }
+        .alert("New sheet \(pendingAdd?.name ?? "")", isPresented: .init(
+            get: { pendingAdd != nil }, set: { if !$0 { pendingAdd = nil } })) {
+            Button("Add") { if let l = pendingAdd { pendingAdd = nil; addTapped(l) } }
+            Button("Not now", role: .cancel) { pendingAdd = nil }
+        } message: {
+            Text("Add it to this iPhone\(jobs.isEmpty ? "" : " and print the waiting job on it")?")
+        }
+        .alert(info, isPresented: .init(get: { !info.isEmpty }, set: { if !$0 { info = "" } })) {
+            Button("OK", role: .cancel) { info = "" }
+        }
         .onAppear { cloud.start(); refresh() }
         .onChange(of: scenePhase) { p in if p == .active { refresh() } }   // a share may have spooled a job
+    }
+
+    // ── tap-to-print: the sheet that touches the phone IS the sheet choice ──
+
+    private func tapSheet() {
+        nfc.scan(prompt: jobs.isEmpty ? "Hold a sheet to the top edge of the iPhone to add it."
+                                      : "Hold the sheet to the top edge of the iPhone.") { uri in
+            guard let uri else { return }   // cancelled or unreadable tag
+            onSheetTap(uri)
+        }
+    }
+
+    private func onSheetTap(_ uri: String) {
+        guard let landing = try? Landing.parse(uri) else {
+            info = "That tag doesn't look like a RePaper sheet."; return
+        }
+        DiagLog.log("nfc tap: \(landing.name)")
+        let job = jobs.first
+        if let known = sheets.find(landing) {
+            if let job { print(job: job, on: known) }
+            else { info = "That's \(known.name) — nothing waiting to print." }
+        } else {
+            pendingAdd = landing
+        }
+    }
+
+    private func addTapped(_ landing: Landing) {
+        Task {
+            do {
+                info = ""
+                _ = try await SheetOps.describeAndRegister(landing)
+                refresh()
+                if let job = jobs.first, let known = sheets.find(landing) {
+                    print(job: job, on: known)
+                } else {
+                    info = "Added \(landing.name)."
+                }
+            } catch {
+                info = error.localizedDescription
+            }
+        }
     }
 
     // ── the LED language, app edition: Printing > flash > Job waiting > Setup > Ready ──
