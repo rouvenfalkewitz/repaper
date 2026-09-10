@@ -45,6 +45,36 @@ Technical build/run details live in `ios/README.md`; this doc is product + decis
    UserDefaults to the Keychain; job badge/notification when a share arrives while
    the app is closed; haptics on print done/failed.
 
+## Dock Light shipped (10 Sep — Dock 0.0.26 · cloud · Go iOS 0.1.4 · Go Android 0.2.11)
+
+A third product family, built end to end while Rouven was out. A Dock Light is
+the same dockd with `dock_light: true` — it exposes the AirPrint/IPP printer but
+holds no sheets and has no radios. Every job it accepts is forwarded to the
+cloud (`/api/device/forward-job`, PNG per page) and delivered to ONE mirrored
+device (a Go or a full Dock) chosen in the console; that device's sheets do the
+printing. Jobs are deleted on delivery, purged after an hour.
+
+- Cloud: kind `dock-light`, `mirror_to` column, `mirror_job` relay table, the two
+  device endpoints + `/api/devices/:id/mirror`, fleet Light cards + a Mirror
+  picker on the device page (with the honest "pages travel through the cloud"
+  note). A device's kind now updates on reconnect (was frozen at registration).
+  15-check end-to-end relay test green (live push, offline queue, byte integrity,
+  isolation).
+- Apps: both receive `mirror_job` pushes, fetch through the relay, spool into the
+  normal queue (auto-print / choose exactly like a shared page).
+- Shop: "Three ways to print" with a 3-way table and a Dock Light hardware card.
+
+**The pilot Pi is now running as a Dock Light** (0.0.26, confirmed `kind:
+dock-light` in production, "no mirror chosen yet" warning showing). To revert to
+a full Dock: `cp ~/.repaper/config.dock-backup.json ~/.repaper/config.json`
+(or set `dock_light: false`) and `sudo systemctl restart repaper-dockd`. The
+regular-Dock config was backed up before the switch.
+
+**Two decisions parked in docs/DECISIONS.md**: (1) tap-to-print on today's
+no-NFC-endpoint sheets — wait / learn-the-sticker / phone-writes-the-sticker;
+(2) Dock Light page-privacy — honest label now vs. E2E encryption before
+paying customers.
+
 ## NFC done right (10 Sep, all variants — Go iOS 0.1.2 · Go Android 0.2.9 · Dock 0.0.25)
 
 Correction from Rouven: tags are NOT programmed with the phone's NFC radio. The
