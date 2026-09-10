@@ -188,20 +188,7 @@ struct MainView: View {
                         .frame(width: 40, height: 40)
                 }
                 howArrow
-                howTile(step: 3, caption: "On paper") {
-                    // a mini sheet: bezel, paper panel, ink line — the thing itself
-                    VStack(spacing: 3) {
-                        RoundedRectangle(cornerRadius: 1.5).fill(Ui.ink)
-                            .frame(width: 22, height: 3)
-                        RoundedRectangle(cornerRadius: 1.5).fill(Ui.epaperRed)
-                            .frame(width: 14, height: 3)
-                    }
-                    .frame(width: 34, height: 22)
-                    .background(RoundedRectangle(cornerRadius: 3).fill(Ui.epaperPanel))
-                    .padding(4)
-                    .background(RoundedRectangle(cornerRadius: 6).fill(Ui.epaperBezel))
-                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Ui.borderStrong, lineWidth: 1))
-                }
+                howTile(step: 3, caption: "On paper") { miniSheet }
             }
         }
         .padding(.vertical, 16).padding(.horizontal, 16)
@@ -229,10 +216,7 @@ struct MainView: View {
                         .font(.system(size: 24)).foregroundColor(Ui.blue)
                 }
                 howArrow
-                howTile(step: 3, caption: "Print", accent: Ui.blue, tint: Ui.blueTint) {
-                    Image(systemName: "doc.text.fill")
-                        .font(.system(size: 22)).foregroundColor(Ui.text)
-                }
+                howTile(step: 3, caption: "Add label", accent: Ui.blue, tint: Ui.blueTint) { miniSheet }
             }
         }
         .padding(.vertical, 16).padding(.horizontal, 16)
@@ -248,6 +232,20 @@ struct MainView: View {
             .foregroundColor(Ui.text3)
             .frame(maxWidth: .infinity)
             .offset(y: -8)   // align with the tile centres, not the captions
+    }
+
+    /// The label itself, in miniature: carbon bezel, paper panel, an ink line and a red
+    /// line — colour-neutral, so it fits both the green how-to and the blue setup cards.
+    private var miniSheet: some View {
+        VStack(spacing: 3) {
+            RoundedRectangle(cornerRadius: 1.5).fill(Ui.ink).frame(width: 22, height: 3)
+            RoundedRectangle(cornerRadius: 1.5).fill(Ui.epaperRed).frame(width: 14, height: 3)
+        }
+        .frame(width: 34, height: 22)
+        .background(RoundedRectangle(cornerRadius: 3).fill(Ui.epaperPanel))
+        .padding(4)
+        .background(RoundedRectangle(cornerRadius: 6).fill(Ui.epaperBezel))
+        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Ui.borderStrong, lineWidth: 1))
     }
 
     private func howTile(step: Int, caption: String, accent: Color = Ui.accent, tint: Color = Ui.accentTint,
