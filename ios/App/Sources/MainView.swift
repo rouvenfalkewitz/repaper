@@ -211,34 +211,29 @@ struct MainView: View {
         .padding(.top, 18)
     }
 
-    /// First-run steps, same numbered-tile language as the how-to card.
+    /// First-run steps, same numbered-tile language as the how-to card — but in the
+    /// setup-blue accent so it belongs to the setup state.
     private var setupSteps: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("GETTING STARTED")
                 .font(Ui.display(11, weight: 700, width: 112)).kerning(1.6)
                 .foregroundColor(Ui.text3)
             HStack(spacing: 0) {
-                howTile(step: 1, caption: "Settings") {
+                howTile(step: 1, caption: "Settings", accent: Ui.blue, tint: Ui.blueTint) {
                     Image(systemName: "gearshape.fill")
                         .font(.system(size: 22)).foregroundColor(Ui.text)
                 }
                 howArrow
-                howTile(step: 2, caption: "Scan QR") {
+                howTile(step: 2, caption: "Scan QR", accent: Ui.blue, tint: Ui.blueTint) {
                     Image(systemName: "qrcode.viewfinder")
-                        .font(.system(size: 24)).foregroundColor(Ui.accent)
+                        .font(.system(size: 24)).foregroundColor(Ui.blue)
                 }
                 howArrow
-                howTile(step: 3, caption: "Print") {
-                    Image("Mark").resizable().scaledToFit().frame(width: 40, height: 40)
+                howTile(step: 3, caption: "Print", accent: Ui.blue, tint: Ui.blueTint) {
+                    Image(systemName: "doc.text.fill")
+                        .font(.system(size: 22)).foregroundColor(Ui.text)
                 }
             }
-            Button { showSettings = true } label: {
-                Text("Open Settings")
-                    .font(Ui.body(15, weight: 700)).foregroundColor(Ui.onAccent)
-                    .frame(maxWidth: .infinity).padding(.vertical, 12)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(Ui.accent))
-            }
-            .padding(.top, 2)
         }
         .padding(.vertical, 16).padding(.horizontal, 16)
         .frame(maxWidth: .infinity)
@@ -255,7 +250,8 @@ struct MainView: View {
             .offset(y: -8)   // align with the tile centres, not the captions
     }
 
-    private func howTile(step: Int, caption: String, @ViewBuilder content: () -> some View) -> some View {
+    private func howTile(step: Int, caption: String, accent: Color = Ui.accent, tint: Color = Ui.accentTint,
+                         @ViewBuilder content: () -> some View) -> some View {
         VStack(spacing: 8) {
             ZStack(alignment: .topLeading) {
                 RoundedRectangle(cornerRadius: 16)
@@ -266,9 +262,9 @@ struct MainView: View {
                 // the step number: a display-face numeral in a tinted accent badge
                 Text("\(step)")
                     .font(Ui.display(12, weight: 700, width: 112))
-                    .foregroundColor(Ui.accent)
+                    .foregroundColor(accent)
                     .frame(width: 20, height: 20)
-                    .background(Circle().fill(Ui.accentTint))
+                    .background(Circle().fill(tint))
                     .overlay(Circle().stroke(Ui.borderStrong, lineWidth: 1))
                     .offset(x: -6, y: -6)
             }
