@@ -91,6 +91,7 @@ struct Sheet: Identifiable, Equatable {
     var address: String
     var keyHex: String?
     var bleAddress: String?
+    var landingUrl: String?   // the original QR/NFC link — needed to (re)program the tag
     var model: SheetModel
 
     static func == (a: Sheet, b: Sheet) -> Bool { a.id == b.id }
@@ -122,6 +123,7 @@ struct Sheet: Identifiable, Equatable {
                          address: e["address"] as? String ?? id,
                          keyHex: (keys["key"] as? String).flatMap { $0.isEmpty ? nil : $0 },
                          bleAddress: (keys["ble_address"] as? String).flatMap { $0.isEmpty ? nil : $0 },
+                         landingUrl: (keys["landing"] as? String).flatMap { $0.isEmpty ? nil : $0 },
                          model: SheetModel(width: w, height: h,
                                            palette: m["palette"] as? String ?? "BW",
                                            inset: m["inset"] as? [Int] ?? [0, 0, 0, 0]))
@@ -134,6 +136,7 @@ struct Sheet: Identifiable, Equatable {
             var keys: [String: Any] = [:]
             if let k = s.keyHex { keys["key"] = k }
             if let b = s.bleAddress { keys["ble_address"] = b }
+            if let l = s.landingUrl { keys["landing"] = l }
             obj[s.id] = ["name": s.name, "transport": "opendisplay-ble", "address": s.address, "keys": keys,
                          "model": ["width": s.model.width, "height": s.model.height,
                                    "palette": s.model.palette, "inset": s.model.inset]]

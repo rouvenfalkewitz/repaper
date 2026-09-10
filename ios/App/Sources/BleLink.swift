@@ -263,7 +263,7 @@ extension BleLink: OdLink {
 /// Registering a sheet from its landing link (QR, NFC, or pasted): find it over BLE,
 /// read its config, remember everything — Android's SheetOps, Swift edition.
 enum SheetOps {
-    @MainActor static func describeAndRegister(_ landing: Landing) async throws -> Capabilities {
+    @MainActor static func describeAndRegister(_ landing: Landing, link rawLink: String? = nil) async throws -> Capabilities {
         let peripheral = try await SheetRadio.shared.find(name: landing.name)
         let link = try await SheetRadio.shared.connect(peripheral)
         defer { link.close() }
@@ -274,6 +274,7 @@ enum SheetOps {
         DiagLog.log("add \(landing.name): caps=\(caps) tlv=\(tlv ?? "-")")
         SheetStore.shared.add(Sheet(id: landing.name, name: landing.name, address: landing.name,
                                     keyHex: landing.keyHex, bleAddress: peripheral.identifier.uuidString,
+                                    landingUrl: rawLink,
                                     model: SheetModel(width: caps.viewedWidth, height: caps.viewedHeight,
                                                       palette: caps.scheme.paletteKey)))
         return caps

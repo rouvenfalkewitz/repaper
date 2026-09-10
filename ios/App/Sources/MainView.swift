@@ -54,22 +54,15 @@ struct MainView: View {
                     .padding(.horizontal, 16).padding(.top, 4)
                     .frame(height: 58, alignment: .top)
 
-                // action slot — reserved even when empty, so the layout stays put
+                // action slot — reserved even when empty, so the layout stays put.
+                // tap-to-print appears only when a job actually needs a sheet CHOICE
+                // (several sheets, cycling off); the tech chips live in Settings.
                 VStack(spacing: 0) {
-                    if led == .ready {
-                        HStack(spacing: 6) {
-                            Chip(text: "Share to print")
-                            Chip(text: "OpenDisplay BLE")
-                        }
-                    }
-                    // tap-to-print: only when a job actually needs a sheet CHOICE
-                    // (several sheets, cycling off). Adding sheets lives in Settings.
                     if NfcReader.available, led == .wait, sheets.sheets.count > 1, !Prefs.cycleSheets {
                         UiButton(label: "Tap the sheet to print", primary: true) { tapSheet() }
-                            .padding(.top, 8)
                     }
                 }
-                .frame(height: 64, alignment: .top)
+                .frame(height: 56, alignment: .top)
                 .padding(.top, 10)
 
                 if !jobs.isEmpty {
@@ -147,7 +140,10 @@ struct MainView: View {
                 }
                 howArrow
                 howTile(caption: "RePaper Go") {
-                    RingMark(size: 44)
+                    // the OFFICIAL app icon mark — the same thing people tap on the homescreen
+                    Image("Mark")
+                        .resizable().scaledToFit()
+                        .frame(width: 40, height: 40)
                 }
                 howArrow
                 howTile(caption: "On paper") {

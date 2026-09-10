@@ -13,10 +13,10 @@ struct SettingsView: View {
     @State private var adding = false
     @State private var showScanner = false
     @State private var showPaste = false
-    @State private var nfc = NfcReader()
+    @State private var nfcWriter = NfcWriter()
     @State private var confirmSignOut = false
     @State private var signOutNote = ""
-    @State private var removeSheet: Sheet?
+    @State private var actionSheet: Sheet?
 
     var body: some View {
         ScrollView {
@@ -29,9 +29,13 @@ struct SettingsView: View {
                     }
                     Text("Settings").font(Ui.display(20, weight: 700, width: 112)).foregroundColor(Ui.text)
                     Spacer()
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 18)).foregroundColor(Ui.text3)
+                        .padding(8)
                 }
 
-                SectionHeader(text: "This device")
+                // the printer half: how this device behaves as a printer
+                SectionHeader(text: "Printer")
                 VStack(spacing: 0) {
                     HStack(spacing: 12) {
                         settingIcon("printer.fill")
@@ -54,9 +58,13 @@ struct SettingsView: View {
                         Toggle("", isOn: $cycle).labelsHidden().tint(Ui.accent)
                             .onChange(of: cycle) { Prefs.cycleSheets = $0 }
                     }
+                    divider
+                    techRow(icon: "square.and.arrow.up", title: "Intake",
+                            sub: "How pages reach this printer", chips: ["Share to print"])
                 }
                 .card()
 
+                // the sheets half: the paper this printer can put ink on
                 SectionHeader(text: "Sheets")
                 ForEach(sheets.sheets) { s in
                     sheetCard(s)
@@ -67,6 +75,9 @@ struct SettingsView: View {
                         .frame(maxWidth: .infinity, alignment: .leading).padding(.bottom, 8)
                 }
                 addCard
+                techRow(icon: "dot.radiowaves.left.and.right", title: "Sheet link",
+                        sub: "How pages reach the paper", chips: ["OpenDisplay BLE", "NFC tags"])
+                    .card().padding(.top, 8)
 
                 SectionHeader(text: "RePaper Cloud")
                 VStack(spacing: 0) {
@@ -83,9 +94,21 @@ struct SettingsView: View {
                     }
                     divider
                     Button { confirmSignOut = true } label: {
-                        Text("Sign out")
-                            .font(Ui.body(14, weight: 600)).foregroundColor(Ui.red)
-                            .frame(maxWidth: .infinity)
+                        HStack(spacing: 12) {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                                .font(.system(size: 15, weight: .medium)).foregroundColor(Ui.red)
+                                .frame(width: 34, height: 34)
+                                .background(RoundedRectangle(cornerRadius: 9).fill(Ui.redTint))
+                                .overlay(RoundedRectangle(cornerRadius: 9).stroke(Ui.border, lineWidth: 1))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Sign out").font(Ui.body(14, weight: 600)).foregroundColor(Ui.red)
+                                Text("Removes this device from the fleet — sheets stay.")
+                                    .font(Ui.body(12)).foregroundColor(Ui.text3)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12, weight: .semibold)).foregroundColor(Ui.text3)
+                        }
                     }
                 }
                 .card()
@@ -104,14 +127,17 @@ struct SettingsView: View {
         } message: {
             Text("This device is removed from \(cloud.org ?? "your fleet"). Your sheets stay on this device; signing in again brings it right back.")
         }
-        .alert("Remove \(removeSheet?.name ?? "")?", isPresented: .init(
-            get: { removeSheet != nil }, set: { if !$0 { removeSheet = nil } })) {
-            Button("Remove", role: .destructive) {
-                if let s = removeSheet { sheets.remove(s.id) }; removeSheet = nil
+        .confirmationDialog(actionSheet?.name ?? "", isPresented: .init(
+            get: { actionSheet != nil }, set: { if !$0 { actionSheet = nil } }), titleVisibility: .visible) {
+            if NfcReader.available, let link = actionSheet?.landingUrl {
+                Button("Program the NFC tag") { actionSheet = nil; programTag(link) }
             }
-            Button("Cancel", role: .cancel) { removeSheet = nil }
+            Button("Remove from this device", role: .destructive) {
+                if let s = actionSheet { sheets.remove(s.id) }; actionSheet = nil
+            }
+            Button("Cancel", role: .cancel) { actionSheet = nil }
         } message: {
-            Text("The sheet keeps what it currently shows — it just leaves this device.")
+            Text("Removing only forgets the sheet here — it keeps what it currently shows.")
         }
         .sheet(isPresented: $showScanner) { scannerSheet }
     }
@@ -154,29 +180,40 @@ struct SettingsView: View {
             Text(s.name)
                 .font(Ui.body(16, weight: 600)).foregroundColor(Ui.text)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            Text("hold to remove")
+            Text("hold for options")
                 .font(Ui.mono(10)).foregroundColor(Ui.text3)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, 2)
         }
         .card().padding(.bottom, 8)
-        .onLongPressGesture { removeSheet = s }
+        .onLongPressGesture { actionSheet = s }
     }
 
-    /// Adding a sheet: camera first, NFC tap beside it, pasting tucked away.
+    /// The slim technology strip at the bottom of a section's card.
+    private func techRow(icon: String, title: String, sub: String, chips: [String]) -> some View {
+        HStack(spacing: 12) {
+            settingIcon(icon)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(Ui.body(14, weight: 600)).foregroundColor(Ui.text)
+                Text(sub).font(Ui.body(12)).foregroundColor(Ui.text3)
+            }
+            Spacer()
+            HStack(spacing: 5) {
+                ForEach(chips, id: \.self) { Chip(text: $0) }
+            }
+        }
+    }
+
+    /// Adding a sheet: camera first, pasting tucked away. (No add-by-NFC-tap:
+    /// sheets can ship with an EMPTY tag — the QR is the ground truth, and the
+    /// add flow programs the tag right afterwards so tapping works from then on.)
     private var addCard: some View {
         VStack(spacing: 10) {
-            HStack(spacing: 8) {
-                if QrScanView.available {
-                    UiButton(label: "Scan QR code", primary: true) { showScanner = true }
-                        .disabled(adding)
-                }
-                if NfcReader.available {
-                    UiButton(label: "Tap the sheet", primary: !QrScanView.available) { addByTap() }
-                        .disabled(adding)
-                }
+            if QrScanView.available {
+                UiButton(label: "Scan QR code", primary: true) { showScanner = true }
+                    .disabled(adding)
             }
-            if !QrScanView.available && !NfcReader.available || showPaste {
+            if !QrScanView.available || showPaste {
                 HStack(spacing: 8) {
                     TextField("https://…", text: $addLink)
                         .font(Ui.mono(12)).foregroundColor(Ui.text)
@@ -199,7 +236,7 @@ struct SettingsView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
-            if !showPaste && (QrScanView.available || NfcReader.available) {
+            if !showPaste && QrScanView.available {
                 Button { showPaste = true } label: {
                     Text("or paste the sheet's link")
                         .font(Ui.mono(11)).foregroundColor(Ui.text3).underline()
@@ -227,15 +264,6 @@ struct SettingsView: View {
 
     // ── adding ───────────────────────────────────────────────────────────────
 
-    /// NFC add: the label's built-in tag carries the same landing link as the QR.
-    private func addByTap() {
-        nfc.scan(prompt: "Hold the sheet to the top edge of the iPhone.") { uri in
-            guard let uri else { return }
-            addLink = uri
-            Task { await addSheet() }
-        }
-    }
-
     private func addSheet() async {
         let link = addLink.trimmingCharacters(in: .whitespaces)
         guard !link.isEmpty else { addNote = "Paste the sheet's link first."; return }
@@ -245,12 +273,23 @@ struct SettingsView: View {
         adding = true
         addNote = "Looking for \(landing.name) nearby — wake the sheet…"
         do {
-            _ = try await SheetOps.describeAndRegister(landing)
+            _ = try await SheetOps.describeAndRegister(landing, link: link)
             addNote = ""; addLink = ""; showPaste = false
+            adding = false
+            // some sheets ship with an empty tag: program it now so tap-to-print
+            // always works (the finding of 10 Sep — applies to every RePaper variant)
+            if NfcReader.available { programTag(link) }
         } catch {
             addNote = error.localizedDescription
+            adding = false
         }
-        adding = false
+    }
+
+    private func programTag(_ link: String) {
+        nfcWriter.write(link, prompt: "Hold the sheet to the top edge to program its tag.") { ok in
+            addNote = ok ? "" : "Tag not programmed — hold the sheet for options to retry."
+            if ok { DiagLog.log("nfc tag programmed") }
+        }
     }
 
     // ── sign out ─────────────────────────────────────────────────────────────
