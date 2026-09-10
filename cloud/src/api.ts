@@ -123,6 +123,13 @@ export const registerApi = (app: FastifyInstance) => {
       .send(createReadStream(apk));
   });
 
+  /* Apple app ↔ site association: lets iOS password managers offer the
+     repaper.schisch.net credentials inside RePaper Go (webcredentials). */
+  app.get("/.well-known/apple-app-site-association", async (_req, reply) => {
+    return reply.header("Content-Type", "application/json")
+      .send({ webcredentials: { apps: ["8DPLCLHB27.net.repaper.go.ios"] } });
+  });
+
   /* the pull path: devices check in over plain HTTPS — short requests survive
      radio interference that kills long-lived sockets. The check-in also reports
      the running version, so convergence works with a dead WebSocket. */

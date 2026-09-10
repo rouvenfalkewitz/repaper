@@ -28,10 +28,10 @@ struct AuthView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 8).padding(.top, 10).padding(.bottom, 18)
 
-                field("Email", text: $email, keyboard: .emailAddress)
-                field("Password", text: $password, secure: true).padding(.top, 10)
+                field("Email", text: $email, keyboard: .emailAddress, content: .username)
+                field("Password", text: $password, secure: true, content: .password).padding(.top, 10)
                 if showCode {
-                    field("Code from your authenticator app", text: $code, keyboard: .numberPad).padding(.top, 10)
+                    field("Code from your authenticator app", text: $code, keyboard: .numberPad, content: .oneTimeCode).padding(.top, 10)
                 }
 
                 if !note.isEmpty {
@@ -96,11 +96,13 @@ struct AuthView: View {
     }
 
     private func field(_ hint: String, text: Binding<String>, secure: Bool = false,
-                       keyboard: UIKeyboardType = .default) -> some View {
+                       keyboard: UIKeyboardType = .default,
+                       content: UITextContentType? = nil) -> some View {
         Group {
             if secure { SecureField(hint, text: text) }
             else { TextField(hint, text: text).keyboardType(keyboard).textInputAutocapitalization(.never).autocorrectionDisabled() }
         }
+        .textContentType(content)
         .font(Ui.body(15)).foregroundColor(Ui.text)
         .padding(.horizontal, 14).padding(.vertical, 12)
         .background(RoundedRectangle(cornerRadius: 12).fill(Ui.bg))

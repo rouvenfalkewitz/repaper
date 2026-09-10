@@ -11,6 +11,7 @@ struct SettingsView: View {
     @State private var addLink = ""
     @State private var addNote = ""
     @State private var adding = false
+    @State private var showScanner = false
 
     var body: some View {
         ScrollView {
@@ -77,8 +78,13 @@ struct SettingsView: View {
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Add a sheet").font(Ui.body(14, weight: 600)).foregroundColor(Ui.text)
-                    Text("Paste the link from the QR code on the sheet. Scanning by camera and NFC tap arrive with the next build.")
+                    Text("Scan the QR code on the sheet — or paste its link below.")
                         .font(Ui.mono(11)).foregroundColor(Ui.text3)
+                    if QrScanView.available {
+                        UiButton(label: adding ? "Reading the sheet…" : "Scan QR code", primary: true) {
+                            showScanner = true
+                        }.disabled(adding)
+                    }
                     TextField("https://…", text: $addLink)
                         .font(Ui.mono(12)).foregroundColor(Ui.text)
                         .textInputAutocapitalization(.never).autocorrectionDisabled()
@@ -88,7 +94,7 @@ struct SettingsView: View {
                     if !addNote.isEmpty {
                         Text(addNote).font(Ui.body(12)).foregroundColor(Ui.amber)
                     }
-                    UiButton(label: adding ? "Reading the sheet…" : "Add sheet", primary: true) {
+                    UiButton(label: adding ? "Reading the sheet…" : "Add sheet", primary: !QrScanView.available) {
                         Task { await addSheet() }
                     }.disabled(adding)
                 }.card().padding(.top, 8)
@@ -110,6 +116,21 @@ struct SettingsView: View {
         }
         .background(Ui.bg.ignoresSafeArea())
         .onDisappear { Prefs.printerName = printerName }
+        .sheet(isPresented: $showScanner) {
+            ZStack(alignment: .bottom) {
+                QrScanView { link in
+                    showScanner = false
+                    addLink = link
+                    Task { await addSheet() }
+                }
+                .ignoresSafeArea()
+                Text("Point the camera at the sheet's QR code")
+                    .font(Ui.body(14, weight: 600)).foregroundColor(Ui.text)
+                    .padding(.horizontal, 14).padding(.vertical, 10)
+                    .background(Capsule().fill(Ui.bg.opacity(0.85)))
+                    .padding(.bottom, 28)
+            }
+        }
     }
 
     private func addSheet() async {
