@@ -63,6 +63,27 @@ over BLE during registration**, in the same connection that interrogates it:
   sheet" as primary); Android got the same capsule as a passive beacon (its reader
   mode is always listening) with an ic_nfc glyph.
 
+## Field diagnosis 10 Sep evening: sheet firmware 1.0.0 has NO NFC endpoint
+
+Verified from the pilot Dock (SSH as repaper@, SDK driven directly against the
+sheets in radio range): command 0x0083 gets pure silence — the vendor SDK's own
+`write_nfc_url` raises NfcNotSupportedError, and the read sub-opcode is equally
+dead. Both field observations explained: the empty tag stayed empty because the
+write was (correctly) skipped, and the "unparseable" tag was never touched by us
+— its content predates RePaper and is not a landing token (the 0.1.3 build shows
+the raw content on tap). Our BLE write is correct and golden-pinned; it starts
+working the moment sheets run firmware with the endpoint. The SDK ships OTA
+machinery (nRF DFU / Silabs), so sheet-firmware updates are client-side possible
+once vendor images exist. Side find: the Pi's BlueZ adapter was wedged
+(org.bluez.Error.NotSupported on every connect) until a `bluetoothctl power
+off/on` — worth watching, may explain past flaky dock prints.
+
+Open decision (Rouven): for current-firmware sheets, tap-to-print needs either
+(a) waiting for sheet firmware, (b) tag-FINGERPRINT linking — one tap stores
+whatever the tag already holds and later taps resolve by match, no writing ever,
+works for the junk-content sheet — or (c) an optional phone-radio write for
+empty tags (the flow removed earlier by request).
+
 ## The 10 Sep adaptation pass (Android 0.2.8 · Dock 0.0.25)
 
 Rouven's review findings, ported the same day ("adapt our findings to android and
