@@ -113,22 +113,16 @@ struct MainView: View {
         .onChange(of: scenePhase) { p in if p == .active { refresh() } }   // a share may have spooled a job
     }
 
-    /// The tap-to-print button: accent capsule with radiating NFC waves that
-    /// actually radiate — the invitation to touch paper with the phone.
+    /// The tap-to-print button: an accent capsule with the contactless glyph,
+    /// breathing gently — the invitation to touch paper with the phone.
     private var nfcTapButton: some View {
         Button { tapSheet() } label: {
             HStack(spacing: 10) {
-                TimelineView(.animation(minimumInterval: 0.12)) { tl in
-                    let t = tl.date.timeIntervalSince1970
-                    HStack(spacing: 2.5) {
-                        ForEach(0..<3, id: \.self) { i in
-                            Arc(fraction: 0.28)
-                                .stroke(Ui.onAccent, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                                .frame(width: 7 + CGFloat(i) * 7, height: 7 + CGFloat(i) * 7)
-                                .opacity(0.35 + 0.65 * pulse(t, phase: Double(i) * 0.25))
-                        }
-                    }
-                    .frame(width: 26, height: 22, alignment: .leading)
+                TimelineView(.animation(minimumInterval: 0.08)) { tl in
+                    Image(systemName: "wave.3.right")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(Ui.onAccent)
+                        .opacity(0.55 + 0.45 * (0.5 + 0.5 * sin(tl.date.timeIntervalSince1970 * 2.2)))
                 }
                 Text("Tap the sheet to print")
                     .font(Ui.body(15, weight: 700))
@@ -139,11 +133,6 @@ struct MainView: View {
             .background(Capsule().fill(Ui.accent))
             .shadow(color: Ui.accent.opacity(0.35), radius: 12, y: 2)
         }
-    }
-
-    private func pulse(_ t: Double, phase: Double) -> Double {
-        let x = (t / 1.4 + phase).truncatingRemainder(dividingBy: 1)
-        return max(0, sin(x * .pi))
     }
 
     // ── tap-to-print: the sheet that touches the phone IS the sheet choice ──
@@ -157,7 +146,9 @@ struct MainView: View {
 
     private func onSheetTap(_ uri: String) {
         guard let landing = try? Landing.parse(uri) else {
-            info = "That tag doesn't look like a RePaper sheet."; return
+            DiagLog.log("nfc tap unparseable: \(uri)")
+            info = "That tag doesn't look like a RePaper sheet.\n\nTag content:\n\(uri.prefix(140))"
+            return
         }
         DiagLog.log("nfc tap: \(landing.name)")
         guard let known = sheets.find(landing) else {
@@ -314,20 +305,6 @@ struct MainView: View {
             try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
             flash = nil; errorNote = ""; refresh()
         }
-    }
-}
-
-/// A partial ring — the NFC wave glyph's building block.
-struct Arc: Shape {
-    let fraction: Double
-    func path(in rect: CGRect) -> Path {
-        var p = Path()
-        p.addArc(center: CGPoint(x: rect.minX, y: rect.midY),
-                 radius: rect.width,
-                 startAngle: .degrees(-90 * fraction * 2),
-                 endAngle: .degrees(90 * fraction * 2),
-                 clockwise: false)
-        return p
     }
 }
 

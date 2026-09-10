@@ -139,6 +139,21 @@ class GoldenTest {
         assertEquals(noKey.getString("name"), l2.name)
     }
 
+    @Test fun landingParseSurvivesFieldMangling() {
+        val g = golden("landing").getJSONObject("with_key")
+        val url = g.getString("url")
+        val want = LandingUrl.parse(url)
+        // NFC readers swallow the first byte as a URI prefix code
+        assertEquals(want.name, LandingUrl.parse(url.drop(1)).name)
+        // schemes get stripped entirely
+        assertEquals(want.name, LandingUrl.parse(url.removePrefix("https://")).name)
+        // EEPROM padding appends garbage after the payload
+        assertEquals(want.name, LandingUrl.parse(url + "  ÿ").name)
+        // even garbage from the base64 alphabet: the token is fixed-size
+        assertEquals(want.name, LandingUrl.parse(url + "AAAAAA").name)
+        assertEquals(want.keyHex, LandingUrl.parse(url + "AAAAAA").keyHex)
+    }
+
     @Test fun configParseMatchesSdk() {
         val g = golden("config")
         val caps = OdConfig.parse(g.getString("tlv").hexToBytes())

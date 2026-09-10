@@ -29,9 +29,15 @@ final class NfcReader: NSObject, NFCNDEFReaderSessionDelegate {
     }
 
     func readerSession(_ s: NFCNDEFReaderSession, didDetectNDEFs messages: [NFCNDEFMessage]) {
-        let uri = messages.flatMap(\.records)
-            .compactMap { $0.wellKnownTypeURIPayload()?.absoluteString }
-            .first
+        let records = messages.flatMap(\.records)
+        // proper URI records first; then any payload as text — field tags come back
+        // with broken prefix codes, and the lenient Landing parser sorts out the rest
+        let uri = records.compactMap { $0.wellKnownTypeURIPayload()?.absoluteString }.first
+            ?? records.compactMap { r -> String? in
+                guard let first = r.payload.first else { return nil }
+                let body = (first < 0x20 || first > 0x7E) ? r.payload.dropFirst() : r.payload[...]
+                return String(data: Data(body), encoding: .utf8)
+            }.first
         finish(uri)
     }
 

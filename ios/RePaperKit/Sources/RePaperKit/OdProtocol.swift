@@ -178,13 +178,20 @@ public struct Landing: Sendable {
     public let keyHex: String?
     public let manufacturerId: Int
 
+    /// The 23-byte payload is 31 base64url chars.
+    static let tokenChars = 31
+
     public static func parse(_ url: String) throws -> Landing {
-        let tok = url.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Lenient by design: NFC tags come back mangled in the field — prefix bytes
+        // swallowed by readers, EEPROM padding after the payload, stripped schemes.
+        // The payload is a fixed-size base64url token, so recover exactly that:
+        // take the alphabet-run after the last '?' (or the whole string), and if the
+        // full run doesn't decode, try its first 31 chars (trailing garbage case).
+        let tail = url.trimmingCharacters(in: .whitespacesAndNewlines)
             .components(separatedBy: "?").last!
             .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        var b64 = tok.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
-        while b64.count % 4 != 0 { b64 += "=" }
-        guard let raw = Data(base64Encoded: b64), raw.count == 23 else {
+        let tok = String(tail.prefix { $0.isLetter || $0.isNumber || $0 == "-" || $0 == "_" })
+        guard let raw = decode(tok) ?? (tok.count > tokenChars ? decode(String(tok.prefix(tokenChars))) : nil) else {
             throw OdError.protocolError("not an OpenDisplay landing URL")
         }
         let key = raw.dropFirst(5).prefix(16)
@@ -194,5 +201,12 @@ public struct Landing: Sendable {
             deviceId: id, name: "OD" + id,
             keyHex: key.allSatisfy { $0 == 0 } ? nil : key.hexLower,
             manufacturerId: Int(raw[21]) << 8 | Int(raw[22]))
+    }
+
+    private static func decode(_ tok: String) -> Data? {
+        var b64 = tok.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
+        while b64.count % 4 != 0 { b64 += "=" }
+        guard let raw = Data(base64Encoded: b64), raw.count == 23 else { return nil }
+        return raw
     }
 }

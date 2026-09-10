@@ -141,7 +141,14 @@ class MainActivity : AppCompatActivity() {
             val uri = try {
                 ndef.connect()
                 (ndef.ndefMessage ?: ndef.cachedNdefMessage)?.records
-                    ?.firstNotNullOfOrNull { r -> r.toUri()?.toString() }
+                    ?.firstNotNullOfOrNull { r ->
+                        // proper URI records first; then any payload as text — field tags
+                        // come back with broken prefix codes, the lenient parser copes
+                        r.toUri()?.toString() ?: r.payload?.takeIf { it.isNotEmpty() }?.let { p ->
+                            val c = p[0].toInt() and 0xFF
+                            String(if (c < 0x20 || c > 0x7E) p.copyOfRange(1, p.size) else p, Charsets.UTF_8)
+                        }
+                    }
             } catch (e: Exception) { null } finally { runCatching { ndef.close() } }
             if (uri != null) runOnUiThread { onSheetTap(uri) }
         }, android.nfc.NfcAdapter.FLAG_READER_NFC_A or android.nfc.NfcAdapter.FLAG_READER_NFC_B or
@@ -157,7 +164,11 @@ class MainActivity : AppCompatActivity() {
      *  Adding sheets lives in Settings (decision of 10 Sep): an unknown tag just points there. */
     private fun onSheetTap(uri: String) {
         val landing = runCatching { net.repaper.go.core.LandingUrl.parse(uri) }.getOrNull()
-            ?: run { toast("That tag doesn't look like a RePaper sheet."); return }
+            ?: run {
+                DiagLog.log("nfc tap unparseable: $uri")
+                toast("That tag doesn't look like a RePaper sheet: ${uri.take(80)}")
+                return
+            }
         DiagLog.log("nfc tap: ${landing.name}")
         val known = SheetOps.findRegistered(registry, landing)
         val job = jobs.list().firstOrNull()

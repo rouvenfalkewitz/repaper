@@ -263,6 +263,9 @@ extension BleLink: OdLink {
 /// Registering a sheet from its landing link (QR, NFC, or pasted): find it over BLE,
 /// read its config, remember everything — Android's SheetOps, Swift edition.
 enum SheetOps {
+    /// nil = no write attempted; true/false = the tag write's outcome during the last add.
+    @MainActor static private(set) var lastTagProgrammed: Bool?
+
     @MainActor static func describeAndRegister(_ landing: Landing, link rawLink: String? = nil) async throws -> Capabilities {
         let peripheral = try await SheetRadio.shared.find(name: landing.name)
         let link = try await SheetRadio.shared.connect(peripheral)
@@ -275,9 +278,16 @@ enum SheetOps {
         // program the sheet's OWN NFC tag while we're connected — some ship with an
         // empty tag, and this is what makes tap-to-print reliable. Non-fatal: older
         // firmware without the endpoint just logs.
+        lastTagProgrammed = nil
         if let rawLink {
-            do { try await od.writeNfcUrl(rawLink); DiagLog.log("nfc tag programmed over BLE") }
-            catch { DiagLog.log("nfc tag write skipped: \(error.localizedDescription)") }
+            do {
+                try await od.writeNfcUrl(rawLink)
+                lastTagProgrammed = true
+                DiagLog.log("nfc tag programmed over BLE")
+            } catch {
+                lastTagProgrammed = false
+                DiagLog.log("nfc tag write skipped: \(error.localizedDescription)")
+            }
         }
         SheetStore.shared.add(Sheet(id: landing.name, name: landing.name, address: landing.name,
                                     keyHex: landing.keyHex, bleAddress: peripheral.identifier.uuidString,

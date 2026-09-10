@@ -14,13 +14,20 @@ data class Landing(
 )
 
 object LandingUrl {
+    /** The 23-byte payload is 31 base64url chars. */
+    private const val TOKEN_CHARS = 31
+
     fun parse(url: String): Landing {
+        // Lenient by design: NFC tags come back mangled in the field — prefix bytes
+        // swallowed by readers, EEPROM padding after the payload, stripped schemes.
+        // The payload is a fixed-size base64url token, so recover exactly that:
+        // take the alphabet-run after the last '?' (or the whole string), and if the
+        // full run doesn't decode, try its first 31 chars (trailing garbage case).
         val tok = url.trim().substringAfterLast("?").trimEnd('/')
-        val padded = tok + "=".repeat((4 - tok.length % 4) % 4)
-        val raw = try { Base64.getUrlDecoder().decode(padded) } catch (e: IllegalArgumentException) {
-            throw OdError("not an OpenDisplay landing URL", e)
-        }
-        if (raw.size != 23) throw OdError("not an OpenDisplay landing URL (payload must be 23 bytes)")
+            .takeWhile { it.isLetterOrDigit() || it == '-' || it == '_' }
+        val raw = decode(tok)
+            ?: (if (tok.length > TOKEN_CHARS) decode(tok.take(TOKEN_CHARS)) else null)
+            ?: throw OdError("not an OpenDisplay landing URL")
         val key = raw.copyOfRange(5, 21)
         val id = raw.copyOfRange(2, 5).toHexUpper()
         return Landing(
@@ -30,6 +37,12 @@ object LandingUrl {
             keyHex = if (key.all { it == 0.toByte() }) null else key.toHexLower(),
             manufacturerId = ((raw[21].toInt() and 0xFF) shl 8) or (raw[22].toInt() and 0xFF),
         )
+    }
+
+    private fun decode(tok: String): ByteArray? {
+        val padded = tok + "=".repeat((4 - tok.length % 4) % 4)
+        val raw = try { Base64.getUrlDecoder().decode(padded) } catch (e: IllegalArgumentException) { return null }
+        return if (raw.size == 23) raw else null
     }
 }
 

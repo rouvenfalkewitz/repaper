@@ -277,7 +277,12 @@ struct SettingsView: View {
             // one connection does it all: interrogate AND program the sheet's own
             // NFC tag over BLE (no phone-radio fiddling — the sheet writes itself)
             _ = try await SheetOps.describeAndRegister(landing, link: link)
-            addNote = ""; addLink = ""; showPaste = false
+            addLink = ""; showPaste = false
+            switch SheetOps.lastTagProgrammed {
+            case .some(true): addNote = "Added \(landing.name) — its tag is programmed, tap it to print."
+            case .some(false): addNote = "Added \(landing.name) — its firmware couldn't program the tag, so tapping this sheet won't work."
+            case .none: addNote = ""
+            }
         } catch {
             addNote = error.localizedDescription
         }

@@ -122,6 +122,21 @@ final class GoldenTests: XCTestCase {
         XCTAssertEqual(noKey["name"] as! String, l2.name)
     }
 
+    func testLandingParseSurvivesFieldMangling() throws {
+        let g = try golden("landing")
+        let url = (g["with_key"] as! [String: Any])["url"] as! String
+        let want = try Landing.parse(url)
+        // NFC readers swallow the first byte as a URI prefix code
+        XCTAssertEqual(want.name, try Landing.parse(String(url.dropFirst())).name)
+        // schemes get stripped entirely
+        XCTAssertEqual(want.name, try Landing.parse(url.replacingOccurrences(of: "https://", with: "")).name)
+        // EEPROM padding appends garbage after the payload
+        XCTAssertEqual(want.name, try Landing.parse(url + "\0\0\u{FF}").name)
+        // even garbage from the base64 alphabet: the token is fixed-size
+        XCTAssertEqual(want.name, try Landing.parse(url + "AAAAAA").name)
+        XCTAssertEqual(want.keyHex, try Landing.parse(url + "AAAAAA").keyHex)
+    }
+
     func testConfigParseMatchesSdk() throws {
         let g = try golden("config")
         let caps = try OdConfig.parse(hexData(g["tlv"]))
