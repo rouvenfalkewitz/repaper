@@ -95,7 +95,36 @@ class CloudAgent(private val context: Context) {
                 sendStatus(socket)
             }
             "identify" -> {} // a phone has no LED ring; the app could vibrate later
+            "mirror_job" -> {
+                // a Dock Light somewhere printed a page for THIS device — fetch and spool it
+                val job = msg.optJSONObject("job")
+                if (job != null) scope.launch { fetchMirrorJob(job.optString("id"), job.optString("name", "job")) }
+            }
             "diag" -> socket.send(JSONObject().put("t", "diag").put("log", DiagLog.dump()).toString())
+        }
+    }
+
+    /** The main screen (when open) refreshes the moment a mirror job lands. */
+    @Volatile var onJobArrived: (() -> Unit)? = null
+
+    private fun fetchMirrorJob(id: String, name: String) {
+        if (id.isEmpty()) return
+        try {
+            val body = JSONObject().put("id", identity.deviceId).put("secret", identity.secret)
+            val resp = client.newCall(okhttp3.Request.Builder()
+                .url("${Prefs.cloudBase(context)}/api/device/mirror-job/$id")
+                .post(okhttp3.RequestBody.create(null, body.toString()))
+                .header("Content-Type", "application/json")
+                .build()).execute()
+            val obj = resp.use { JSONObject(it.body?.string() ?: "{}") }
+            if (!obj.optBoolean("ok")) { DiagLog.log("mirror job $id: fetch refused"); return }
+            val bytes = android.util.Base64.decode(obj.optString("data"), android.util.Base64.DEFAULT)
+            val ext = if (obj.optString("type") == "pdf") "pdf" else "png"
+            JobStore(context).newJob(name, ext).writeBytes(bytes)
+            DiagLog.log("mirror job spooled: $name (${bytes.size} B)")
+            onJobArrived?.invoke()
+        } catch (e: Exception) {
+            DiagLog.log("mirror job $id failed: ${e.message}")
         }
     }
 

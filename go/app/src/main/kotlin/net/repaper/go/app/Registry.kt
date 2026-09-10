@@ -7,7 +7,7 @@ import org.json.JSONObject
 import java.io.File
 import java.security.SecureRandom
 
-const val GO_VERSION = "0.2.10"
+const val GO_VERSION = "0.2.11"
 
 /** Same shape as the Dock's ~/.repaper/sheets.json: id → {name, transport, address, keys, model}.
  *  The AES key from the QR link lives only here. */
@@ -128,9 +128,12 @@ class Identity(context: Context) {
     }
 }
 
-/** Print jobs waiting for a sheet, spooled as rendered PDFs in filesDir/jobs. */
+/** Print jobs waiting for a sheet: rendered PDFs from the print service, plus
+ *  PNGs relayed from a Dock Light — all in filesDir/jobs. */
 class JobStore(context: Context) {
     val dir = File(context.filesDir, "jobs").apply { mkdirs() }
-    fun list(): List<File> = (dir.listFiles() ?: emptyArray()).filter { it.extension == "pdf" }.sortedBy { it.name }
-    fun newJob(label: String): File = File(dir, "${System.currentTimeMillis()}-${label.take(40).replace(Regex("[^A-Za-z0-9._-]"), "_")}.pdf")
+    fun list(): List<File> = (dir.listFiles() ?: emptyArray())
+        .filter { it.extension.lowercase() in setOf("pdf", "png", "jpg", "jpeg") }.sortedBy { it.name }
+    fun newJob(label: String, ext: String = "pdf"): File =
+        File(dir, "${System.currentTimeMillis()}-${label.take(40).replace(Regex("[^A-Za-z0-9._-]"), "_")}.$ext")
 }

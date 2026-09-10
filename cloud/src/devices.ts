@@ -4,7 +4,7 @@
    signed-in user enters their claim code in the console. */
 import type { WebSocket } from "ws";
 import { hashSecret, secretMatches } from "./auth.js";
-import { addEvent, getDevice, getOrg, registerDevice, saveDeviceStatus, saveDiag, setTargetVersion, touchDevice, upsertStat } from "./db.js";
+import { addEvent, deviceLabel, getDevice, getOrg, pendingMirrorJobs, registerDevice, saveDeviceStatus, saveDiag, setTargetVersion, touchDevice, upsertStat } from "./db.js";
 
 const live = new Map<string, WebSocket>(); // device id → open socket
 const alive = new WeakMap<WebSocket, boolean>();
@@ -56,7 +56,7 @@ export const handleDeviceSocket = (ws: WebSocket, remote: string) => {
       clearTimeout(helloDeadline);
       const h = msg as unknown as Hello;
       if (h.t !== "hello" || typeof h.id !== "string" || typeof h.secret !== "string") return refuse("hello first");
-      if (!ID_RE.test(h.id) || !["dock", "go"].includes(h.kind)) return refuse("bad hello");
+      if (!ID_RE.test(h.id) || !["dock", "go", "dock-light"].includes(h.kind)) return refuse("bad hello");
       const known = getDevice(h.id);
       if (known) {
         if (!secretMatches(h.secret, known.secret_hash)) {
@@ -79,6 +79,15 @@ export const handleDeviceSocket = (ws: WebSocket, remote: string) => {
       const d = getDevice(deviceId)!;
       const org = d.org_id ? getOrg(d.org_id) : undefined;
       ws.send(JSON.stringify({ t: "hello_ok", claimed: !!d.org_id, org: org?.name ?? null, approved: !!d.approved }));
+      if (d.kind === "dock-light") {
+        const target = d.mirror_to ? getDevice(d.mirror_to) : undefined;
+        ws.send(JSON.stringify({ t: "mirror", name: target ? deviceLabel(target) : null }));
+      }
+      // jobs that arrived while this device was away are delivered now
+      for (const j of pendingMirrorJobs(deviceId)) {
+        const from = getDevice(j.from_id);
+        ws.send(JSON.stringify({ t: "mirror_job", job: { id: j.id, name: j.name, from: from ? deviceLabel(from) : "a Dock Light" } }));
+      }
       addEvent(deviceId, "online");
       offerUpdate(deviceId);
       return;

@@ -24,7 +24,7 @@
 
   <section class="card" id="job"></section>
 
-  <h2>Sheets</h2>
+  <h2 id="sheetsHead">Sheets</h2>
   <div class="sheets" id="sheets"></div>
 
   <h2>Recent</h2>
@@ -79,15 +79,29 @@ function dots(palette) { const c = {BW: ["#FFFFFF", "#000000"], BWR: ["#FFFFFF",
   GRAY4: ["#FFFFFF", "#AAAAAA", "#555555", "#000000"]}[palette] || ["#FFFFFF", "#000000"]; return `<span class="dots" title="${palette}">${c.map(x => `<i style="background:${x}"></i>`).join("")}</span>`; }
 function render(s) {
   el("printer").textContent = s.printer; el("addr").textContent = s.address || "";
+  document.title = s.light ? "RePaper Dock Light" : document.title;
+  el("sheetsHead").hidden = !!s.light; el("sheets").hidden = !!s.light;
   const n = (s.notifications || []).length, g = document.querySelector(".gear"); if (g) { g.classList.toggle("has-badge", n > 0); g.setAttribute("data-count", n); g.title = n ? `${n} notification${n > 1 ? "s" : ""}` : "Settings"; }
   el("foot").textContent = `RePaper Dock · ${s.version || ""} · identifier: ${s.identifier}`;
   const j = s.job, now = s.now;
   let html;
   if (!j) {
+    const where = s.light
+      ? (s.mirror ? `it appears on <b>${esc(s.mirror)}</b>.` : `<span style="color:var(--amber)">no mirror chosen yet — pick one in the RePaper Cloud console.</span>`)
+      : `the page shows up here.`;
     html = `<div class="empty">${ring("led-ready")}
             <div><span class="pill">Ready</span><div class="title">Ready to print</div>
-            <div class="meta">Print to <b>${esc(s.printer)}</b> from any device on this network — the page shows up here.</div>
-            <div class="chips"><span>AirPrint</span><span>IPP Everywhere</span><span>Mopria</span></div></div></div>`;
+            <div class="meta">Print to <b>${esc(s.printer)}</b> from any device on this network — ${where}</div>
+            <div class="chips"><span>AirPrint</span><span>IPP Everywhere</span><span>Mopria</span>${s.light ? "<span>Cloud mirror</span>" : ""}</div></div></div>`;
+  } else if (s.light) {
+    // Dock Light: no picker, no tap — the job is on its way (or telling you why not)
+    const err = s.state === "error" && s.error ? `<div class="notice err"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6m0-6 6 6"/></svg><div><b>Not delivered</b><span>${esc(s.error)}</span></div></div>` : "";
+    html = `<div class="hero">${ring(s.state === "error" ? "led-err" : s.state === "printed" ? "led-done" : "led-busy")}<div>
+            <div class="card-head"><span class="pill ${s.state === "error" ? "" : s.state === "printed" ? "done" : "busy"}">${s.state === "printed" ? "Sent" : s.state === "error" ? "Waiting" : "Sending"}</span>
+              <form method="post" action="/cancel"><button class="btn outline small" type="submit" name="job" value="${esc(j.id)}">${ICON.trash}Discard</button></form></div>
+            <div class="title">${esc(j.name)}</div>
+            <div class="meta">${s.state === "printed" ? esc(s.message) : s.mirror ? `on its way to <b>${esc(s.mirror)}</b>` : ""}</div>
+            <div class="center"><div class="preview">${frame(4, 3, `/preview/${j.id}/${j.next_page || j.pages}`)}</div>${err}</div></div></div>`;
   } else if (s.state === "printing") {
     html = `<div class="hero">${ring("led-busy")}<div><span class="pill busy">Printing</span><div class="title">${esc(j.name)}</div>${pages(j)}
             ${stepper(s.phase, s.printing_since, now)}

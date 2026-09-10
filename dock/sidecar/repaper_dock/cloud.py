@@ -2,7 +2,7 @@
 Printing never depends on it — with no cloud_url configured, or the cloud unreachable,
 the Dock just keeps working. The cloud sees metadata (status, sheet readings), never pages."""
 from __future__ import annotations
-import asyncio, hashlib, json, logging, secrets, subprocess, sys, threading, time, urllib.request
+import asyncio, hashlib, json, logging, secrets, subprocess, sys, threading, time, urllib.error, urllib.request
 from pathlib import Path
 from . import __version__
 from .config import HOME
@@ -38,12 +38,13 @@ class CloudAgent(threading.Thread):
         self.org: str | None = None
         self._updating = False
         self.updating_version: str | None = None
+        self.mirror: str | None = None      # Dock Light: the device jobs appear on
         threading.Thread(target=self._update_check_loop, daemon=True, name="update-check").start()
 
     # ── what Settings shows ───────────────────────────────────────────────────
     def info(self) -> dict:
         return {"url": self.dock.cfg.get("cloud_url", ""), "state": self.state, "detail": self.detail,
-                "claimed": self.claimed, "org": self.org,
+                "claimed": self.claimed, "org": self.org, "mirror": self.mirror,
                 "claim_code": self.identity["claim_code"], "device_id": self.identity["device_id"]}
 
     # ── the status heartbeat: metadata only, never job content ────────────────
@@ -86,7 +87,8 @@ class CloudAgent(threading.Thread):
                 self.state, self.detail = "connecting", ""
                 async with websockets.connect(url, open_timeout=10, ping_interval=20, ping_timeout=20, max_size=1 << 20) as ws:
                     await ws.send(json.dumps({"t": "hello", "id": self.identity["device_id"], "secret": self.identity["secret"],
-                                              "claim": self.identity["claim_code"], "kind": "dock",
+                                              "claim": self.identity["claim_code"],
+                                              "kind": "dock-light" if self.dock.cfg.get("dock_light") else "dock",
                                               "name": self.dock.cfg["printer_name"], "version": __version__}))
                     first = json.loads(await asyncio.wait_for(ws.recv(), 15))
                     if first.get("t") != "hello_ok": raise RuntimeError(first.get("error") or "unexpected reply")
@@ -140,9 +142,43 @@ class CloudAgent(threading.Thread):
             if self._updating: return None
             self._start_update(version, url, sha)
             return {"t": "updating", "version": version}
+        elif t == "mirror":
+            self.mirror = msg.get("name") or None
+            log.info("cloud: mirror is %s", self.mirror or "not set")
         elif t == "error":
             raise RuntimeError(msg.get("error") or "server error")
         return None
+
+    # ── Dock Light: forward a job's pages to the cloud relay ─────────────────
+    def forward_job(self, job) -> tuple[bool, str]:
+        """Uploads every page as PNG; returns (ok, message). Metadata-honesty note:
+        this is THE exception — Dock Light pages do travel through the cloud."""
+        base = self._http_base()
+        if not base: return False, "no cloud configured"
+        if self.claimed is False: return False, "claim this Dock Light in the console first"
+        import base64, io
+        from PIL import Image
+        try:
+            for n in range(1, job.pages + 1):
+                img = Image.open(job.page_path(n)).convert("RGB")
+                buf = io.BytesIO(); img.save(buf, "PNG")
+                name = job.name if job.pages == 1 else f"{job.name} (page {n} of {job.pages})"
+                body = json.dumps({"id": self.identity["device_id"], "secret": self.identity["secret"],
+                                   "name": name, "type": "png",
+                                   "data": base64.b64encode(buf.getvalue()).decode()}).encode()
+                req = urllib.request.Request(base + "/api/device/forward-job", data=body,
+                                             headers={"Content-Type": "application/json"})
+                with urllib.request.urlopen(req, timeout=30) as r:
+                    resp = json.loads(r.read().decode() or "{}")
+                if not resp.get("ok"): return False, resp.get("error", "the cloud refused the job")
+                to = resp.get("to") or "the mirrored device"
+            return True, f"sent to {to}" + ("" if resp.get("delivered") else " — it prints when that device comes online")
+        except urllib.error.HTTPError as e:
+            try: detail = json.loads(e.read().decode()).get("error", str(e))
+            except Exception: detail = str(e)
+            return False, detail
+        except Exception as e:
+            return False, str(e) or type(e).__name__
 
     def _http_base(self) -> str:
         u = (self.dock.cfg.get("cloud_url") or "").strip()

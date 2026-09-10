@@ -105,6 +105,7 @@ struct MainView: View {
         .alert(info, isPresented: .init(get: { !info.isEmpty }, set: { if !$0 { info = "" } })) {
             Button("OK", role: .cancel) { info = "" }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .mirrorJobArrived)) { _ in refresh() }
         .onAppear {
             cloud.start(); refresh()
             // visual-test hook: `simctl launch … --open-settings` jumps straight there
@@ -161,8 +162,12 @@ struct MainView: View {
     }
 
     /// How printing works, told in pictures: share → the app → e-paper.
+    /// The words sit ABOVE the pictures (Rouven, 10 Sep).
     private var howToPrint: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 14) {
+            Text("Share a photo or document from any app — it lands on your sheet.")
+                .font(Ui.body(13)).foregroundColor(Ui.text2)
+                .multilineTextAlignment(.center)
             HStack(spacing: 0) {
                 howTile(caption: "Share") {
                     Image(systemName: "square.and.arrow.up")
@@ -193,9 +198,6 @@ struct MainView: View {
                     .overlay(RoundedRectangle(cornerRadius: 6).stroke(Ui.borderStrong, lineWidth: 1))
                 }
             }
-            Text("Share a photo or document from any app — it lands on your sheet.")
-                .font(Ui.body(12)).foregroundColor(Ui.text3)
-                .multilineTextAlignment(.center)
         }
         .padding(.vertical, 16).padding(.horizontal, 14)
         .frame(maxWidth: .infinity)
@@ -262,7 +264,7 @@ struct MainView: View {
         case .wait: return sheets.sheets.isEmpty ? "Add a sheet in Settings first."
                                                  : "Tap a job below and choose the sheet."
         case .setup: return "Add your first sheet in Settings — the gear, top right."
-        case .ready: return "Share a page or photo to RePaper Go from any app."
+        case .ready: return ""   // the how-to card below carries the message
         }
     }
 

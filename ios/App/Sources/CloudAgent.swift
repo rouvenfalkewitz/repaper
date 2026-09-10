@@ -1,7 +1,13 @@
 import Foundation
 
+extension Notification.Name {
+    /// A Dock Light job just landed in the spool — the main screen refreshes.
+    static let mirrorJobArrived = Notification.Name("mirrorJobArrived")
+}
+
 /// One outbound WebSocket to RePaper Cloud — the Dock's cloud.py in miniature, kind "go".
-/// Printing never depends on it; the cloud sees metadata, never pages.
+/// Printing never depends on it; the cloud sees metadata, never pages —
+/// EXCEPT mirror jobs from a Dock Light, which arrive through the relay by design.
 @MainActor final class CloudAgent: ObservableObject {
     static let shared = CloudAgent()
 
@@ -78,6 +84,11 @@ import Foundation
             await sendStatus()
         case "identify":
             break   // a phone has no LED ring; the app could vibrate later
+        case "mirror_job":
+            // a Dock Light somewhere printed a page for THIS device — fetch and spool it
+            if let job = msg["job"] as? [String: Any], let id = job["id"] as? String {
+                await fetchMirrorJob(id: id, name: job["name"] as? String ?? "job")
+            }
         case "diag":
             try? await send(["t": "diag", "log": DiagLog.dump()])
         default:
@@ -93,6 +104,29 @@ import Foundation
         try? await send(["t": "status", "printer": Prefs.printerName, "state": "ready",
                          "version": GO_IOS_VERSION, "identifier": "touch",
                          "jobs_today": Prefs.printedToday, "sheets": sheets])
+    }
+
+    /// The relay hands over the page and forgets it; the job joins the normal queue
+    /// (one sheet auto-prints, several ask — exactly like a shared page).
+    private func fetchMirrorJob(id: String, name: String) async {
+        do {
+            var req = URLRequest(url: URL(string: "\(Prefs.cloudBase)/api/device/mirror-job/\(id)")!)
+            req.httpMethod = "POST"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.httpBody = try JSONSerialization.data(withJSONObject: ["id": Identity.shared.deviceId, "secret": Identity.shared.secret])
+            let (data, _) = try await URLSession.shared.data(for: req)
+            guard let obj = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  obj["ok"] as? Bool == true,
+                  let b64 = obj["data"] as? String, let bytes = Data(base64Encoded: b64) else {
+                DiagLog.log("mirror job \(id): fetch refused"); return
+            }
+            let ext = (obj["type"] as? String) == "pdf" ? "pdf" : "png"
+            try bytes.write(to: JobStore.newJobURL(label: name, ext: ext))
+            DiagLog.log("mirror job spooled: \(name) (\(bytes.count) B)")
+            NotificationCenter.default.post(name: .mirrorJobArrived, object: nil)
+        } catch {
+            DiagLog.log("mirror job \(id) failed: \(error.localizedDescription)")
+        }
     }
 
     private func send(_ obj: [String: Any]) async throws {

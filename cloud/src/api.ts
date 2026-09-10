@@ -1,6 +1,6 @@
 /* Console API: everything a signed-in user does. Device-facing traffic lives in devices.ts. */
-import { createHash, randomBytes } from "node:crypto";
-import { copyFileSync, createReadStream, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { copyFileSync, createReadStream, existsSync, mkdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import QRCode from "qrcode";
@@ -17,6 +17,7 @@ import {
   createRelease, getRelease, latestRelease, listReleases, setTargetVersion,
   setOrgLogo, setUserName, setUserRole, updateCompany, updatePassword, useRecoveryCode, userApiKeys,
   COMPANY_FIELDS, DATA_DIR, type DeviceRow, type UserRow,
+  addMirrorJob, deleteMirrorJob, deviceLabel, getMirrorJob, setMirror, staleMirrorJobs,
 } from "./db.js";
 import { COOKIE, endSession, hashPassword, loginAllowed, loginFailed, loginOk, requireUser, secretMatches, startSession, verifyPassword } from "./auth.js";
 import { mailEnabled, sendInviteMail, sendRegisterMail, sendResetMail } from "./mail/index.js";
@@ -33,6 +34,10 @@ const publicDevice = (d: DeviceRow) => ({
   online: isOnline(d.id), last_seen: d.last_seen, claimed_at: d.claimed_at,
   status: JSON.parse(d.status || "{}"),
   stats: deviceStats(d.id).reverse(),
+  ...(d.kind === "dock-light" ? {
+    mirror_to: d.mirror_to,
+    mirror: d.mirror_to ? deviceLabel(getDevice(d.mirror_to) ?? ({ status: "{}", name: "", id: d.mirror_to } as DeviceRow)) : null,
+  } : {}),
 });
 
 const LOW_MV = 2700;
@@ -121,6 +126,58 @@ export const registerApi = (app: FastifyInstance) => {
       .header("Content-Disposition", 'attachment; filename="repaper-go.apk"')
       .header("Content-Length", String(statSync(apk).size))
       .send(createReadStream(apk));
+  });
+
+  /* ── Dock Light mirroring ─────────────────────────────────────────────────
+     A Dock Light knows no sheets: every job it accepts is forwarded here and
+     delivered to the device it mirrors to. Jobs are deleted on delivery and
+     expire after an hour — the cloud is a relay, not an archive. */
+  const MIRROR_DIR = join(DATA_DIR, "mirror-jobs");
+  mkdirSync(MIRROR_DIR, { recursive: true });
+  const dropMirrorJob = (id: string) => {
+    const j = getMirrorJob(id);
+    if (!j) return;
+    try { unlinkSync(j.path); } catch {}
+    deleteMirrorJob(id);
+  };
+  const purgeStaleMirrorJobs = () => { for (const j of staleMirrorJobs(Date.now() - 3_600_000)) dropMirrorJob(j.id); };
+
+  app.post("/api/device/forward-job", { bodyLimit: 24 * 1024 * 1024 }, async (req, reply) => {
+    purgeStaleMirrorJobs();
+    const { id, secret, name, type, data } = (req.body ?? {}) as
+      { id?: string; secret?: string; name?: string; type?: string; data?: string };
+    if (typeof id !== "string" || typeof secret !== "string" || !data) return reply.code(400).send({ error: "bad request" });
+    const d = getDevice(id);
+    if (!d || !secretMatches(secret, d.secret_hash)) return reply.code(401).send({ error: "auth" });
+    if (!d.org_id) return reply.code(409).send({ error: "claim this Dock Light in the console first" });
+    if (!d.mirror_to) return reply.code(409).send({ error: "no mirror set — choose a device in the console" });
+    const target = getDevice(d.mirror_to);
+    if (!target || target.org_id !== d.org_id) return reply.code(409).send({ error: "the mirrored device is gone — choose a new one in the console" });
+    const buf = Buffer.from(data, "base64");
+    if (buf.length < 16) return reply.code(400).send({ error: "empty job" });
+    const jobId = randomUUID();
+    const path = join(MIRROR_DIR, jobId);
+    writeFileSync(path, buf);
+    addMirrorJob({ id: jobId, from_id: d.id, to_id: target.id, name: String(name ?? "job").slice(0, 80),
+                   type: type === "pdf" ? "pdf" : "png", path, created: Date.now() });
+    const delivered = sendToDevice(target.id, { t: "mirror_job", job: { id: jobId, name: String(name ?? "job").slice(0, 80), from: deviceLabel(d) } });
+    addEvent(d.id, "mirror_forwarded", `${String(name ?? "job").slice(0, 60)} → ${deviceLabel(target)}`);
+    return { ok: true, delivered, to: deviceLabel(target) };
+  });
+
+  /* the mirrored device fetches the page and the relay forgets it */
+  app.post("/api/device/mirror-job/:jid", async (req, reply) => {
+    const { id, secret } = (req.body ?? {}) as { id?: string; secret?: string };
+    if (typeof id !== "string" || typeof secret !== "string") return reply.code(400).send({ error: "bad request" });
+    const d = getDevice(id);
+    if (!d || !secretMatches(secret, d.secret_hash)) return reply.code(401).send({ error: "auth" });
+    const j = getMirrorJob((req.params as { jid: string }).jid);
+    if (!j || j.to_id !== d.id) return reply.code(404).send({ error: "no such job" });
+    let payload: string;
+    try { payload = readFileSync(j.path).toString("base64"); } catch { dropMirrorJob(j.id); return reply.code(404).send({ error: "job expired" }); }
+    dropMirrorJob(j.id);
+    addEvent(j.from_id, "mirror_delivered", `${j.name} → ${deviceLabel(d)}`);
+    return { ok: true, name: j.name, type: j.type, data: payload };
   });
 
   /* sign-out on the Go apps: the device removes itself from the fleet. Same
@@ -656,6 +713,25 @@ export const registerApi = (app: FastifyInstance) => {
       addEvent(d.id, "approved", u.name || u.email);
       sendToDevice(d.id, { t: "claimed", org: org.name, approved: true });
       return { ok: true };
+    });
+
+    /* Dock Light: choose the device its jobs appear on (one target for now) */
+    f.post("/api/devices/:id/mirror", async (req, reply) => {
+      const d = ownDevice(req as Authed);
+      if (!d) return reply.code(404).send({ error: "unknown device" });
+      if (d.kind !== "dock-light") return reply.code(400).send({ error: "only a Dock Light mirrors" });
+      const to = ((req.body ?? {}) as { to?: string | null }).to ?? null;
+      if (to !== null) {
+        const target = getDevice(to);
+        if (!target || target.org_id !== d.org_id) return reply.code(404).send({ error: "unknown target device" });
+        if (target.kind !== "go") return reply.code(400).send({ error: "mirror to a RePaper Go device" });
+        if (!target.approved) return reply.code(400).send({ error: "that device is not approved yet" });
+      }
+      setMirror(d.id, to);
+      const target = to ? getDevice(to) : undefined;
+      addEvent(d.id, "mirror_set", target ? deviceLabel(target) : "cleared");
+      sendToDevice(d.id, { t: "mirror", name: target ? deviceLabel(target) : null });
+      return { ok: true, to: target ? deviceLabel(target) : null };
     });
 
     f.post("/api/devices/:id/remove", async (req, reply) => {

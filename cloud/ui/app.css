@@ -433,3 +433,20 @@ a.stat-tile:hover { border-color: var(--border-strong); transform: translateY(-1
 }
 
 .appnews { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border) }
+
+/* Dock Light mirror selector */
+.fieldlike { flex: 1; min-width: 0; background: var(--carbon); color: var(--text); border: 1px solid var(--border-strong); border-radius: 10px; padding: 9px 12px; font: inherit; font-size: .9rem }
+.fieldlike:focus { outline: none; border-color: var(--accent) }
+
+/* Shop: three product families */
+.vs3 { grid-template-columns: 1fr 1fr 1fr }
+@media (max-width: 1080px) { .vs3 { grid-template-columns: 1fr 1fr } }
+@media (max-width: 820px) { .vs3 { grid-template-columns: 1fr } }
+.vstable3 .vrow { grid-template-columns: 150px 1fr 1fr 1fr }
+@media (max-width: 760px) { .vstable3 { overflow-x: auto } .vstable3 .vrow { grid-template-columns: 120px 150px 150px 150px; min-width: 570px } }
+/* Dock Light art: a dimmer ring with a small "mirror" glyph beside it */
+.dockring.light { border-color: var(--text-2); box-shadow: 0 0 14px rgba(154,165,160,.3), inset 0 0 12px rgba(154,165,160,.18); animation: none }
+.vsart { position: relative }
+.lightmirror { position: absolute; right: calc(50% - 60px); top: 50%; width: 26px; height: 26px; transform: translateY(-50%); border-radius: 7px; border: 2px solid var(--accent); box-shadow: 0 0 12px rgba(30,227,165,.4) }
+.lightmirror::after { content: "→"; position: absolute; left: -20px; top: 50%; transform: translateY(-50%); color: var(--text-3); font-size: .8rem }
+.prodring.light { border-color: var(--text-2); box-shadow: 0 0 12px rgba(154,165,160,.3) }

@@ -135,6 +135,7 @@ class MainActivity : AppCompatActivity() {
         }
         registry = Registry(this)          // Settings may have added/removed sheets meanwhile
         refresh()
+        CloudAgent.get(this).onJobArrived = { runOnUiThread { refresh() } }   // Dock Light jobs land live
         // tap-to-print: the labels' built-in NFC tag carries the same landing link as the QR
         android.nfc.NfcAdapter.getDefaultAdapter(this)?.enableReaderMode(this, { tag ->
             val ndef = android.nfc.tech.Ndef.get(tag) ?: return@enableReaderMode
@@ -156,6 +157,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onPause() {
+        CloudAgent.get(this).onJobArrived = null
         android.nfc.NfcAdapter.getDefaultAdapter(this)?.disableReaderMode(this)
         super.onPause()
     }

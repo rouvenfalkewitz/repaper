@@ -14,6 +14,7 @@ DEFAULT_CONFIG = {
     "identifier": "manual",                          # manual | nfc-sticker | qr | ble-rssi
     "job_timeout_seconds": 3600,                     # a job nobody taps for is cancelled after this
     "sheet_cycle": False,                            # with several sheets: print on each in turn, no tap needed
+    "dock_light": False,                             # Dock Light: no sheets — jobs are forwarded to the cloud mirror
     "web_port": 9631,
     "web_bind": "0.0.0.0",                           # the Dock's page is reachable on the network (phones on the same Wi-Fi)
     "status_refresh_seconds": 60,                    # how often sheet battery/online is re-read while idle

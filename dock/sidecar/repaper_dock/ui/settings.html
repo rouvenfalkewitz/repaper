@@ -18,9 +18,9 @@
   <div class="notices" id="noteSec" hidden><div id="notes"></div></div>
 
   <section class="sec">
-    <div class="shead"><span class="sic"><svg viewBox="0 0 24 24"><path d="M6 3h9l5 5v13H6z"/><path d="M15 3v5h5"/></svg></span><div><b>Sheets</b><span id="sheetSub">The e-paper displays this Dock prints to</span></div></div>
+    <div class="shead" id="sheetsHead"><span class="sic"><svg viewBox="0 0 24 24"><path d="M6 3h9l5 5v13H6z"/><path d="M15 3v5h5"/></svg></span><div><b>Sheets</b><span id="sheetSub">The e-paper displays this Dock prints to</span></div></div>
     <div class="sheets" id="sheets"></div>
-    <div class="techrow standalone"><div class="tx"><b>Sheet link</b><span>How pages reach the paper</span></div><span class="techchips"><span class="chip">OpenDisplay BLE</span></span></div>
+    <div class="techrow standalone" id="sheetTech"><div class="tx"><b>Sheet link</b><span>How pages reach the paper</span></div><span class="techchips"><span class="chip">OpenDisplay BLE</span></span></div>
   </section>
 
   <div class="duo">
@@ -152,6 +152,16 @@ async function load() {
   el("noteSec").hidden = !notes.length;
   el("notes").innerHTML = notes.map(n => `<div class="notice ${n.level === "warn" ? "" : n.level}">${ICON[n.level] || ICON.info}<div><b>${esc(n.title)}</b><span>${esc(n.text)}</span></div></div>`).join("");
   const n = Object.keys(s.sheets).length;
+  if (S.light) {
+    document.title = "RePaper Dock Light · Settings";
+    el("sheetTech").hidden = true;
+    const cyc = el("cycle").closest("label"); cyc.hidden = true; if (cyc.nextElementSibling) cyc.nextElementSibling.hidden = true;
+    el("sheetsHead").querySelector("b").textContent = "Mirror";
+    el("sheetSub").textContent = S.mirror ? `Jobs appear on ${S.mirror}` : "A Dock Light prints through another RePaper device";
+    el("sheets").innerHTML = `<div class="card scard"><p class="meta" style="margin:0">${S.mirror
+      ? `Everything printed on this Dock Light appears on <b>${esc(S.mirror)}</b> — whichever sheets that device carries do the printing. Change the mirror on this device's page in the RePaper Cloud console.`
+      : `No mirror chosen yet. Open this device's page in the RePaper Cloud console and pick the RePaper Go device its jobs should appear on.`}</p></div>`;
+  } else
   el("sheetSub").textContent = n ? `${n} sheet${n === 1 ? "" : "s"} added to this Dock` : "The e-paper displays this Dock prints to";
   const nf = { ...s.network }, share = nf["Printer sharing"]; delete nf["Printer sharing"];
   if (share) el("netSub").textContent = share;

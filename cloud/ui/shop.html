@@ -16,10 +16,10 @@
     <div class="pagehead"><h1>Shop</h1><span class="pill amber">preview — nothing is for sale yet</span></div>
 
     <div class="duohead">
-      <h2>Two ways to print</h2>
+      <h2>Three ways to print</h2>
       <span class="devmeta">Same sheets, same fleet, same account — mix them freely.</span>
     </div>
-    <div class="vs">
+    <div class="vs vs3">
       <div class="vscard">
         <div class="vsart"><span class="dockring"></span></div>
         <b class="vstitle">RePaper Dock</b>
@@ -28,7 +28,7 @@
           <li>Everyone on the Wi-Fi can print — no app, no drivers, no setup</li>
           <li>Always on: jobs wait for a sheet, the cloud keeps watch</li>
           <li>Tap a sheet on the Dock and the page is on it</li>
-          <li>Updates itself over the cloud</li>
+          <li>Talks to sheets itself over Bluetooth</li>
         </ul>
         <div class="chips"><span>AirPrint</span><span>IPP Everywhere</span><span>Mopria</span></div>
         <div class="vsact"><a class="btn primary" href="/fleet">Claim a Dock</a><span class="mono">hardware below ↓</span></div>
@@ -38,24 +38,37 @@
         <b class="vstitle">RePaper Go</b>
         <span class="vssub">The printer in your pocket</span>
         <ul class="vslist">
-          <li>Print from any app on an Android phone or tablet</li>
+          <li>Print from any app on a phone or tablet</li>
           <li>Talks to sheets directly over Bluetooth — no Dock needed</li>
           <li>Tap a sheet with the phone to print it (NFC)</li>
           <li>Sign in once and it joins your fleet by itself</li>
         </ul>
-        <div class="chips"><span>Android Print</span><span>Bluetooth LE</span><span>NFC tap</span></div>
+        <div class="chips"><span>Android</span><span>iPhone soon</span><span>Bluetooth LE</span></div>
         <div class="vsact"><a class="btn primary" href="/dl/repaper-go.apk" download>Download for Android</a><span class="mono" id="apkmeta"></span></div>
-        <span class="mono" style="color:var(--text-3);font-size:.75rem">iPhone &amp; iPad: in the works — coming via TestFlight. Until then, iPhones print through any Dock.</span>
+        <span class="mono" style="color:var(--text-3);font-size:.75rem">iPhone &amp; iPad: coming via TestFlight.</span>
+      </div>
+      <div class="vscard">
+        <div class="vsart"><span class="dockring light"></span><span class="lightmirror"></span></div>
+        <b class="vstitle">RePaper Dock Light <span class="pill amber" style="font-size:.6rem;vertical-align:middle">new</span></b>
+        <span class="vssub">The network printer, at its simplest</span>
+        <ul class="vslist">
+          <li>The same network printer everyone can print to — no app</li>
+          <li>Holds no sheets itself: jobs appear on a RePaper Go or Dock you choose</li>
+          <li>Whichever mirrored device has the sheet does the printing</li>
+          <li>The most affordable way to make a room printable</li>
+        </ul>
+        <div class="chips"><span>AirPrint</span><span>IPP Everywhere</span><span>Cloud mirror</span></div>
+        <div class="vsact"><a class="btn primary" href="/fleet">Claim a Dock Light</a><span class="mono">hardware below ↓</span></div>
       </div>
     </div>
 
-    <div class="vstable">
-      <div class="vrow head"><span></span><b>Dock</b><b>Go</b></div>
-      <div class="vrow"><span>Who can print</span><i>everyone on the network</i><i>this device</i></div>
-      <div class="vrow"><span>Availability</span><i>always on</i><i>while the app is open</i></div>
-      <div class="vrow"><span>Reaches sheets via</span><i>Bluetooth + tap reader</i><i>the phone's own radios</i></div>
-      <div class="vrow"><span>Speaks</span><i>AirPrint · IPP · Mopria</i><i>the Android print system</i></div>
-      <div class="vrow"><span>Best for</span><i>teams, shared spaces, production</i><i>individuals &amp; field work</i></div>
+    <div class="vstable vstable3">
+      <div class="vrow head"><span></span><b>Dock</b><b>Go</b><b>Dock Light</b></div>
+      <div class="vrow"><span>Who can print</span><i>everyone on the network</i><i>this device</i><i>everyone on the network</i></div>
+      <div class="vrow"><span>Availability</span><i>always on</i><i>while the app is open</i><i>always on</i></div>
+      <div class="vrow"><span>Holds sheets</span><i>yes — prints them directly</i><i>yes — over Bluetooth</i><i>no — mirrors to another device</i></div>
+      <div class="vrow"><span>Speaks</span><i>AirPrint · IPP · Mopria</i><i>the phone's print system</i><i>AirPrint · IPP</i></div>
+      <div class="vrow"><span>Best for</span><i>teams, shared spaces</i><i>individuals &amp; field work</i><i>extra rooms, on a budget</i></div>
     </div>
 
     <h2>Hardware</h2>
@@ -66,6 +79,12 @@
         <div class="prodart"><span class="prodring"></span></div>
         <b>RePaper Dock</b>
         <span class="devmeta">The printer for the whole network. AirPrint &amp; IPP, NFC tap, light ring.</span>
+        <div class="row between prodfoot"><span class="mono">price t.b.a.</span><button class="btn outline small" disabled>Coming soon</button></div>
+      </div>
+      <div class="prod">
+        <div class="prodart"><span class="prodring light"></span></div>
+        <b>RePaper Dock Light</b>
+        <span class="devmeta">The network printer without the radios — jobs print on a Go or Dock you mirror it to.</span>
         <div class="row between prodfoot"><span class="mono">price t.b.a.</span><button class="btn outline small" disabled>Coming soon</button></div>
       </div>
       <div class="prod">

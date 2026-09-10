@@ -114,6 +114,16 @@ if (!(db.prepare("PRAGMA table_info(invite)").all() as { name: string }[]).some(
 if (!dcols.includes("approved")) db.exec("ALTER TABLE device ADD COLUMN approved INTEGER NOT NULL DEFAULT 1");
 if (!dcols.includes("claimed_by")) db.exec("ALTER TABLE device ADD COLUMN claimed_by INTEGER");
   if (!dcols.includes("diag")) db.exec("ALTER TABLE device ADD COLUMN diag TEXT");
+  if (!dcols.includes("mirror_to")) db.exec("ALTER TABLE device ADD COLUMN mirror_to TEXT");
+  db.exec(`CREATE TABLE IF NOT EXISTS mirror_job(
+    id TEXT PRIMARY KEY,
+    from_id TEXT NOT NULL,
+    to_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    path TEXT NOT NULL,
+    created INTEGER NOT NULL
+  )`);
   if (!dcols.includes("diag_at")) db.exec("ALTER TABLE device ADD COLUMN diag_at REAL");
 }
 db.exec(`
@@ -190,8 +200,9 @@ export type DeviceRow = {
   id: string; org_id: number | null; kind: string; name: string; secret_hash: string;
   claim_code: string; version: string; status: string; created: number; claimed_at: number | null; last_seen: number | null;
   site: string | null; diag: string | null; diag_at: number | null; target_version: string | null;
-  approved: number; claimed_by: number | null;
+  approved: number; claimed_by: number | null; mirror_to: string | null;
 };
+export type MirrorJobRow = { id: string; from_id: string; to_id: string; name: string; type: string; path: string; created: number };
 
 // ── orgs & users ────────────────────────────────────────────────────────────
 export const getOrg = (id: number) => db.prepare("SELECT * FROM org WHERE id=?").get(id) as OrgRow | undefined;
@@ -296,6 +307,24 @@ export const touchDevice = (id: string, version?: string) =>
     : db.prepare("UPDATE device SET last_seen=?, version=? WHERE id=?").run(now(), version, id);
 export const saveDeviceStatus = (id: string, status: string) =>
   db.prepare("UPDATE device SET status=?, last_seen=? WHERE id=?").run(status, now(), id);
+
+// ── Dock Light mirroring: jobs travel through the cloud to the mirrored device ─
+export const setMirror = (id: string, to: string | null) =>
+  db.prepare("UPDATE device SET mirror_to=? WHERE id=?").run(to, id);
+export const addMirrorJob = (j: MirrorJobRow) =>
+  db.prepare("INSERT INTO mirror_job(id, from_id, to_id, name, type, path, created) VALUES(?,?,?,?,?,?,?)")
+    .run(j.id, j.from_id, j.to_id, j.name, j.type, j.path, j.created);
+export const getMirrorJob = (id: string) => db.prepare("SELECT * FROM mirror_job WHERE id=?").get(id) as MirrorJobRow | undefined;
+export const deleteMirrorJob = (id: string) => db.prepare("DELETE FROM mirror_job WHERE id=?").run(id);
+export const pendingMirrorJobs = (toId: string) =>
+  db.prepare("SELECT * FROM mirror_job WHERE to_id=? ORDER BY created").all(toId) as MirrorJobRow[];
+export const staleMirrorJobs = (olderThan: number) =>
+  db.prepare("SELECT * FROM mirror_job WHERE created < ?").all(olderThan) as MirrorJobRow[];
+/** The name a device goes by: its status payload's printer name, else the hello name, else the id. */
+export const deviceLabel = (d: DeviceRow): string => {
+  try { const p = JSON.parse(d.status).printer; if (typeof p === "string" && p) return p; } catch {}
+  return d.name || d.id.slice(0, 8);
+};
 export const renameDevice = (id: string, name: string) => db.prepare("UPDATE device SET name=? WHERE id=?").run(name, id);
 export const setTargetVersion = (id: string, v: string | null) => db.prepare("UPDATE device SET target_version=? WHERE id=?").run(v, id);
 export const setDeviceSite = (id: string, site: string | null) => db.prepare("UPDATE device SET site=? WHERE id=?").run(site, id);

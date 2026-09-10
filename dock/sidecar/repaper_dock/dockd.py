@@ -88,6 +88,21 @@ class Dock:
             if time.time() - job.created > self.cfg["job_timeout_seconds"]:
                 job.state = "cancelled"; job.error = "nobody held a sheet in time"; job.save()
                 log.info("job %s expired", job.id); continue
+            if self.cfg.get("dock_light"):
+                # Dock Light: no sheets here — the job travels to the cloud and appears
+                # on the mirrored device. Success flashes green; failure stays visible
+                # and retries every few seconds until the console fixes the cause.
+                self.state = "job-waiting"; self.phase = "forwarding"
+                ok, msg = self.cloud.forward_job(job)
+                self.phase = ""
+                if ok:
+                    job.state = "done"; job.save()
+                    self.state = "printed"; self.message = f"{job.name}: {msg}"; self.last_error = ""
+                    log.info("dock light: %s", self.message); time.sleep(3)
+                else:
+                    self.state = "error"; self.message = msg; self.last_error = msg
+                    log.warning("dock light: forward failed: %s", msg); time.sleep(10)
+                continue
             if self.state == "error": self.message = getattr(self, "last_error", "")   # keep a failure visible until the next tap
             elif self.state != "job-waiting": self.message = ""                        # a previous success never lingers under a new job
             self.state = "job-waiting"; page_no = job.next_page(); self.phase = ""
@@ -157,6 +172,7 @@ class Dock:
                       "hw": e.get("keys", {}).get("hw", {})}
                   for k, e in self.registry.all().items()}
         return {"printer_name": self.cfg["printer_name"], "job_timeout_seconds": self.cfg["job_timeout_seconds"],
+                "light": bool(self.cfg.get("dock_light")), "mirror": getattr(self.cloud, "mirror", None),
                 "sheet_cycle": bool(self.cfg.get("sheet_cycle")), "notifications": self.notifications(self.snapshot()["sheets"]),
                 "wifi_supported": self.wifi.supported,
                 "address": f"http://{socket.gethostname()}:{self.cfg['web_port']}/", "sheets": sheets, "cloud": self.cloud.info(),
@@ -170,6 +186,10 @@ class Dock:
     def notifications(self, sheets: dict) -> list[dict]:
         """Things a person should know about this Dock. Shown in Settings; counted on the gear."""
         out = []
+        if self.cfg.get("dock_light"):
+            if not getattr(self.cloud, "mirror", None):
+                out.append({"level": "warn", "title": "No mirror chosen yet", "text": "A Dock Light prints through another RePaper device. Pick one on this device's page in the RePaper Cloud console."})
+            return out
         if self.identifier.id == "manual":
             out.append({"level": "warn", "title": "No sheet reader on this Dock", "text": "Sheets are chosen on the page and printed with the Print button. With a reader, tapping a sheet does this automatically."})
         for k, v in sheets.items():
@@ -281,6 +301,7 @@ class Dock:
                          "size": f'{m["width"]}×{m["height"]} {m["palette"]}', "hw": e.get("keys", {}).get("hw", {}),
                          "min_battery_mv": caps.get("min_battery_mv"), "last": last, **st.get(k, {})}
         return {"state": self.state, "phase": self.phase, "message": self.message,
+                "light": bool(self.cfg.get("dock_light")), "mirror": getattr(self.cloud, "mirror", None),
                 "updating": getattr(self.cloud, "updating_version", None), "error": (self.message if self.state == "error" else getattr(self, "last_error", "")) or "",
                 "printer": self.cfg["printer_name"], "notifications": self.notifications(sheets),
                 "identifier": self.identifier.id, "version": __version__, "address": f"http://{socket.gethostname()}:{self.cfg['web_port']}/",

@@ -16,8 +16,10 @@ import java.io.File
 class PrintFlow(private val activity: Activity, private val registry: Registry) {
 
     companion object {
-        /** Small first-page preview for job cards. */
-        fun pdfThumb(pdf: File, maxWidthPx: Int): Bitmap? = try {
+        /** Small first-page preview for job cards — PDFs and relayed images alike. */
+        fun pdfThumb(pdf: File, maxWidthPx: Int): Bitmap? = if (pdf.extension.lowercase() != "pdf") {
+            try { android.graphics.BitmapFactory.decodeFile(pdf.path) } catch (e: Exception) { null }
+        } else try {
             ParcelFileDescriptor.open(pdf, ParcelFileDescriptor.MODE_READ_ONLY).use { pfd ->
                 PdfRenderer(pfd).use { renderer ->
                     val p = renderer.openPage(0)
@@ -32,10 +34,12 @@ class PrintFlow(private val activity: Activity, private val registry: Registry) 
         } catch (e: Exception) { null }
     }
 
-    /** Render the first PDF page for a sheet and print it. */
-    suspend fun printPdf(pdf: File, sheetId: String, narrate: (String) -> Unit = {}) {
+    /** Render a job file (PDF page 1, or a relayed PNG/JPG) for a sheet and print it. */
+    suspend fun printPdf(job: File, sheetId: String, narrate: (String) -> Unit = {}) {
         val model = registry.model(sheetId)
-        val bitmap = renderPdfPage(pdf, model)
+        val bitmap = if (job.extension.lowercase() == "pdf") renderPdfPage(job, model)
+                     else android.graphics.BitmapFactory.decodeFile(job.path)
+                         ?: throw Exception("couldn't read ${job.name}")
         val px = IntArray(bitmap.width * bitmap.height)
         bitmap.getPixels(px, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
         printPage(sheetId, Render.forSheet(px, bitmap.width, bitmap.height, model), narrate)
