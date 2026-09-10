@@ -52,14 +52,10 @@ class AuthActivity : AppCompatActivity() {
             setPadding(dp(24), dp(20), dp(24), dp(28)); gravity = Gravity.CENTER_HORIZONTAL
         }
 
-        root.addView(LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-            addView(ImageView(this@AuthActivity).apply {
-                setImageResource(R.drawable.ic_ring)
-                layoutParams = LinearLayout.LayoutParams(dp(26), dp(26)).apply { rightMargin = dp(10) }
-            })
-            addView(Ui.displayText(this@AuthActivity, "RePaper Go", 22f, weight = 700, width = 112))
+        root.addView(ImageView(this).apply {
+            setImageResource(R.drawable.lockup_go)   // the real product lockup
+            adjustViewBounds = true
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(40))
         })
 
         root.addView(Ui.bodyText(this, "Sign in with your RePaper account — this phone joins your fleet automatically.", 14f).apply {

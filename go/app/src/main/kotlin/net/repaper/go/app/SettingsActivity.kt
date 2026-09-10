@@ -44,10 +44,11 @@ class SettingsActivity : AppCompatActivity() {
                 setOnClickListener { finish() }
             })
             addView(Ui.displayText(this@SettingsActivity, "Settings", 22f, weight = 700, width = 112))
-        })
-        root.addView(Ui.button(this, "Add a sheet", primary = true) { addSheetDialog() }.apply {
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-                .apply { topMargin = dp(16) }
+            addView(android.widget.ImageView(this@SettingsActivity).apply {
+                setImageResource(net.repaper.go.R.drawable.ic_gear)
+                setColorFilter(Ui.TEXT)   // right behind the word, in the word's white
+                layoutParams = LinearLayout.LayoutParams(dp(22), dp(22)).apply { leftMargin = dp(8) }
+            })
         })
         listView = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(listView)
@@ -59,80 +60,65 @@ class SettingsActivity : AppCompatActivity() {
     private fun refresh() {
         listView.removeAllViews()
 
+        // one card per section, rows separated by dividers — the pattern of 10 Sep
         listView.addView(Ui.sectionHeader(this, "Printer"))
-        listView.addView(Ui.card(this, ripple = true).apply {
-            addView(Ui.displayText(this@SettingsActivity, Prefs.printerName(this@SettingsActivity), 16f, Ui.TEXT, weight = 600))
-            addView(Ui.monoText(this@SettingsActivity, "what people see in their print dialog · tap to rename", 12f).apply {
-                setPadding(0, dp(3), 0, 0)
-            })
-            setOnClickListener {
-                val input = EditText(this@SettingsActivity).apply { setText(Prefs.printerName(this@SettingsActivity)) }
-                AlertDialog.Builder(this@SettingsActivity).setTitle("Printer name").setView(input)
-                    .setPositiveButton("Save") { _, _ ->
-                        Prefs.setPrinterName(this@SettingsActivity, input.text.toString())
-                        toast("Saved — the new name shows the next time a print dialog opens.")
-                        refresh()
-                    }
-                    .setNegativeButton("Cancel", null).show()
-            }
-        })
-
         listView.addView(Ui.card(this).apply {
-            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             addView(LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL
-                addView(Ui.displayText(this@SettingsActivity, "Cycle through sheets", 15f, Ui.TEXT, weight = 600))
-                addView(Ui.bodyText(this@SettingsActivity, "With several sheets, jobs print on each in turn.", 12f).apply {
-                    setPadding(0, dp(2), 0, 0)
+                addView(Ui.displayText(this@SettingsActivity, Prefs.printerName(this@SettingsActivity), 16f, Ui.TEXT, weight = 600))
+                addView(Ui.monoText(this@SettingsActivity, "what people see in their print dialog · tap to rename", 12f).apply {
+                    setPadding(0, dp(3), 0, 0)
                 })
-            }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            addView(android.widget.Switch(this@SettingsActivity).apply {
-                isChecked = Prefs.cycleSheets(this@SettingsActivity)
-                setOnCheckedChangeListener { _, v -> Prefs.setCycleSheets(this@SettingsActivity, v) }
+                setOnClickListener {
+                    val input = EditText(this@SettingsActivity).apply { setText(Prefs.printerName(this@SettingsActivity)) }
+                    AlertDialog.Builder(this@SettingsActivity).setTitle("Printer name").setView(input)
+                        .setPositiveButton("Save") { _, _ ->
+                            Prefs.setPrinterName(this@SettingsActivity, input.text.toString())
+                            toast("Saved — the new name shows the next time a print dialog opens.")
+                            refresh()
+                        }
+                        .setNegativeButton("Cancel", null).show()
+                }
             })
+            addView(divider())
+            addView(LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+                addView(LinearLayout(context).apply {
+                    orientation = LinearLayout.VERTICAL
+                    addView(Ui.displayText(this@SettingsActivity, "Cycle through sheets", 15f, Ui.TEXT, weight = 600))
+                    addView(Ui.bodyText(this@SettingsActivity, "With several sheets, jobs print on each in turn.", 12f).apply {
+                        setPadding(0, dp(2), 0, 0)
+                    })
+                }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                addView(android.widget.Switch(this@SettingsActivity).apply {
+                    isChecked = Prefs.cycleSheets(this@SettingsActivity)
+                    setOnCheckedChangeListener { _, v -> Prefs.setCycleSheets(this@SettingsActivity, v) }
+                })
+            })
+            addView(divider())
+            addView(techRow("Intake", "How pages reach this printer", listOf("Android Print", "Share to print")))
         })
 
         listView.addView(Ui.sectionHeader(this, "Sheets"))
-        val ids = registry.ids()
-        if (ids.isEmpty()) {
-            listView.addView(Ui.bodyText(this, "No sheets yet. Scan the QR on a label with your camera and paste the link here.", 14f))
-        }
-        for (id in ids) {
-            val m = registry.model(id)
-            listView.addView(Ui.card(this, ripple = true).apply {
-                // top row: address in mono caps + the palette dots — the Dock's sheet-card anatomy
-                addView(LinearLayout(context).apply {
-                    orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-                    addView(Ui.monoText(this@SettingsActivity, registry.address(id).uppercase(), 11f, Ui.TEXT_2).apply {
-                        letterSpacing = 0.08f
-                    }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-                    addView(Ui.palDots(this@SettingsActivity, m.palette))
-                })
-                // the sheet as a sheet: bezel + panel at its real aspect ratio
-                val panel = LinearLayout(context).apply {
-                    gravity = Gravity.CENTER
-                    setBackgroundColor(Ui.EPAPER_PANEL)
-                    val pw = dp(190)
-                    layoutParams = LinearLayout.LayoutParams(pw, (pw * m.height / m.width).coerceIn(dp(28), dp(190)))
-                    addView(Ui.monoText(this@SettingsActivity, "${m.width}×${m.height}", 11f, Ui.INK))
-                }
-                addView(LinearLayout(context).apply {
-                    gravity = Gravity.CENTER_HORIZONTAL
-                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-                        .apply { topMargin = dp(10); bottomMargin = dp(8) }
-                    addView(Ui.frame(this@SettingsActivity, panel))
-                })
-                addView(Ui.displayText(this@SettingsActivity, registry.name(id), 16f, Ui.TEXT, weight = 600))
-                addView(Ui.monoText(this@SettingsActivity, "tap for a test page · hold to rename or remove", 11f).apply {
-                    setPadding(0, dp(3), 0, 0)
-                })
-                setOnClickListener { testPrint(id) }
-                setOnLongClickListener { sheetActions(id); true }
+        listView.addView(Ui.card(this).apply {
+            val ids = registry.ids()
+            if (ids.isEmpty()) {
+                addView(Ui.bodyText(this@SettingsActivity, "No sheets yet — add the first one below.", 14f))
+                addView(divider())
+            }
+            for (id in ids) {
+                addView(sheetRow(id))
+                addView(divider())
+            }
+            addView(Ui.button(this@SettingsActivity, "Add a sheet", primary = true) { addSheetDialog() }.apply {
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
             })
-        }
+            addView(divider())
+            addView(techRow("Sheet link", "How pages reach the paper", listOf("OpenDisplay BLE", "NFC tags")))
+        })
 
         val cloud = CloudAgent.get(this)
-        listView.addView(Ui.sectionHeader(this, "RePaper Cloud"))
+        listView.addView(Ui.sectionHeader(this, "Cloud"))
         listView.addView(Ui.card(this).apply {
             addView(LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
@@ -156,17 +142,26 @@ class SettingsActivity : AppCompatActivity() {
                     addView(Ui.bodyText(this@SettingsActivity, "Signing in claims this phone automatically — the code is only for claiming by hand.", 12f))
                 })
             }
-        })
-        if (cloud.claimed) {
-            listView.addView(Ui.card(this, ripple = true).apply {
-                addView(Ui.bodyText(this@SettingsActivity, "Sign out", 14f, Ui.RED).apply {
-                    gravity = Gravity.CENTER
-                    setTypeface(typeface, android.graphics.Typeface.BOLD)
-                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            if (cloud.claimed) {
+                addView(divider())
+                addView(LinearLayout(context).apply {
+                    orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+                    addView(android.widget.ImageView(this@SettingsActivity).apply {
+                        setImageResource(net.repaper.go.R.drawable.ic_signout)
+                        setColorFilter(Ui.RED)
+                        background = android.graphics.drawable.GradientDrawable().apply {
+                            setColor(Ui.RED_TINT); cornerRadius = dp(9).toFloat(); setStroke(dp(1), Ui.BORDER)
+                        }
+                        setPadding(dp(7), dp(7), dp(7), dp(7))
+                        layoutParams = LinearLayout.LayoutParams(dp(34), dp(34)).apply { rightMargin = dp(12) }
+                    })
+                    addView(Ui.bodyText(this@SettingsActivity, "Sign out", 14f, Ui.RED).apply {
+                        setTypeface(typeface, android.graphics.Typeface.BOLD)
+                    })
+                    setOnClickListener { confirmSignOut(cloud.org) }
                 })
-                setOnClickListener { confirmSignOut(cloud.org) }
-            })
-        }
+            }
+        })
         listView.addView(Ui.monoText(this, "RePaper Go $GO_VERSION", 11f).apply {
             gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
@@ -237,9 +232,103 @@ class SettingsActivity : AppCompatActivity() {
                 val caps = withContext(Dispatchers.IO) {
                     SheetOps.describeAndRegister(this@SettingsActivity, registry, landing)
                 }
+                registry.updateKey(landing.name, "landing", link)   // for (re)programming the tag
                 toast("Added ${landing.name} · ${caps.viewedWidth}×${caps.viewedHeight}")
                 refresh()
+                // some sheets ship with an empty tag: program it now so tap-to-print always works
+                programTag(link)
             } catch (e: Exception) { toast(e.message ?: "could not add the sheet") }
+        }
+    }
+
+    /** Writes the landing link onto the sheet's NFC tag — applies to every RePaper variant. */
+    private fun programTag(link: String) {
+        val adapter = android.nfc.NfcAdapter.getDefaultAdapter(this) ?: return
+        var done = false
+        val dlg = AlertDialog.Builder(this).setTitle("Program the sheet's tag")
+            .setMessage("Hold the sheet to the back of the phone — tapping it will then always work.")
+            .setNegativeButton("Skip", null)
+            .setOnDismissListener { if (!done) adapter.disableReaderMode(this) }
+            .show()
+        adapter.enableReaderMode(this, { tag ->
+            val ok = try {
+                val msg = android.nfc.NdefMessage(android.nfc.NdefRecord.createUri(link))
+                val ndef = android.nfc.tech.Ndef.get(tag)
+                if (ndef != null) { ndef.connect(); ndef.writeNdefMessage(msg); ndef.close(); true }
+                else android.nfc.tech.NdefFormatable.get(tag)?.let { f -> f.connect(); f.format(msg); f.close(); true } ?: false
+            } catch (e: Exception) { false }
+            runOnUiThread {
+                done = true
+                adapter.disableReaderMode(this)
+                dlg.dismiss()
+                DiagLog.log("nfc tag program: $ok")
+                toast(if (ok) "Tag programmed — tapping this sheet works now."
+                      else "Couldn't write the tag — hold the sheet in the list to retry.")
+            }
+        }, android.nfc.NfcAdapter.FLAG_READER_NFC_A or android.nfc.NfcAdapter.FLAG_READER_NFC_B or
+           android.nfc.NfcAdapter.FLAG_READER_NFC_F or android.nfc.NfcAdapter.FLAG_READER_NFC_V, null)
+    }
+
+    /** Hairline between rows of a section card. */
+    private fun divider() = android.view.View(this).apply {
+        setBackgroundColor(Ui.BORDER)
+        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(1)).apply {
+            topMargin = dp(10); bottomMargin = dp(10)
+        }
+    }
+
+    /** The slim technology row at the bottom of a section — Printer vs Sheets halves.
+     *  Chips stack vertically so long names never wrap. */
+    private fun techRow(title: String, sub: String, chips: List<String>): LinearLayout =
+        LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            addView(LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(Ui.bodyText(this@SettingsActivity, title, 14f, Ui.TEXT).apply {
+                    setTypeface(typeface, android.graphics.Typeface.BOLD)
+                })
+                addView(Ui.bodyText(this@SettingsActivity, sub, 12f).apply { setPadding(0, dp(2), 0, 0) })
+            }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL; gravity = Gravity.END
+                for (c in chips) addView(Ui.chip(this@SettingsActivity, c).apply {
+                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                        .apply { topMargin = dp(3); gravity = Gravity.END }
+                })
+            })
+        }
+
+    /** A sheet as a sheet — one row of the Sheets card (the Dock's anatomy). */
+    private fun sheetRow(id: String): LinearLayout {
+        val m = registry.model(id)
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+                addView(Ui.monoText(this@SettingsActivity, registry.address(id).uppercase(), 11f, Ui.TEXT_2).apply {
+                    letterSpacing = 0.08f
+                }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                addView(Ui.palDots(this@SettingsActivity, m.palette))
+            })
+            val panel = LinearLayout(context).apply {
+                gravity = Gravity.CENTER
+                setBackgroundColor(Ui.EPAPER_PANEL)
+                val pw = dp(190)
+                layoutParams = LinearLayout.LayoutParams(pw, (pw * m.height / m.width).coerceIn(dp(28), dp(190)))
+                addView(Ui.monoText(this@SettingsActivity, "${m.width}×${m.height}", 11f, Ui.INK))
+            }
+            addView(LinearLayout(context).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                    .apply { topMargin = dp(10); bottomMargin = dp(8) }
+                addView(Ui.frame(this@SettingsActivity, panel))
+            })
+            addView(Ui.displayText(this@SettingsActivity, registry.name(id), 16f, Ui.TEXT, weight = 600))
+            addView(Ui.monoText(this@SettingsActivity, "tap for a test page · hold for options", 11f).apply {
+                setPadding(0, dp(3), 0, 0)
+            })
+            setOnClickListener { testPrint(id) }
+            setOnLongClickListener { sheetActions(id); true }
         }
     }
 
@@ -255,16 +344,24 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun sheetActions(id: String) {
+        val landing = registry.landing(id)
+        val canProgram = landing != null && android.nfc.NfcAdapter.getDefaultAdapter(this) != null
+        val items = buildList {
+            add("Rename")
+            if (canProgram) add("Program NFC tag")
+            add("Remove")
+        }
         AlertDialog.Builder(this).setTitle(registry.name(id))
-            .setItems(arrayOf("Rename", "Remove")) { _, which ->
-                when (which) {
-                    0 -> {
+            .setItems(items.toTypedArray()) { _, which ->
+                when (items[which]) {
+                    "Rename" -> {
                         val input = EditText(this).apply { setText(registry.name(id)) }
                         AlertDialog.Builder(this).setTitle("Rename").setView(input)
                             .setPositiveButton("Save") { _, _ -> registry.rename(id, input.text.toString().trim()); refresh() }
                             .setNegativeButton("Cancel", null).show()
                     }
-                    1 -> { registry.remove(id); refresh() }
+                    "Program NFC tag" -> programTag(landing!!)
+                    "Remove" -> { registry.remove(id); refresh() }
                 }
             }.show()
     }

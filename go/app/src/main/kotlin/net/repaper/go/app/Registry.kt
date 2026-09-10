@@ -7,7 +7,7 @@ import org.json.JSONObject
 import java.io.File
 import java.security.SecureRandom
 
-const val GO_VERSION = "0.2.7"
+const val GO_VERSION = "0.2.8"
 
 /** Same shape as the Dock's ~/.repaper/sheets.json: id → {name, transport, address, keys, model}.
  *  The AES key from the QR link lives only here. */
@@ -53,6 +53,8 @@ class Registry(context: Context) {
 
     fun keyHex(id: String): String? = entry(id).getJSONObject("keys").optString("key").ifEmpty { null }
     fun bleAddress(id: String): String? = entry(id).getJSONObject("keys").optString("ble_address").ifEmpty { null }
+    /** The original QR link — needed to (re)program the sheet's NFC tag. */
+    fun landing(id: String): String? = entry(id).getJSONObject("keys").optString("landing").ifEmpty { null }
     fun name(id: String): String = entry(id).optString("name").ifEmpty { id }
     fun address(id: String): String = entry(id).getString("address")
 }

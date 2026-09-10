@@ -33,7 +33,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var statusSub: android.widget.TextView
     private lateinit var jobList: LinearLayout
     private lateinit var pillHolder: LinearLayout
-    private lateinit var chipRow: LinearLayout
     private val printFlow by lazy { PrintFlow(this, registry) }
     private var busy = false                   // a BLE print is running
     private var flash: RingView.Led? = null    // DONE/ERR held briefly, then back to the state machine
@@ -55,15 +54,15 @@ class MainActivity : AppCompatActivity() {
             setPadding(dp(20), dp(16), dp(20), dp(28))
         }
 
-        // header: wordmark left, gear right
+        // header: the real product lockup left, gear right
         root.addView(LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             addView(ImageView(this@MainActivity).apply {
-                setImageResource(R.drawable.ic_ring)
-                layoutParams = LinearLayout.LayoutParams(dp(24), dp(24)).apply { rightMargin = dp(9) }
+                setImageResource(R.drawable.lockup_go)
+                adjustViewBounds = true
+                scaleType = ImageView.ScaleType.FIT_START
+                layoutParams = LinearLayout.LayoutParams(0, dp(26), 1f)
             })
-            addView(Ui.displayText(this@MainActivity, "RePaper Go", 20f, weight = 700, width = 112),
-                LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
             addView(ImageView(this@MainActivity).apply {
                 setImageResource(R.drawable.ic_gear)
                 setColorFilter(Ui.TEXT_2)
@@ -95,20 +94,6 @@ class MainActivity : AppCompatActivity() {
         statusSub = Ui.bodyText(this, "", 14f).apply { gravity = Gravity.CENTER; setPadding(dp(16), dp(4), dp(16), 0) }
         root.addView(statusTitle)
         root.addView(statusSub)
-        chipRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-                .apply { topMargin = dp(12) }
-            for (t in listOf("Android Print", "OpenDisplay BLE")) {
-                addView(Ui.chip(this@MainActivity, t).apply {
-                    (layoutParams as? LinearLayout.LayoutParams)?.leftMargin = dp(3)
-                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-                        .apply { leftMargin = dp(3); rightMargin = dp(3) }
-                })
-            }
-        }
-        root.addView(chipRow)
-
         jobList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(jobList)
 
@@ -142,7 +127,8 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
     }
 
-    /** A sheet touched the phone: that IS the sheet choice — the Dock's tap, phone edition. */
+    /** A sheet touched the phone: that IS the sheet choice — the Dock's tap, phone edition.
+     *  Adding sheets lives in Settings (decision of 10 Sep): an unknown tag just points there. */
     private fun onSheetTap(uri: String) {
         val landing = runCatching { net.repaper.go.core.LandingUrl.parse(uri) }.getOrNull()
             ?: run { toast("That tag doesn't look like a RePaper sheet."); return }
@@ -152,22 +138,7 @@ class MainActivity : AppCompatActivity() {
         when {
             known != null && job != null -> printJob(job, known)
             known != null -> toast("That's ${registry.name(known)} — nothing waiting to print.")
-            else -> AlertDialog.Builder(this)
-                .setTitle("New sheet ${landing.name}")
-                .setMessage("Add it to this phone${if (job != null) " and print the waiting job on it" else ""}?")
-                .setPositiveButton("Add") { _, _ ->
-                    lifecycleScope.launch {
-                        try {
-                            toast("Reading the sheet — keep it nearby…")
-                            withContext(Dispatchers.IO) { SheetOps.describeAndRegister(this@MainActivity, registry, landing) }
-                            registry = Registry(this@MainActivity); refresh()
-                            val j = jobs.list().firstOrNull()
-                            val id = SheetOps.findRegistered(registry, landing)
-                            if (j != null && id != null) printJob(j, id) else toast("Added ${landing.name}.")
-                        } catch (e: Exception) { toast(e.message ?: "could not add the sheet") }
-                    }
-                }
-                .setNegativeButton("Not now", null).show()
+            else -> toast("${landing.name} isn't registered on this phone yet — add it in Settings.")
         }
     }
 
@@ -228,7 +199,75 @@ class MainActivity : AppCompatActivity() {
                     if (bm != null) runOnUiThread { thumbHolder.setImageBitmap(bm) }
                 }
             }
+        } else if (!busy && f == null && registry.ids().isNotEmpty()) {
+            jobList.addView(howToCard())
         }
+    }
+
+    // ── how printing works, told in pictures: share → the app → e-paper ──────
+
+    private fun howToCard(): LinearLayout = Ui.card(this).apply {
+        (layoutParams as LinearLayout.LayoutParams).topMargin = dp(18)
+        addView(LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            addView(howTile("Share", ImageView(this@MainActivity).apply {
+                setImageResource(R.drawable.ic_share); setColorFilter(Ui.TEXT)
+            }))
+            addView(howArrow())
+            addView(howTile("RePaper Go", ImageView(this@MainActivity).apply {
+                setImageResource(R.drawable.brand_mark)   // the OFFICIAL app-icon mark
+            }))
+            addView(howArrow())
+            addView(howTile("On paper", miniSheet()))
+        })
+        addView(Ui.bodyText(this@MainActivity, "Share a photo or document from any app — it lands on your sheet.", 12f).apply {
+            gravity = Gravity.CENTER; setPadding(dp(6), dp(12), dp(6), dp(2))
+        })
+    }
+
+    private fun howArrow() = Ui.bodyText(this, "→", 15f, Ui.TEXT_3).apply {
+        gravity = Gravity.CENTER
+        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+    }
+
+    private fun howTile(caption: String, content: android.view.View): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL
+        addView(android.widget.FrameLayout(this@MainActivity).apply {
+            background = android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.TL_BR, intArrayOf(Ui.SURFACE_2, Ui.BG)).apply {
+                cornerRadius = dp(16).toFloat(); setStroke(dp(1), Ui.BORDER_STRONG)
+            }
+            layoutParams = LinearLayout.LayoutParams(dp(64), dp(64))
+            addView(content, android.widget.FrameLayout.LayoutParams(dp(38), dp(38), Gravity.CENTER))
+        })
+        addView(Ui.monoText(this@MainActivity, caption, 10f).apply {
+            gravity = Gravity.CENTER; setPadding(0, dp(8), 0, 0)
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        })
+    }
+
+    private fun miniSheet(): android.view.View = LinearLayout(this).apply {
+        gravity = Gravity.CENTER
+        background = android.graphics.drawable.GradientDrawable().apply {
+            setColor(Ui.EPAPER_BEZEL); cornerRadius = dp(6).toFloat(); setStroke(dp(1), Ui.BORDER_STRONG)
+        }
+        setPadding(dp(3), dp(3), dp(3), dp(3))
+        addView(LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(Ui.EPAPER_PANEL); cornerRadius = dp(3).toFloat()
+            }
+            layoutParams = LinearLayout.LayoutParams(dp(30), dp(20))
+            addView(android.view.View(context).apply {
+                background = android.graphics.drawable.GradientDrawable().apply { setColor(Ui.INK); cornerRadius = dp(1).toFloat() }
+                layoutParams = LinearLayout.LayoutParams(dp(18), dp(3))
+            })
+            addView(android.view.View(context).apply {
+                background = android.graphics.drawable.GradientDrawable().apply { setColor(Ui.EPAPER_RED); cornerRadius = dp(1).toFloat() }
+                layoutParams = LinearLayout.LayoutParams(dp(12), dp(3)).apply { topMargin = dp(3) }
+            })
+        })
     }
 
     private fun setState(led: RingView.Led, title: String, sub: String) {
@@ -242,7 +281,6 @@ class MainActivity : AppCompatActivity() {
             RingView.Led.ERR -> Ui.pill(this, "Failed", Ui.RED, Ui.RED_TINT, blinkMs = 500)
             RingView.Led.SETUP -> Ui.pill(this, "Setup", Ui.BLUE, Ui.BLUE_TINT, blinkMs = 500)
         })
-        chipRow.visibility = if (led == RingView.Led.READY) android.view.View.VISIBLE else android.view.View.GONE
     }
 
     private fun flashState(led: RingView.Led, ms: Long) {

@@ -45,21 +45,30 @@ Technical build/run details live in `ios/README.md`; this doc is product + decis
    UserDefaults to the Keychain; job badge/notification when a share arrives while
    the app is closed; haptics on print done/failed.
 
-## Android parity backlog
+## The 10 Sep adaptation pass (Android 0.2.8 · Dock 0.0.25)
 
-Accumulates everything iOS got that Android doesn't have yet. Port in ONE pass at the end.
+Rouven's review findings, ported the same day ("adapt our findings to android and
+the regular dock"):
+- **Android**: official adaptive launcher icon (brand export, incl. monochrome),
+  RE|PAPER GO lockup in main/auth headers, main chips removed, visual how-to card
+  (share → mark → mini sheet), tap on unknown tag points to Settings (adding lives
+  there), NFC tag programmed on add + "Program NFC tag" in sheet options (landing
+  link stored per sheet), Settings as one card per section with dividers + gear
+  behind the title + icon sign-out row + tech rows (Intake / Sheet link), section
+  "Cloud".
+- **Dock**: settings gains the same Printer/Sheets tech rows (Intake: AirPrint ·
+  IPP; Sheet link: OpenDisplay BLE) — 0.0.25 tarball built, upload + rollout via
+  the Updates page pending. NFC tag programming on the Dock waits for the RC522
+  (no writer hardware yet) — requirement noted.
+
+## Android parity backlog (remaining)
 
 - **Password-manager autofill**: serve `/.well-known/assetlinks.json` (Digital Asset
   Links with the APK signing cert SHA-256) + `android:autofillHints` on the sign-in
   fields — the Android twin of the AASA work (10 Sep).
 - **Share-first intake?** iOS is share-first by design; Android currently exposes a
   system print service instead. Open product decision (docs/03): add share intake to
-  Android too, keep "expose printer" as an option. Decide before the parity pass.
-- **App icon**: whatever icon ships on iOS should be mirrored to the Android launcher
-  icon set (current Android icon predates it) — official adaptive layers exist in
-  `brand/logo/export/app-icon/android/`.
-- **In-app brand lockup**: Android's header still uses ic_ring + text — port the
-  composed RE|PAPER GO lockup asset (and the matching auth/main header layout).
-- **Main-screen polish**: fixed-position hero with reserved slots, visual how-to card,
-  tap button only for print-target choice — mirror once iOS UX is signed off.
+  Android too, keep "expose printer" as an option.
+- **Main-screen fixed-position hero** with reserved slots (iOS has it; Android's
+  hero still shifts slightly between states).
 - *(Sign out, QR scanning, cycle-through-sheets, one-sheet auto-print: already on both.)*

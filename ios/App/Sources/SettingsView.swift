@@ -28,10 +28,10 @@ struct SettingsView: View {
                             .padding(8)
                     }
                     Text("Settings").font(Ui.display(20, weight: 700, width: 112)).foregroundColor(Ui.text)
-                    Spacer()
                     Image(systemName: "gearshape.fill")
-                        .font(.system(size: 18)).foregroundColor(Ui.text3)
-                        .padding(8)
+                        .font(.system(size: 17)).foregroundColor(Ui.text)
+                        .padding(.leading, 2)
+                    Spacer()
                 }
 
                 // the printer half: how this device behaves as a printer
@@ -64,22 +64,28 @@ struct SettingsView: View {
                 }
                 .card()
 
-                // the sheets half: the paper this printer can put ink on
+                // the sheets half: the paper this printer can put ink on — ONE card,
+                // rows separated by dividers, like every other section
                 SectionHeader(text: "Sheets")
-                ForEach(sheets.sheets) { s in
-                    sheetCard(s)
+                VStack(spacing: 0) {
+                    ForEach(sheets.sheets) { s in
+                        sheetRow(s)
+                        divider
+                    }
+                    if sheets.sheets.isEmpty {
+                        Text("No sheets yet — add the first one below.")
+                            .font(Ui.body(13)).foregroundColor(Ui.text3)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        divider
+                    }
+                    addRows
+                    divider
+                    techRow(icon: "dot.radiowaves.left.and.right", title: "Sheet link",
+                            sub: "How pages reach the paper", chips: ["OpenDisplay BLE", "NFC tags"])
                 }
-                if sheets.sheets.isEmpty {
-                    Text("No sheets yet — add the first one below.")
-                        .font(Ui.body(13)).foregroundColor(Ui.text3)
-                        .frame(maxWidth: .infinity, alignment: .leading).padding(.bottom, 8)
-                }
-                addCard
-                techRow(icon: "dot.radiowaves.left.and.right", title: "Sheet link",
-                        sub: "How pages reach the paper", chips: ["OpenDisplay BLE", "NFC tags"])
-                    .card().padding(.top, 8)
+                .card()
 
-                SectionHeader(text: "RePaper Cloud")
+                SectionHeader(text: "Cloud")
                 VStack(spacing: 0) {
                     HStack(spacing: 10) {
                         Circle().fill(cloud.state == "online" ? Ui.accent : Ui.amber).frame(width: 8, height: 8)
@@ -100,14 +106,8 @@ struct SettingsView: View {
                                 .frame(width: 34, height: 34)
                                 .background(RoundedRectangle(cornerRadius: 9).fill(Ui.redTint))
                                 .overlay(RoundedRectangle(cornerRadius: 9).stroke(Ui.border, lineWidth: 1))
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Sign out").font(Ui.body(14, weight: 600)).foregroundColor(Ui.red)
-                                Text("Removes this device from the fleet — sheets stay.")
-                                    .font(Ui.body(12)).foregroundColor(Ui.text3)
-                            }
+                            Text("Sign out").font(Ui.body(14, weight: 600)).foregroundColor(Ui.red)
                             Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 12, weight: .semibold)).foregroundColor(Ui.text3)
                         }
                     }
                 }
@@ -155,9 +155,9 @@ struct SettingsView: View {
             .overlay(RoundedRectangle(cornerRadius: 9).stroke(Ui.border, lineWidth: 1))
     }
 
-    /// A sheet as a sheet — the Dock's card anatomy: address + inks up top,
+    /// A sheet as a sheet — the Dock's row anatomy: address + inks up top,
     /// the panel at its real aspect ratio in a carbon bezel, the name below.
-    private func sheetCard(_ s: Sheet) -> some View {
+    private func sheetRow(_ s: Sheet) -> some View {
         VStack(spacing: 0) {
             HStack {
                 Text(s.address.uppercased())
@@ -185,7 +185,7 @@ struct SettingsView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, 2)
         }
-        .card().padding(.bottom, 8)
+        .contentShape(Rectangle())
         .onLongPressGesture { actionSheet = s }
     }
 
@@ -198,8 +198,8 @@ struct SettingsView: View {
                 Text(sub).font(Ui.body(12)).foregroundColor(Ui.text3)
             }
             Spacer()
-            HStack(spacing: 5) {
-                ForEach(chips, id: \.self) { Chip(text: $0) }
+            VStack(alignment: .trailing, spacing: 5) {
+                ForEach(chips, id: \.self) { Chip(text: $0).fixedSize() }
             }
         }
     }
@@ -207,7 +207,7 @@ struct SettingsView: View {
     /// Adding a sheet: camera first, pasting tucked away. (No add-by-NFC-tap:
     /// sheets can ship with an EMPTY tag — the QR is the ground truth, and the
     /// add flow programs the tag right afterwards so tapping works from then on.)
-    private var addCard: some View {
+    private var addRows: some View {
         VStack(spacing: 10) {
             if QrScanView.available {
                 UiButton(label: "Scan QR code", primary: true) { showScanner = true }
@@ -243,7 +243,6 @@ struct SettingsView: View {
                 }
             }
         }
-        .card()
     }
 
     private var scannerSheet: some View {
