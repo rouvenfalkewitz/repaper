@@ -44,9 +44,12 @@ struct MainView: View {
                 pill
                     .frame(height: 26)
                     .padding(.top, 18)
-                Text(title)
-                    .font(Ui.display(22, weight: 700)).foregroundColor(Ui.text)
-                    .frame(height: 32)
+                // the state as a readout: big condensed display caps, tracked, in the
+                // state's own colour — it reads as a live status, not a heading
+                Text(title.uppercased())
+                    .font(Ui.display(26, weight: 800, width: 94)).kerning(0.5)
+                    .foregroundColor(stateColor)
+                    .frame(height: 34)
                     .padding(.top, 6)
                 Text(subtitle)
                     .font(Ui.body(14)).foregroundColor(Ui.text2)
@@ -162,28 +165,28 @@ struct MainView: View {
     }
 
     /// How printing works, told in pictures: share → the app → e-paper.
-    /// The words sit ABOVE the pictures (Rouven, 10 Sep).
+    /// Numbered steps under a "HOW TO USE" header (Rouven, 10 Sep).
     private var howToPrint: some View {
-        VStack(spacing: 14) {
-            Text("Share a photo or document from any app — it lands on your sheet.")
-                .font(Ui.body(13)).foregroundColor(Ui.text2)
-                .multilineTextAlignment(.center)
+        VStack(alignment: .leading, spacing: 14) {
+            Text("HOW TO USE")
+                .font(Ui.display(11, weight: 700, width: 112)).kerning(1.6)
+                .foregroundColor(Ui.text3)
             HStack(spacing: 0) {
-                howTile(caption: "Share") {
+                howTile(step: 1, caption: "Share") {
                     Image(systemName: "square.and.arrow.up")
                         .font(.system(size: 22, weight: .medium))
                         .foregroundColor(Ui.text)
                         .offset(y: -2)
                 }
                 howArrow
-                howTile(caption: "RePaper Go") {
+                howTile(step: 2, caption: "RePaper Go") {
                     // the OFFICIAL app icon mark — the same thing people tap on the homescreen
                     Image("Mark")
                         .resizable().scaledToFit()
                         .frame(width: 40, height: 40)
                 }
                 howArrow
-                howTile(caption: "On paper") {
+                howTile(step: 3, caption: "On paper") {
                     // a mini sheet: bezel, paper panel, ink line — the thing itself
                     VStack(spacing: 3) {
                         RoundedRectangle(cornerRadius: 1.5).fill(Ui.ink)
@@ -199,7 +202,7 @@ struct MainView: View {
                 }
             }
         }
-        .padding(.vertical, 16).padding(.horizontal, 14)
+        .padding(.vertical, 16).padding(.horizontal, 16)
         .frame(maxWidth: .infinity)
         .background(RoundedRectangle(cornerRadius: 14).fill(Ui.surface))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Ui.border, lineWidth: 1))
@@ -211,15 +214,27 @@ struct MainView: View {
             .font(.system(size: 13, weight: .semibold))
             .foregroundColor(Ui.text3)
             .frame(maxWidth: .infinity)
+            .offset(y: -8)   // align with the tile centres, not the captions
     }
 
-    private func howTile(caption: String, @ViewBuilder content: () -> some View) -> some View {
+    private func howTile(step: Int, caption: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(spacing: 8) {
-            ZStack { content() }
-                .frame(width: 64, height: 64)
-                .background(RoundedRectangle(cornerRadius: 16)
-                    .fill(LinearGradient(colors: [Ui.surface2, Ui.bg], startPoint: .topLeading, endPoint: .bottomTrailing)))
-                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Ui.borderStrong, lineWidth: 1))
+            ZStack(alignment: .topLeading) {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(LinearGradient(colors: [Ui.surface2, Ui.bg], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Ui.borderStrong, lineWidth: 1))
+                content()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                // the step number: a display-face numeral in a tinted accent badge
+                Text("\(step)")
+                    .font(Ui.display(12, weight: 700, width: 112))
+                    .foregroundColor(Ui.accent)
+                    .frame(width: 20, height: 20)
+                    .background(Circle().fill(Ui.accentTint))
+                    .overlay(Circle().stroke(Ui.borderStrong, lineWidth: 1))
+                    .offset(x: -6, y: -6)
+            }
+            .frame(width: 64, height: 64)
             Text(caption)
                 .font(Ui.mono(10)).foregroundColor(Ui.text3)
         }
@@ -232,6 +247,16 @@ struct MainView: View {
         if let f = flash { return f }
         if !jobs.isEmpty { return .wait }
         return sheets.sheets.isEmpty ? .setup : .ready
+    }
+
+    /// The state's own colour — the status readout wears it (Ready/Printing green,
+    /// Failed red, Setup blue).
+    private var stateColor: Color {
+        switch led {
+        case .err: return Ui.red
+        case .setup: return Ui.blue
+        default: return Ui.text
+        }
     }
 
     private var pill: Pill {
