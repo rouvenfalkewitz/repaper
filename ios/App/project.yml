@@ -35,6 +35,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: net.repaper.go.ios
         TARGETED_DEVICE_FAMILY: "1,2"
         SWIFT_VERSION: "5.9"
+        DEVELOPMENT_TEAM: 8DPLCLHB27
+        CODE_SIGN_STYLE: Automatic
 
   # the share-sheet intake: spools PDFs/images into the app group's jobs folder
   RePaperGoShare:
@@ -60,3 +62,5 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: net.repaper.go.ios.share
         SWIFT_VERSION: "5.9"
+        DEVELOPMENT_TEAM: 8DPLCLHB27
+        CODE_SIGN_STYLE: Automatic
