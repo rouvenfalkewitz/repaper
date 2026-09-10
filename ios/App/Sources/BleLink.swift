@@ -272,11 +272,30 @@ enum SheetOps {
         let caps = try await od.interrogate()
         let tlv = await od.lastConfigHex
         DiagLog.log("add \(landing.name): caps=\(caps) tlv=\(tlv ?? "-")")
+        // program the sheet's OWN NFC tag while we're connected — some ship with an
+        // empty tag, and this is what makes tap-to-print reliable. Non-fatal: older
+        // firmware without the endpoint just logs.
+        if let rawLink {
+            do { try await od.writeNfcUrl(rawLink); DiagLog.log("nfc tag programmed over BLE") }
+            catch { DiagLog.log("nfc tag write skipped: \(error.localizedDescription)") }
+        }
         SheetStore.shared.add(Sheet(id: landing.name, name: landing.name, address: landing.name,
                                     keyHex: landing.keyHex, bleAddress: peripheral.identifier.uuidString,
                                     landingUrl: rawLink,
                                     model: SheetModel(width: caps.viewedWidth, height: caps.viewedHeight,
                                                       palette: caps.scheme.paletteKey)))
         return caps
+    }
+
+    /// Re-program a registered sheet's tag (sheet options): reconnect and write.
+    @MainActor static func programTag(_ sheet: Sheet) async throws {
+        guard let url = sheet.landingUrl else { throw OdError.protocolError("no landing link stored — re-add the sheet once via its QR") }
+        let peripheral = try await SheetRadio.shared.find(name: sheet.address)
+        let link = try await SheetRadio.shared.connect(peripheral)
+        defer { link.close() }
+        let od = OdDevice(link: link, masterKey: sheet.keyHex.flatMap { Data(hexString: $0) })
+        if sheet.keyHex != nil { try await od.authenticate() }
+        try await od.writeNfcUrl(url)
+        DiagLog.log("nfc tag re-programmed over BLE: \(sheet.id)")
     }
 }

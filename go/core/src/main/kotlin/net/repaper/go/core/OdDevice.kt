@@ -27,6 +27,7 @@ class OdDevice(private val link: OdLink, private val masterKey: ByteArray? = nul
         const val TIMEOUT_DATA_ACK = 90_000L
         const val TIMEOUT_END_ACK = 90_000L
         const val TIMEOUT_REFRESH = 90_000L
+        const val TIMEOUT_NFC_COMMIT = 15_000L   // the tag EEPROM commit is slow I2C work
     }
 
     val isAuthenticated: Boolean get() = sessionKey != null
@@ -118,6 +119,37 @@ class OdDevice(private val link: OdLink, private val masterKey: ByteArray? = nul
             Od.REFRESH_TIMEOUT -> throw OdError("display refresh timed out (device sent 0x74)")
             else -> throw OdError("unexpected response waiting for refresh")
         }
+    }
+
+    /** Write the sheet's OWN NFC tag over BLE: a URI record carrying the landing link,
+     *  so tapping the sheet always resolves — some sheets ship with an empty tag.
+     *  Older firmware stays silent on the unknown opcode: that surfaces as
+     *  "doesn't support" (non-fatal for callers). */
+    suspend fun writeNfcUrl(url: String) {
+        val payload = url.toByteArray(Charsets.UTF_8)
+        if (payload.size > Od.NFC_MAX_TOTAL) throw OdError("landing link too long for the tag")
+        var first = true
+        suspend fun readNfc(timeoutMs: Long): ByteArray = try {
+            read(timeoutMs).also { first = false }
+        } catch (e: OdError) {
+            if (first) throw OdError("this sheet's firmware doesn't support NFC writing") else throw e
+        }
+        if (payload.size <= Od.NFC_INLINE_MAX) {
+            write(Od.nfcWriteInline(Od.NFC_REC_URI, payload))
+            Od.validateNfc(readNfc(TIMEOUT_NFC_COMMIT), Od.NFC_STATUS_WRITE_OK)
+            return
+        }
+        write(Od.nfcWriteStart(Od.NFC_REC_URI, payload.size))
+        Od.validateNfc(readNfc(TIMEOUT_ACK), Od.NFC_STATUS_CHUNK_ACK)
+        var off = 0
+        while (off < payload.size) {
+            val chunk = payload.copyOfRange(off, minOf(off + Od.NFC_CHUNK, payload.size))
+            write(Od.nfcWriteData(chunk))
+            Od.validateNfc(readNfc(TIMEOUT_ACK), Od.NFC_STATUS_CHUNK_ACK)
+            off += chunk.size
+        }
+        write(Od.nfcWriteEnd())
+        Od.validateNfc(readNfc(TIMEOUT_NFC_COMMIT), Od.NFC_STATUS_WRITE_OK)
     }
 
     // ── session-aware write/read ─────────────────────────────────────────────

@@ -19,6 +19,19 @@ public enum Od {
     public static let chunkSize = 230
     public static let encryptedChunkSize = 154
 
+    // NFC endpoint 0x0083: the sheet writes its OWN tag over BLE (sub-opcode selects the op)
+    public static let nfcEndpointCode = 0x0083
+    public static let nfcSubWriteInline: UInt8 = 0x01
+    public static let nfcSubWriteStart: UInt8 = 0x10
+    public static let nfcSubWriteData: UInt8 = 0x11
+    public static let nfcSubWriteEnd: UInt8 = 0x12
+    public static let nfcRecUri = 1
+    public static let nfcInlineMax = 120
+    public static let nfcChunk = 120
+    public static let nfcMaxTotal = 512
+    public static let nfcStatusWriteOk = 0x81
+    public static let nfcStatusChunkAck = 0x82
+
     static func cmd(_ code: Int) -> Data { Data([UInt8(code >> 8), UInt8(code & 0xFF)]) }
 
     public static func readConfig() -> Data { cmd(readConfigCode) }
@@ -34,6 +47,37 @@ public enum Od {
         return cmd(directWriteDataCode) + chunk
     }
     public static func directWriteEnd(refreshMode: Int = 0) -> Data { cmd(directWriteEndCode) + Data([UInt8(refreshMode)]) }
+
+    // ── the sheet's NFC tag, written over BLE ────────────────────────────────
+
+    public static func nfcWriteInline(recType: Int, payload: Data) -> Data {
+        precondition(payload.count >= 1 && payload.count <= nfcInlineMax)
+        return cmd(nfcEndpointCode) + Data([nfcSubWriteInline, UInt8(recType),
+                                            UInt8(payload.count >> 8), UInt8(payload.count & 0xFF)]) + payload
+    }
+    public static func nfcWriteStart(recType: Int, totalLen: Int) -> Data {
+        precondition(totalLen >= 1 && totalLen <= nfcMaxTotal)
+        return cmd(nfcEndpointCode) + Data([nfcSubWriteStart, UInt8(recType),
+                                            UInt8(totalLen >> 8), UInt8(totalLen & 0xFF)])
+    }
+    public static func nfcWriteData(_ chunk: Data) -> Data {
+        precondition(chunk.count >= 1 && chunk.count <= nfcChunk)
+        return cmd(nfcEndpointCode) + Data([nfcSubWriteData]) + chunk
+    }
+    public static func nfcWriteEnd() -> Data { cmd(nfcEndpointCode) + Data([nfcSubWriteEnd]) }
+
+    /// OK frames are [00 83 status]; errors are [FF 83 FF err].
+    public static func validateNfc(_ data: Data, expectedStatus: Int) throws {
+        let b = [UInt8](data)
+        if b.count >= 4, b[0] == 0xFF, b[1] == 0x83, b[2] == 0xFF {
+            throw OdError.protocolError(String(format: "the sheet rejected the tag write (error 0x%02x)", b[3]))
+        }
+        if b.count >= 3, b[0] == 0x00, b[1] == 0x83 {
+            if Int(b[2]) == expectedStatus { return }
+            throw OdError.protocolError(String(format: "NFC status mismatch: expected 0x%02x, got 0x%02x", expectedStatus, b[2]))
+        }
+        throw OdError.protocolError("unexpected NFC response")
+    }
 
     public static func code(_ data: Data, offset: Int = 0) throws -> Int {
         guard data.count >= offset + 2 else { throw OdError.protocolError("response too short for a command code") }

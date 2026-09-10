@@ -13,7 +13,6 @@ struct SettingsView: View {
     @State private var adding = false
     @State private var showScanner = false
     @State private var showPaste = false
-    @State private var nfcWriter = NfcWriter()
     @State private var confirmSignOut = false
     @State private var signOutNote = ""
     @State private var actionSheet: Sheet?
@@ -129,8 +128,11 @@ struct SettingsView: View {
         }
         .confirmationDialog(actionSheet?.name ?? "", isPresented: .init(
             get: { actionSheet != nil }, set: { if !$0 { actionSheet = nil } }), titleVisibility: .visible) {
-            if NfcReader.available, let link = actionSheet?.landingUrl {
-                Button("Program the NFC tag") { actionSheet = nil; programTag(link) }
+            if actionSheet?.landingUrl != nil {
+                Button("Re-program the NFC tag") {
+                    let s = actionSheet; actionSheet = nil
+                    if let s { Task { await reprogramTag(s) } }
+                }
             }
             Button("Remove from this device", role: .destructive) {
                 if let s = actionSheet { sheets.remove(s.id) }; actionSheet = nil
@@ -272,23 +274,26 @@ struct SettingsView: View {
         adding = true
         addNote = "Looking for \(landing.name) nearby — wake the sheet…"
         do {
+            // one connection does it all: interrogate AND program the sheet's own
+            // NFC tag over BLE (no phone-radio fiddling — the sheet writes itself)
             _ = try await SheetOps.describeAndRegister(landing, link: link)
             addNote = ""; addLink = ""; showPaste = false
-            adding = false
-            // some sheets ship with an empty tag: program it now so tap-to-print
-            // always works (the finding of 10 Sep — applies to every RePaper variant)
-            if NfcReader.available { programTag(link) }
         } catch {
             addNote = error.localizedDescription
-            adding = false
         }
+        adding = false
     }
 
-    private func programTag(_ link: String) {
-        nfcWriter.write(link, prompt: "Hold the sheet to the top edge to program its tag.") { ok in
-            addNote = ok ? "" : "Tag not programmed — hold the sheet for options to retry."
-            if ok { DiagLog.log("nfc tag programmed") }
+    private func reprogramTag(_ sheet: Sheet) async {
+        adding = true
+        addNote = "Waking \(sheet.name) to re-program its tag…"
+        do {
+            try await SheetOps.programTag(sheet)
+            addNote = "Tag programmed — tapping \(sheet.name) works now."
+        } catch {
+            addNote = error.localizedDescription
         }
+        adding = false
     }
 
     // ── sign out ─────────────────────────────────────────────────────────────

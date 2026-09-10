@@ -1,3 +1,4 @@
+0.2.9 (10 Sep 2026) — Sheets program their own NFC tag over Bluetooth when added (and can be re-programmed from the sheet options) — tapping a sheet now always works; a fresh tap-to-print look.
 0.2.8 (10 Sep 2026) — The real brand lockup and icon; Settings reorganized (Printer · Sheets · Cloud); sheets’ NFC tags are programmed when added, so tap-to-print always works.
 0.2.7 (10 Sep 2026) — Sign out in Settings: removes this phone from the fleet; sheets stay.
 0.2.6 (8 Sep 2026) — New option: cycle through sheets — jobs print on each in turn.

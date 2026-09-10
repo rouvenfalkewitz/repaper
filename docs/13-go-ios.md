@@ -45,6 +45,24 @@ Technical build/run details live in `ios/README.md`; this doc is product + decis
    UserDefaults to the Keychain; job badge/notification when a share arrives while
    the app is closed; haptics on print done/failed.
 
+## NFC done right (10 Sep, all variants — Go iOS 0.1.2 · Go Android 0.2.9 · Dock 0.0.25)
+
+Correction from Rouven: tags are NOT programmed with the phone's NFC radio. The
+OpenDisplay protocol has an NFC endpoint (0x0083) — **the sheet writes its own tag
+over BLE during registration**, in the same connection that interrogates it:
+- Wire (golden-fixture-pinned in both cores, SDK `write_nfc_url` on the Dock):
+  inline `[0083][01][rec][len:2BE][payload]` ≤120 B, chunked `10/11/12` up to 512 B,
+  OK `[0083][81|82]`, error `[FF83FF][err]`, URI record type 1, commit ≈ slow I2C
+  (15 s timeout). Older firmware stays silent on the first frame → "not supported",
+  non-fatal.
+- The value written is the landing URL (exactly what `Landing.parse` accepts), so
+  tap-to-print always resolves. The link is stored per sheet; "Re-program the NFC
+  tag" lives in the sheet options on both apps.
+- Tap-to-print affordance: iOS got an accent capsule with animated radiating NFC
+  waves + "or choose from the list" fallback (no-NFC devices get "Choose the
+  sheet" as primary); Android got the same capsule as a passive beacon (its reader
+  mode is always listening) with an ic_nfc glyph.
+
 ## The 10 Sep adaptation pass (Android 0.2.8 · Dock 0.0.25)
 
 Rouven's review findings, ported the same day ("adapt our findings to android and

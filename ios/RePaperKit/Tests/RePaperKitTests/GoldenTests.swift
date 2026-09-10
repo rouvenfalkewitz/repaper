@@ -49,6 +49,22 @@ final class GoldenTests: XCTestCase {
         XCTAssertEqual(g["dw_end_fast"] as! String, Od.directWriteEnd(refreshMode: 1).hexLower)
     }
 
+    func testNfcWriteFramesMatchSdk() throws {
+        let g = try golden("commands")
+        let url = Data((g["nfc_url"] as! String).utf8)
+        XCTAssertEqual(g["nfc_inline"] as! String, Od.nfcWriteInline(recType: Od.nfcRecUri, payload: url).hexLower)
+        XCTAssertEqual(g["nfc_start"] as! String, Od.nfcWriteStart(recType: Od.nfcRecUri, totalLen: 300).hexLower)
+        XCTAssertEqual(g["nfc_data"] as! String, Od.nfcWriteData(Data((0..<120).map { UInt8($0) })).hexLower)
+        XCTAssertEqual(g["nfc_end"] as! String, Od.nfcWriteEnd().hexLower)
+        // response validation: both OK statuses pass, the error frame throws with its code
+        try Od.validateNfc(hexData(g["nfc_ok_commit"]), expectedStatus: Od.nfcStatusWriteOk)
+        try Od.validateNfc(hexData(g["nfc_ok_chunk"]), expectedStatus: Od.nfcStatusChunkAck)
+        XCTAssertThrowsError(try Od.validateNfc(hexData(g["nfc_err"]), expectedStatus: Od.nfcStatusWriteOk)) {
+            XCTAssertTrue("\($0.localizedDescription)".contains("0x05"))
+        }
+        XCTAssertThrowsError(try Od.validateNfc(hexData(g["nfc_ok_chunk"]), expectedStatus: Od.nfcStatusWriteOk))
+    }
+
     func testEncodingsMatchSdk() throws {
         let g = try golden("encoding")
         let grid = g["grid"] as! [String]

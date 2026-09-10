@@ -21,6 +21,7 @@ public actor OdDevice {
     public static let timeoutConfigChunk = 2_000
     public static let timeoutDataAck = 90_000
     public static let timeoutRefresh = 90_000
+    public static let timeoutNfcCommit = 15_000   // the tag EEPROM commit is slow I2C work
 
     public init(link: OdLink, masterKey: Data? = nil) {
         self.link = link; self.masterKey = masterKey
@@ -114,6 +115,40 @@ public actor OdDevice {
         case Od.refreshCompleteCode: narrate("printed")
         case Od.refreshTimeoutCode: throw OdError.protocolError("display refresh timed out")
         default: throw OdError.protocolError("unexpected response waiting for refresh")
+        }
+    }
+
+    /// Write the sheet's OWN NFC tag over BLE: a URI record carrying the landing link,
+    /// so tapping the sheet always resolves — some sheets ship with an empty tag.
+    /// Older firmware stays silent on the unknown opcode → "doesn't support" (non-fatal
+    /// for callers).
+    public func writeNfcUrl(_ url: String) async throws {
+        let payload = Data(url.utf8)
+        guard payload.count <= Od.nfcMaxTotal else { throw OdError.protocolError("landing link too long for the tag") }
+        if payload.count <= Od.nfcInlineMax {
+            try await write(Od.nfcWriteInline(recType: Od.nfcRecUri, payload: payload))
+            try Od.validateNfc(try await nfcRead(Self.timeoutNfcCommit, first: true), expectedStatus: Od.nfcStatusWriteOk)
+            return
+        }
+        try await write(Od.nfcWriteStart(recType: Od.nfcRecUri, totalLen: payload.count))
+        try Od.validateNfc(try await nfcRead(Self.timeoutAck, first: true), expectedStatus: Od.nfcStatusChunkAck)
+        var off = 0
+        while off < payload.count {
+            let chunk = Data(payload.dropFirst(off).prefix(Od.nfcChunk))
+            try await write(Od.nfcWriteData(chunk))
+            try Od.validateNfc(try await nfcRead(Self.timeoutAck, first: false), expectedStatus: Od.nfcStatusChunkAck)
+            off += chunk.count
+        }
+        try await write(Od.nfcWriteEnd())
+        try Od.validateNfc(try await nfcRead(Self.timeoutNfcCommit, first: false), expectedStatus: Od.nfcStatusWriteOk)
+    }
+
+    /// Older firmware never answers the first NFC frame — map that silence to a clear error.
+    private func nfcRead(_ timeoutMs: Int, first: Bool) async throws -> Data {
+        do { return try await read(timeoutMs: timeoutMs) }
+        catch {
+            if first { throw OdError.protocolError("this sheet's firmware doesn't support NFC writing") }
+            throw error
         }
     }
 

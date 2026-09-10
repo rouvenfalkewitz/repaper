@@ -44,6 +44,15 @@ resp_frame = crypto.encrypt_command(sk, sid, 42, b"\x00\x40", b"\x01\x02\x03")
     "dw_data": hx(commands.build_direct_write_data_command(b"\x01\x02\x03\x04")),
     "dw_end_full": hx(commands.build_direct_write_end_command(0)),
     "dw_end_fast": hx(commands.build_direct_write_end_command(1)),
+    # NFC endpoint 0x0083 — writing the sheet's own tag over BLE (URI record = 1)
+    "nfc_inline": hx(commands.build_nfc_write_inline_command(1, b"https://example.org/l/?abc")),
+    "nfc_start": hx(commands.build_nfc_write_start_command(1, 300)),
+    "nfc_data": hx(commands.build_nfc_write_data_command(bytes(range(120)))),
+    "nfc_end": hx(commands.build_nfc_write_end_command()),
+    "nfc_url": "https://example.org/l/?abc",
+    "nfc_ok_commit": "008381",
+    "nfc_ok_chunk": "008382",
+    "nfc_err": "ff83ff05",
 }, indent=1))
 
 # ── encodings: logical color grids → SDK bytes ───────────────────────────────

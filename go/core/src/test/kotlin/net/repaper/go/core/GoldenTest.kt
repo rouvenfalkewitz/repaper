@@ -49,6 +49,22 @@ class GoldenTest {
         assertEquals(g.getString("dw_end_fast"), Od.directWriteEnd(1).toHexLower())
     }
 
+    @Test fun nfcWriteFramesMatchSdk() {
+        val g = golden("commands")
+        val url = g.getString("nfc_url").toByteArray(Charsets.UTF_8)
+        assertEquals(g.getString("nfc_inline"), Od.nfcWriteInline(Od.NFC_REC_URI, url).toHexLower())
+        assertEquals(g.getString("nfc_start"), Od.nfcWriteStart(Od.NFC_REC_URI, 300).toHexLower())
+        assertEquals(g.getString("nfc_data"), Od.nfcWriteData(ByteArray(120) { it.toByte() }).toHexLower())
+        assertEquals(g.getString("nfc_end"), Od.nfcWriteEnd().toHexLower())
+        // response validation: both OK statuses pass, the error frame throws with its code
+        Od.validateNfc(g.getString("nfc_ok_commit").hexToBytes(), Od.NFC_STATUS_WRITE_OK)
+        Od.validateNfc(g.getString("nfc_ok_chunk").hexToBytes(), Od.NFC_STATUS_CHUNK_ACK)
+        val err = kotlin.runCatching { Od.validateNfc(g.getString("nfc_err").hexToBytes(), Od.NFC_STATUS_WRITE_OK) }
+        assertTrue(err.exceptionOrNull()?.message?.contains("0x05") == true)
+        val mismatch = kotlin.runCatching { Od.validateNfc(g.getString("nfc_ok_chunk").hexToBytes(), Od.NFC_STATUS_WRITE_OK) }
+        assertTrue(mismatch.isFailure)
+    }
+
     @Test fun encodingsMatchSdk() {
         val g = golden("encoding")
         val grid = g.getJSONArray("grid")

@@ -19,6 +19,19 @@ object Od {
     const val CHUNK_SIZE = 230            // unencrypted 0x71 payload
     const val ENCRYPTED_CHUNK_SIZE = 154  // under a session: cmd(2)+nonce(16)+len(1)+data+tag(12) = 185
 
+    // NFC endpoint 0x0083: the sheet writes its OWN tag over BLE (sub-opcode selects the op)
+    const val NFC_ENDPOINT = 0x0083
+    const val NFC_SUB_WRITE_INLINE = 0x01
+    const val NFC_SUB_WRITE_START = 0x10
+    const val NFC_SUB_WRITE_DATA = 0x11
+    const val NFC_SUB_WRITE_END = 0x12
+    const val NFC_REC_URI = 1
+    const val NFC_INLINE_MAX = 120        // above this: chunked write
+    const val NFC_CHUNK = 120
+    const val NFC_MAX_TOTAL = 512
+    const val NFC_STATUS_WRITE_OK = 0x81
+    const val NFC_STATUS_CHUNK_ACK = 0x82
+
     private fun cmd(code: Int): ByteArray = byteArrayOf((code shr 8).toByte(), (code and 0xFF).toByte())
 
     fun readConfig(): ByteArray = cmd(READ_CONFIG)
@@ -34,6 +47,37 @@ object Od {
         return cmd(DIRECT_WRITE_DATA) + chunk
     }
     fun directWriteEnd(refreshMode: Int = 0): ByteArray = cmd(DIRECT_WRITE_END) + byteArrayOf(refreshMode.toByte())
+
+    // ── the sheet's NFC tag, written over BLE ────────────────────────────────
+
+    fun nfcWriteInline(recType: Int, payload: ByteArray): ByteArray {
+        require(payload.size in 1..NFC_INLINE_MAX) { "inline payload ${payload.size} > $NFC_INLINE_MAX" }
+        return cmd(NFC_ENDPOINT) + byteArrayOf(NFC_SUB_WRITE_INLINE.toByte(), recType.toByte(),
+            (payload.size shr 8).toByte(), (payload.size and 0xFF).toByte()) + payload
+    }
+    fun nfcWriteStart(recType: Int, totalLen: Int): ByteArray {
+        require(totalLen in 1..NFC_MAX_TOTAL) { "nfc payload $totalLen > $NFC_MAX_TOTAL" }
+        return cmd(NFC_ENDPOINT) + byteArrayOf(NFC_SUB_WRITE_START.toByte(), recType.toByte(),
+            (totalLen shr 8).toByte(), (totalLen and 0xFF).toByte())
+    }
+    fun nfcWriteData(chunk: ByteArray): ByteArray {
+        require(chunk.size in 1..NFC_CHUNK) { "nfc chunk ${chunk.size} > $NFC_CHUNK" }
+        return cmd(NFC_ENDPOINT) + byteArrayOf(NFC_SUB_WRITE_DATA.toByte()) + chunk
+    }
+    fun nfcWriteEnd(): ByteArray = cmd(NFC_ENDPOINT) + byteArrayOf(NFC_SUB_WRITE_END.toByte())
+
+    /** OK frames are [00 83 status]; errors are [FF 83 FF err]. */
+    fun validateNfc(data: ByteArray, expectedStatus: Int) {
+        if (data.size >= 4 && data[0] == 0xFF.toByte() && data[1] == 0x83.toByte() && data[2] == 0xFF.toByte()) {
+            throw OdError("the sheet rejected the tag write (error 0x%02x)".format(data[3]))
+        }
+        if (data.size >= 3 && data[0].toInt() == 0x00 && data[1] == 0x83.toByte()) {
+            val status = data[2].toInt() and 0xFF
+            if (status == expectedStatus) return
+            throw OdError("NFC status mismatch: expected 0x%02x, got 0x%02x".format(expectedStatus, status))
+        }
+        throw OdError("unexpected NFC response")
+    }
 
     // ── responses ────────────────────────────────────────────────────────────
 

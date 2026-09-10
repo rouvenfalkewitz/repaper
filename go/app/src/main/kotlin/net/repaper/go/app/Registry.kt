@@ -7,7 +7,7 @@ import org.json.JSONObject
 import java.io.File
 import java.security.SecureRandom
 
-const val GO_VERSION = "0.2.8"
+const val GO_VERSION = "0.2.9"
 
 /** Same shape as the Dock's ~/.repaper/sheets.json: id → {name, transport, address, keys, model}.
  *  The AES key from the QR link lives only here. */

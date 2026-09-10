@@ -97,8 +97,21 @@ class OpenDisplayBLETransport(SheetTransport):
             w, h, rot = int(caps.width), int(caps.height), int(getattr(caps, "rotation", 0) or 0)
             ref.keys.update({"native": f"{caps.width}x{caps.height}", "rotation": rot, "scheme": scheme})
             ref.keys["hw"] = await self._hardware_async(dev)
+            # program the sheet's OWN NFC tag while we're connected — some ship with an
+            # empty tag, and the tag is what makes the Go apps' tap-to-print reliable.
+            # Non-fatal: firmware without the endpoint just logs (NfcNotSupportedError).
+            link = ref.keys.get("landing")
+            if link:
+                import logging
+                try:
+                    await dev.write_nfc_url(link)
+                    ref.keys["tag_programmed"] = True
+                    logging.getLogger("repaper.sheets").info("programmed %s's NFC tag over BLE", ref.address)
+                except Exception as e:
+                    ref.keys["tag_programmed"] = False
+                    logging.getLogger("repaper.sheets").info("NFC tag write skipped for %s: %s", ref.address, e)
             sid = self.registry.find_by_address(self.id, ref.address) if self.registry else None
-            if sid: self.registry.update_keys(sid, **{k: ref.keys[k] for k in ("native", "rotation", "scheme", "hw")})
+            if sid: self.registry.update_keys(sid, **{k: ref.keys[k] for k in ("native", "rotation", "scheme", "hw") if k in ref.keys})
             if rot in (90, 270): w, h = h, w
             return SheetModel(w, h, _SCHEME_TO_PALETTE.get(scheme, "BW"), rotation=0,
                               model_name=f"OpenDisplay {scheme} {caps.width}x{caps.height} rot{rot}")

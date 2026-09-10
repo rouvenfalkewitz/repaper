@@ -33,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var statusSub: android.widget.TextView
     private lateinit var jobList: LinearLayout
     private lateinit var pillHolder: LinearLayout
+    private lateinit var nfcHint: LinearLayout
     private val printFlow by lazy { PrintFlow(this, registry) }
     private var busy = false                   // a BLE print is running
     private var flash: RingView.Led? = null    // DONE/ERR held briefly, then back to the state machine
@@ -94,6 +95,31 @@ class MainActivity : AppCompatActivity() {
         statusSub = Ui.bodyText(this, "", 14f).apply { gravity = Gravity.CENTER; setPadding(dp(16), dp(4), dp(16), 0) }
         root.addView(statusTitle)
         root.addView(statusSub)
+
+        // the tap invitation: an accent capsule with radiating NFC waves — Android
+        // listens passively, so this is a beacon, not a button
+        nfcHint = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER
+            visibility = android.view.View.GONE
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                .apply { topMargin = dp(14) }
+            addView(LinearLayout(this@MainActivity).apply {
+                orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(Ui.ACCENT); cornerRadius = 999f
+                }
+                setPadding(dp(16), dp(10), dp(18), dp(10))
+                addView(ImageView(this@MainActivity).apply {
+                    setImageResource(R.drawable.ic_nfc)
+                    setColorFilter(Ui.ON_ACCENT)
+                    layoutParams = LinearLayout.LayoutParams(dp(18), dp(18)).apply { rightMargin = dp(8) }
+                })
+                addView(Ui.bodyText(this@MainActivity, "Tap the sheet to print", 15f, Ui.ON_ACCENT).apply {
+                    setTypeface(typeface, android.graphics.Typeface.BOLD)
+                })
+            })
+        }
+        root.addView(nfcHint)
         jobList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(jobList)
 
@@ -272,6 +298,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun setState(led: RingView.Led, title: String, sub: String) {
         ring.led = led; statusTitle.text = title; statusSub.text = sub
+        nfcHint.visibility = if (led == RingView.Led.WAIT && registry.ids().isNotEmpty()
+            && android.nfc.NfcAdapter.getDefaultAdapter(this) != null)
+            android.view.View.VISIBLE else android.view.View.GONE
         pillHolder.removeAllViews()
         pillHolder.addView(when (led) {
             RingView.Led.READY -> Ui.pill(this, "Ready", Ui.ACCENT, Ui.ACCENT_TINT)

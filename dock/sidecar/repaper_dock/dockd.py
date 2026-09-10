@@ -204,6 +204,7 @@ class Dock:
         text = text.strip(); keys = {}; transport = "opendisplay-ble"; address = text
         if text.startswith("http"):
             info = parse_landing_url(text); address = info["name"]; keys = {"key": info["key"]} if info["key"] else {}
+            keys["landing"] = text   # kept so the sheet's own NFC tag can be (re)programmed over BLE
         elif re.fullmatch(r"\d+x\d+", text.lower()): transport = "mock"
         elif not (text.upper().startswith("OD") or _is_mac(text)): raise ValueError("paste the sheet's QR link, its OD name (OD…), or a Bluetooth address")
         if transport not in self.transports: raise ValueError(f"transport {transport} is not enabled")

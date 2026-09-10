@@ -229,44 +229,27 @@ class SettingsActivity : AppCompatActivity() {
             toast("Reading the sheet — keep it awake and nearby…")
             try {
                 val landing = LandingUrl.parse(link)
+                // one connection does it all: interrogate AND program the sheet's own
+                // NFC tag over BLE (the sheet writes itself — no phone-radio fiddling)
                 val caps = withContext(Dispatchers.IO) {
-                    SheetOps.describeAndRegister(this@SettingsActivity, registry, landing)
+                    SheetOps.describeAndRegister(this@SettingsActivity, registry, landing, link)
                 }
-                registry.updateKey(landing.name, "landing", link)   // for (re)programming the tag
-                toast("Added ${landing.name} · ${caps.viewedWidth}×${caps.viewedHeight}")
+                toast("Added ${landing.name} · ${caps.viewedWidth}×${caps.viewedHeight}" +
+                      if (SheetOps.lastTagProgrammed) " · tag programmed" else "")
                 refresh()
-                // some sheets ship with an empty tag: program it now so tap-to-print always works
-                programTag(link)
             } catch (e: Exception) { toast(e.message ?: "could not add the sheet") }
         }
     }
 
-    /** Writes the landing link onto the sheet's NFC tag — applies to every RePaper variant. */
-    private fun programTag(link: String) {
-        val adapter = android.nfc.NfcAdapter.getDefaultAdapter(this) ?: return
-        var done = false
-        val dlg = AlertDialog.Builder(this).setTitle("Program the sheet's tag")
-            .setMessage("Hold the sheet to the back of the phone — tapping it will then always work.")
-            .setNegativeButton("Skip", null)
-            .setOnDismissListener { if (!done) adapter.disableReaderMode(this) }
-            .show()
-        adapter.enableReaderMode(this, { tag ->
-            val ok = try {
-                val msg = android.nfc.NdefMessage(android.nfc.NdefRecord.createUri(link))
-                val ndef = android.nfc.tech.Ndef.get(tag)
-                if (ndef != null) { ndef.connect(); ndef.writeNdefMessage(msg); ndef.close(); true }
-                else android.nfc.tech.NdefFormatable.get(tag)?.let { f -> f.connect(); f.format(msg); f.close(); true } ?: false
-            } catch (e: Exception) { false }
-            runOnUiThread {
-                done = true
-                adapter.disableReaderMode(this)
-                dlg.dismiss()
-                DiagLog.log("nfc tag program: $ok")
-                toast(if (ok) "Tag programmed — tapping this sheet works now."
-                      else "Couldn't write the tag — hold the sheet in the list to retry.")
-            }
-        }, android.nfc.NfcAdapter.FLAG_READER_NFC_A or android.nfc.NfcAdapter.FLAG_READER_NFC_B or
-           android.nfc.NfcAdapter.FLAG_READER_NFC_F or android.nfc.NfcAdapter.FLAG_READER_NFC_V, null)
+    /** Re-program a sheet's tag over BLE (sheet options). */
+    private fun bleProgramTag(id: String) {
+        lifecycleScope.launch {
+            toast("Waking ${registry.name(id)} to re-program its tag…")
+            try {
+                withContext(Dispatchers.IO) { SheetOps.programTag(this@SettingsActivity, registry, id) }
+                toast("Tag programmed — tapping this sheet works now.")
+            } catch (e: Exception) { toast(e.message ?: "couldn't program the tag") }
+        }
     }
 
     /** Hairline between rows of a section card. */
@@ -344,11 +327,9 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun sheetActions(id: String) {
-        val landing = registry.landing(id)
-        val canProgram = landing != null && android.nfc.NfcAdapter.getDefaultAdapter(this) != null
         val items = buildList {
             add("Rename")
-            if (canProgram) add("Program NFC tag")
+            if (registry.landing(id) != null) add("Re-program the NFC tag")
             add("Remove")
         }
         AlertDialog.Builder(this).setTitle(registry.name(id))
@@ -360,7 +341,7 @@ class SettingsActivity : AppCompatActivity() {
                             .setPositiveButton("Save") { _, _ -> registry.rename(id, input.text.toString().trim()); refresh() }
                             .setNegativeButton("Cancel", null).show()
                     }
-                    "Program NFC tag" -> programTag(landing!!)
+                    "Re-program the NFC tag" -> bleProgramTag(id)
                     "Remove" -> { registry.remove(id); refresh() }
                 }
             }.show()

@@ -56,13 +56,21 @@ struct MainView: View {
 
                 // action slot — reserved even when empty, so the layout stays put.
                 // tap-to-print appears only when a job actually needs a sheet CHOICE
-                // (several sheets, cycling off); the tech chips live in Settings.
-                VStack(spacing: 0) {
-                    if NfcReader.available, led == .wait, sheets.sheets.count > 1, !Prefs.cycleSheets {
-                        UiButton(label: "Tap the sheet to print", primary: true) { tapSheet() }
+                // (several sheets, cycling off); choosing from the list is the fallback.
+                VStack(spacing: 8) {
+                    if led == .wait, sheets.sheets.count > 1, !Prefs.cycleSheets {
+                        if NfcReader.available {
+                            nfcTapButton
+                            Button { pickFor = jobs.first } label: {
+                                Text("or choose from the list")
+                                    .font(Ui.mono(11)).foregroundColor(Ui.text3).underline()
+                            }
+                        } else {
+                            UiButton(label: "Choose the sheet", primary: true) { pickFor = jobs.first }
+                        }
                     }
                 }
-                .frame(height: 56, alignment: .top)
+                .frame(height: 84, alignment: .top)
                 .padding(.top, 10)
 
                 if !jobs.isEmpty {
@@ -103,6 +111,39 @@ struct MainView: View {
             if ProcessInfo.processInfo.arguments.contains("--open-settings") { showSettings = true }
         }
         .onChange(of: scenePhase) { p in if p == .active { refresh() } }   // a share may have spooled a job
+    }
+
+    /// The tap-to-print button: accent capsule with radiating NFC waves that
+    /// actually radiate — the invitation to touch paper with the phone.
+    private var nfcTapButton: some View {
+        Button { tapSheet() } label: {
+            HStack(spacing: 10) {
+                TimelineView(.animation(minimumInterval: 0.12)) { tl in
+                    let t = tl.date.timeIntervalSince1970
+                    HStack(spacing: 2.5) {
+                        ForEach(0..<3, id: \.self) { i in
+                            Arc(fraction: 0.28)
+                                .stroke(Ui.onAccent, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                                .frame(width: 7 + CGFloat(i) * 7, height: 7 + CGFloat(i) * 7)
+                                .opacity(0.35 + 0.65 * pulse(t, phase: Double(i) * 0.25))
+                        }
+                    }
+                    .frame(width: 26, height: 22, alignment: .leading)
+                }
+                Text("Tap the sheet to print")
+                    .font(Ui.body(15, weight: 700))
+                    .foregroundColor(Ui.onAccent)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 13)
+            .background(Capsule().fill(Ui.accent))
+            .shadow(color: Ui.accent.opacity(0.35), radius: 12, y: 2)
+        }
+    }
+
+    private func pulse(_ t: Double, phase: Double) -> Double {
+        let x = (t / 1.4 + phase).truncatingRemainder(dividingBy: 1)
+        return max(0, sin(x * .pi))
     }
 
     // ── tap-to-print: the sheet that touches the phone IS the sheet choice ──
@@ -273,6 +314,20 @@ struct MainView: View {
             try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
             flash = nil; errorNote = ""; refresh()
         }
+    }
+}
+
+/// A partial ring — the NFC wave glyph's building block.
+struct Arc: Shape {
+    let fraction: Double
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        p.addArc(center: CGPoint(x: rect.minX, y: rect.midY),
+                 radius: rect.width,
+                 startAngle: .degrees(-90 * fraction * 2),
+                 endAngle: .degrees(90 * fraction * 2),
+                 clockwise: false)
+        return p
     }
 }
 
