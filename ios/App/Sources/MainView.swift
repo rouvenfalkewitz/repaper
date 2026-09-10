@@ -21,11 +21,11 @@ struct MainView: View {
     @State private var pendingAdd: Landing?          // unknown sheet tapped → offer to add
 
     var body: some View {
+        GeometryReader { geo in
         ScrollView {
             VStack(spacing: 0) {
-                HStack(spacing: 9) {
-                    RingMark(size: 24)
-                    Text("RePaper Go").font(Ui.display(20, weight: 700, width: 112)).foregroundColor(Ui.text)
+                HStack {
+                    BrandLockup(height: 26)
                     Spacer()
                     Button { showSettings = true } label: {
                         Image(systemName: "gearshape.fill")
@@ -34,30 +34,44 @@ struct MainView: View {
                     }
                 }
 
+                // the hero sits at a FIXED offset (per device, never per state): every
+                // slot below has a reserved height, so the ring never moves when the
+                // state, texts or buttons change.
+                Spacer().frame(height: max(24, geo.size.height * 0.055))
+
                 // the ring in its box — the device outcut, exactly like the Dock's page
                 RingBox { RingView(led: led) }
-                    .padding(.top, 26)
-                pill.padding(.top, 18)
+                pill
+                    .frame(height: 26)
+                    .padding(.top, 18)
                 Text(title)
                     .font(Ui.display(22, weight: 700)).foregroundColor(Ui.text)
-                    .padding(.top, 8)
+                    .frame(height: 32)
+                    .padding(.top, 6)
                 Text(subtitle)
                     .font(Ui.body(14)).foregroundColor(Ui.text2)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 16).padding(.top, 4)
-                if led == .ready {
-                    HStack(spacing: 6) {
-                        Chip(text: "Share to print")
-                        Chip(text: "OpenDisplay BLE")
-                    }.padding(.top, 12)
+                    .frame(height: 58, alignment: .top)
+
+                // action slot — reserved even when empty, so the layout stays put
+                VStack(spacing: 0) {
+                    if led == .ready {
+                        HStack(spacing: 6) {
+                            Chip(text: "Share to print")
+                            Chip(text: "OpenDisplay BLE")
+                        }
+                    }
+                    // tap-to-print: iOS reads NFC only in an explicit session, so the
+                    // tap gets a button where Android listens passively
+                    if NfcReader.available, led == .wait || led == .ready || led == .setup {
+                        UiButton(label: jobs.isEmpty ? "Tap a sheet to add it" : "Tap the sheet to print",
+                                 primary: led == .wait) { tapSheet() }
+                            .padding(.top, 14)
+                    }
                 }
-                // tap-to-print: iOS reads NFC only in an explicit session, so the tap
-                // gets a button where Android listens passively
-                if NfcReader.available, led == .wait || led == .ready || led == .setup {
-                    UiButton(label: jobs.isEmpty ? "Tap a sheet to add it" : "Tap the sheet to print",
-                             primary: led == .wait) { tapSheet() }
-                        .padding(.top, 16)
-                }
+                .frame(height: NfcReader.available ? 108 : 36, alignment: .top)
+                .padding(.top, 10)
 
                 if !jobs.isEmpty {
                     SectionHeader(text: "Waiting to print")
@@ -70,9 +84,14 @@ struct MainView: View {
                                 } label: { Label("Discard", systemImage: "trash") }
                             }
                     }
+                } else if led == .ready {
+                    howToPrint
                 }
+                Spacer(minLength: 24)
             }
-            .padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 28)
+            .padding(.horizontal, 20).padding(.top, 16)
+            .frame(minHeight: geo.size.height - 40, alignment: .top)
+        }
         }
         .background(Ui.bg.ignoresSafeArea())
         .fullScreenCover(isPresented: $showSettings, onDismiss: { refresh() }) { SettingsView() }
@@ -135,6 +154,34 @@ struct MainView: View {
             } catch {
                 info = error.localizedDescription
             }
+        }
+    }
+
+    /// Three lines instead of a manual: how printing works on a phone.
+    private var howToPrint: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("HOW TO PRINT")
+                .font(Ui.display(11, weight: 700, width: 112)).kerning(1.3)
+                .foregroundColor(Ui.text3)
+            step(1, "Open a photo or document in any app")
+            step(2, "Share it and pick “RePaper Go”")
+            step(3, NfcReader.available
+                 ? "Tap the sheet with your iPhone — with one sheet it prints by itself"
+                 : "Choose the sheet — with one sheet it prints by itself")
+        }
+        .card()
+        .padding(.top, 18)
+    }
+
+    private func step(_ n: Int, _ text: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text("\(n)")
+                .font(Ui.mono(11)).foregroundColor(Ui.accent)
+                .frame(width: 20, height: 20)
+                .overlay(Circle().stroke(Ui.borderStrong, lineWidth: 1))
+            Text(text)
+                .font(Ui.body(13)).foregroundColor(Ui.text2)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 

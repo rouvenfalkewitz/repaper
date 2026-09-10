@@ -17,11 +17,8 @@ struct AuthView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                HStack(spacing: 10) {
-                    RingMark(size: 26)
-                    Text("RePaper Go").font(Ui.display(22, weight: 700, width: 112)).foregroundColor(Ui.text)
-                }
-                .padding(.top, 40)
+                BrandLockup(height: 40)
+                    .padding(.top, 48)
 
                 Text("Sign in with your RePaper account — this \(deviceWord) joins your fleet automatically.")
                     .font(Ui.body(14)).foregroundColor(Ui.text2)

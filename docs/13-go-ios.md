@@ -24,20 +24,19 @@ Technical build/run details live in `ios/README.md`; this doc is product + decis
 | Sign out | ✅ | Device removes itself server-side (`POST /api/device/unclaim`, id+secret auth) — sheets stay, sign-in brings it back |
 | Signing | ✅ | Team 8DPLCLHB27, automatic; `-allowProvisioningUpdates -allowProvisioningDeviceRegistration` does portal work |
 
+| App icon | ✅ CI-checked (10 Sep) | First version (bare ring + glow) was NOT CI — the official mark is ring **+ RE**, no glow. Now uses `brand/logo/export/app-icon/ios/AppIcon.appiconset` verbatim (incl. iOS 18 dark/tinted) |
+| NFC tap-to-print | ✅ built (device-test pending) | iOS has no passive reader mode → explicit "Tap the sheet" button starts the NFC session; tap semantics identical to Android (known+job → print, unknown → add+print) |
+| Brand lockup in-app | ✅ | Real RE\|PAPER lockup asset + "GO" in Archivo, Paper color (logo README: green never on letters), cap height matched — login + main header |
+| Main-screen layout | ✅ | Hero at a FIXED offset per device; pill/title/subtitle/action slots have reserved heights so the ring never moves between states; "How to print" 3-step card in ready state |
+| Autofill bug post-mortem | ✅ fixed (10 Sep) | `?mode=developer` alone is IGNORED unless Settings→Developer→"Associated Domains Development" is on → association silently off. Fix: list the plain domain AND the developer twin; Apple's CDN already serves our AASA (verified via app-site-association.cdn-apple.com) |
+
 ## In progress / next (iOS only)
 
-1. **App icon** — homescreen currently shows the blank placeholder. The ring mark on
-   carbon, generated from the exact logo geometry.
-2. **NFC tap-to-print** — iOS cannot read tags passively in the foreground like
-   Android's reader mode; the UX is an explicit "Tap the sheet" button starting an
-   `NFCNDEFReaderSession` (sheet held to the top edge). Same tap semantics as Android:
-   known sheet + job → print; known, no job → say so; unknown → offer add (+print).
-3. **TestFlight** — needs the App Store Connect app record (Rouven's ~5 clicks, or an
+1. **UX pass over everything** with Rouven (his ask, 10 Sep) — walk every screen/state.
+2. **TestFlight** — needs the App Store Connect app record (Rouven's ~5 clicks, or an
    ASC API key once for full automation). Then: archive upload, invite link on the
    cloud Updates page next to the APK, iOS changelog surfaced like the Android one.
-4. **Distribution entitlements sanity pass** before TestFlight: drop `?mode=developer`
-   from the associated domain for release builds; app group + NFC on the App IDs.
-5. Nice-to-haves noticed while testing (unordered): move the device secret from
+3. Nice-to-haves noticed while testing (unordered): move the device secret from
    UserDefaults to the Keychain; job badge/notification when a share arrives while
    the app is closed; haptics on print done/failed.
 

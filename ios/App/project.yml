@@ -21,9 +21,12 @@ targets:
       properties:
         com.apple.security.application-groups: [group.net.repaper.go]
         com.apple.developer.nfc.readersession.formats: [NDEF]
-        # lets iOS password managers offer repaper.schisch.net credentials in the app;
-        # ?mode=developer makes dev builds validate instantly (ignored in distribution)
+        # lets iOS password managers offer repaper.schisch.net credentials in the app.
+        # The plain entry validates via Apple's CDN (verified cached); the ?mode=developer
+        # twin is ONLY honored when Settings→Developer→Associated Domains Development is
+        # on — listing it alone silently disabled the association (the 10 Sep bug).
         com.apple.developer.associated-domains:
+          - webcredentials:repaper.schisch.net
           - webcredentials:repaper.schisch.net?mode=developer
     info:
       path: Sources/Info.plist
