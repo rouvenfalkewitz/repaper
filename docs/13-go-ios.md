@@ -29,6 +29,11 @@ Technical build/run details live in `ios/README.md`; this doc is product + decis
 | Brand lockup in-app | ✅ | Real RE\|PAPER lockup asset + "GO" in Archivo, Paper color (logo README: green never on letters), cap height matched — login + main header |
 | Main-screen layout | ✅ | Hero at a FIXED offset per device; pill/title/subtitle/action slots have reserved heights so the ring never moves between states; "How to print" 3-step card in ready state |
 | Autofill bug post-mortem | ✅ fixed (10 Sep) | `?mode=developer` alone is IGNORED unless Settings→Developer→"Associated Domains Development" is on → association silently off. Fix: list the plain domain AND the developer twin; Apple's CDN already serves our AASA (verified via app-site-association.cdn-apple.com) |
+| Product lockup RE\|PAPER GO | ✅ (10 Sep) | Runtime-font "GO" didn't match → composed a single image through the logo pipeline's letterforms (Archivo wght 800 / wdth 125, −0.03 em, cap height from the export manifest). Gotcha: PIL variation axes are in fvar order (Weight, Width) |
+| Tap semantics (Rouven, 10 Sep) | ✅ | **Adding sheets lives in Settings** (QR / NFC tap / paste). The main page's tap button appears ONLY when a job waits AND a choice is needed (>1 sheet, cycling off) |
+| How-to-print card | ✅ redesigned | Visual pipeline (share icon → ring → mini e-paper sheet with ink lines) instead of a text list, one caption line |
+| Settings redesign | 🔎 awaiting Rouven's review | Merged device card (icon rows + dividers), Dock-anatomy sheet cards (mono address + palette dots + real-aspect panel), add-card with Scan/Tap side by side + tucked-away paste link, cloud card with inline sign-out row |
+| Visual-test hook | ✅ | `simctl launch … --open-settings` jumps straight to Settings for screenshot verification |
 
 ## In progress / next (iOS only)
 
@@ -51,5 +56,10 @@ Accumulates everything iOS got that Android doesn't have yet. Port in ONE pass a
   system print service instead. Open product decision (docs/03): add share intake to
   Android too, keep "expose printer" as an option. Decide before the parity pass.
 - **App icon**: whatever icon ships on iOS should be mirrored to the Android launcher
-  icon set (current Android icon predates it).
+  icon set (current Android icon predates it) — official adaptive layers exist in
+  `brand/logo/export/app-icon/android/`.
+- **In-app brand lockup**: Android's header still uses ic_ring + text — port the
+  composed RE|PAPER GO lockup asset (and the matching auth/main header layout).
+- **Main-screen polish**: fixed-position hero with reserved slots, visual how-to card,
+  tap button only for print-target choice — mirror once iOS UX is signed off.
 - *(Sign out, QR scanning, cycle-through-sheets, one-sheet auto-print: already on both.)*

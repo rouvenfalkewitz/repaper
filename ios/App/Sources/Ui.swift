@@ -23,6 +23,7 @@ enum Ui {
     static let epaperPanel = rgb(0xE9EBE6)
     static let epaperBezel = rgb(0x1C2320)
     static let epaperRed = rgb(0xC8102E)
+    static let ink = rgb(0x131614)
     static let epaperYellow = rgb(0xF2C400)
     static let blue = rgb(0x4D8DFF)
     static let redTint = rgb(0x3A1512)
@@ -197,19 +198,14 @@ struct RingMark: View {
     }
 }
 
-/// The real brand lockup (RE|PAPER) with the product suffix — letters stay Paper,
-/// the green stays on the ring (logo README rule), GO joins in the same voice.
+/// The product lockup RE|PAPER GO — one composed image, GO rendered through the
+/// logo pipeline's exact letterforms (Archivo wght 800 / wdth 125, −0.03 em).
 struct BrandLockup: View {
     var height: CGFloat = 28
     var body: some View {
-        HStack(alignment: .center, spacing: height * 0.28) {
-            Image("Lockup")
-                .resizable()
-                .scaledToFit()
-                .frame(height: height)
-            Text("GO")
-                .font(Ui.display(height * 0.55, weight: 700, width: 112))
-                .foregroundColor(Ui.text)
-        }
+        Image("Lockup")
+            .resizable()
+            .scaledToFit()
+            .frame(height: height)
     }
 }

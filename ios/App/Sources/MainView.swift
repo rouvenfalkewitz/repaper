@@ -62,15 +62,14 @@ struct MainView: View {
                             Chip(text: "OpenDisplay BLE")
                         }
                     }
-                    // tap-to-print: iOS reads NFC only in an explicit session, so the
-                    // tap gets a button where Android listens passively
-                    if NfcReader.available, led == .wait || led == .ready || led == .setup {
-                        UiButton(label: jobs.isEmpty ? "Tap a sheet to add it" : "Tap the sheet to print",
-                                 primary: led == .wait) { tapSheet() }
-                            .padding(.top, 14)
+                    // tap-to-print: only when a job actually needs a sheet CHOICE
+                    // (several sheets, cycling off). Adding sheets lives in Settings.
+                    if NfcReader.available, led == .wait, sheets.sheets.count > 1, !Prefs.cycleSheets {
+                        UiButton(label: "Tap the sheet to print", primary: true) { tapSheet() }
+                            .padding(.top, 8)
                     }
                 }
-                .frame(height: NfcReader.available ? 108 : 36, alignment: .top)
+                .frame(height: 64, alignment: .top)
                 .padding(.top, 10)
 
                 if !jobs.isEmpty {
@@ -102,25 +101,21 @@ struct MainView: View {
             }
             Button("Cancel", role: .cancel) { pickFor = nil }
         }
-        .alert("New sheet \(pendingAdd?.name ?? "")", isPresented: .init(
-            get: { pendingAdd != nil }, set: { if !$0 { pendingAdd = nil } })) {
-            Button("Add") { if let l = pendingAdd { pendingAdd = nil; addTapped(l) } }
-            Button("Not now", role: .cancel) { pendingAdd = nil }
-        } message: {
-            Text("Add it to this iPhone\(jobs.isEmpty ? "" : " and print the waiting job on it")?")
-        }
         .alert(info, isPresented: .init(get: { !info.isEmpty }, set: { if !$0 { info = "" } })) {
             Button("OK", role: .cancel) { info = "" }
         }
-        .onAppear { cloud.start(); refresh() }
+        .onAppear {
+            cloud.start(); refresh()
+            // visual-test hook: `simctl launch … --open-settings` jumps straight there
+            if ProcessInfo.processInfo.arguments.contains("--open-settings") { showSettings = true }
+        }
         .onChange(of: scenePhase) { p in if p == .active { refresh() } }   // a share may have spooled a job
     }
 
     // ── tap-to-print: the sheet that touches the phone IS the sheet choice ──
 
     private func tapSheet() {
-        nfc.scan(prompt: jobs.isEmpty ? "Hold a sheet to the top edge of the iPhone to add it."
-                                      : "Hold the sheet to the top edge of the iPhone.") { uri in
+        nfc.scan(prompt: "Hold the sheet to the top edge of the iPhone.") { uri in
             guard let uri else { return }   // cancelled or unreadable tag
             onSheetTap(uri)
         }
@@ -131,57 +126,72 @@ struct MainView: View {
             info = "That tag doesn't look like a RePaper sheet."; return
         }
         DiagLog.log("nfc tap: \(landing.name)")
-        let job = jobs.first
-        if let known = sheets.find(landing) {
-            if let job { print(job: job, on: known) }
-            else { info = "That's \(known.name) — nothing waiting to print." }
-        } else {
-            pendingAdd = landing
+        guard let known = sheets.find(landing) else {
+            info = "\(landing.name) isn't registered on this iPhone yet — add it in Settings."; return
         }
+        guard let job = jobs.first else {
+            info = "That's \(known.name) — nothing waiting to print."; return
+        }
+        print(job: job, on: known)
     }
 
-    private func addTapped(_ landing: Landing) {
-        Task {
-            do {
-                info = ""
-                _ = try await SheetOps.describeAndRegister(landing)
-                refresh()
-                if let job = jobs.first, let known = sheets.find(landing) {
-                    print(job: job, on: known)
-                } else {
-                    info = "Added \(landing.name)."
-                }
-            } catch {
-                info = error.localizedDescription
-            }
-        }
-    }
-
-    /// Three lines instead of a manual: how printing works on a phone.
+    /// How printing works, told in pictures: share → the app → e-paper.
     private var howToPrint: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("HOW TO PRINT")
-                .font(Ui.display(11, weight: 700, width: 112)).kerning(1.3)
-                .foregroundColor(Ui.text3)
-            step(1, "Open a photo or document in any app")
-            step(2, "Share it and pick “RePaper Go”")
-            step(3, NfcReader.available
-                 ? "Tap the sheet with your iPhone — with one sheet it prints by itself"
-                 : "Choose the sheet — with one sheet it prints by itself")
+        VStack(spacing: 12) {
+            HStack(spacing: 0) {
+                howTile(caption: "Share") {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 22, weight: .medium))
+                        .foregroundColor(Ui.text)
+                        .offset(y: -2)
+                }
+                howArrow
+                howTile(caption: "RePaper Go") {
+                    RingMark(size: 44)
+                }
+                howArrow
+                howTile(caption: "On paper") {
+                    // a mini sheet: bezel, paper panel, ink line — the thing itself
+                    VStack(spacing: 3) {
+                        RoundedRectangle(cornerRadius: 1.5).fill(Ui.ink)
+                            .frame(width: 22, height: 3)
+                        RoundedRectangle(cornerRadius: 1.5).fill(Ui.epaperRed)
+                            .frame(width: 14, height: 3)
+                    }
+                    .frame(width: 34, height: 22)
+                    .background(RoundedRectangle(cornerRadius: 3).fill(Ui.epaperPanel))
+                    .padding(4)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(Ui.epaperBezel))
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Ui.borderStrong, lineWidth: 1))
+                }
+            }
+            Text("Share a photo or document from any app — it lands on your sheet.")
+                .font(Ui.body(12)).foregroundColor(Ui.text3)
+                .multilineTextAlignment(.center)
         }
-        .card()
+        .padding(.vertical, 16).padding(.horizontal, 14)
+        .frame(maxWidth: .infinity)
+        .background(RoundedRectangle(cornerRadius: 14).fill(Ui.surface))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Ui.border, lineWidth: 1))
         .padding(.top, 18)
     }
 
-    private func step(_ n: Int, _ text: String) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            Text("\(n)")
-                .font(Ui.mono(11)).foregroundColor(Ui.accent)
-                .frame(width: 20, height: 20)
-                .overlay(Circle().stroke(Ui.borderStrong, lineWidth: 1))
-            Text(text)
-                .font(Ui.body(13)).foregroundColor(Ui.text2)
-                .fixedSize(horizontal: false, vertical: true)
+    private var howArrow: some View {
+        Image(systemName: "arrow.right")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundColor(Ui.text3)
+            .frame(maxWidth: .infinity)
+    }
+
+    private func howTile(caption: String, @ViewBuilder content: () -> some View) -> some View {
+        VStack(spacing: 8) {
+            ZStack { content() }
+                .frame(width: 64, height: 64)
+                .background(RoundedRectangle(cornerRadius: 16)
+                    .fill(LinearGradient(colors: [Ui.surface2, Ui.bg], startPoint: .topLeading, endPoint: .bottomTrailing)))
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Ui.borderStrong, lineWidth: 1))
+            Text(caption)
+                .font(Ui.mono(10)).foregroundColor(Ui.text3)
         }
     }
 

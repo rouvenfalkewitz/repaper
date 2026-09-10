@@ -1,7 +1,6 @@
 {
   "images": [
-    { "filename": "lockup-dark-1024.png", "idiom": "universal" }
+    { "filename": "lockup-go.png", "idiom": "universal" }
   ],
-  "info": { "author": "xcode", "version": 1 },
-  "properties": { "preserves-vector-representation": false }
+  "info": { "author": "xcode", "version": 1 }
 }
