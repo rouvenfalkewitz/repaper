@@ -22,12 +22,16 @@ and the full LED state machine. ✅ Verified in the simulator end to end minus B
 Note: simulator builds must be ad-hoc signed (default) — `CODE_SIGNING_ALLOWED=NO`
 strips the app-group entitlement and the extension↔app handoff silently breaks.
 
-## What still needs a real iPhone
+**Field-proven (10 Sep 2026, iPhone 16 Pro):** signed dev build installed over
+`devicectl`, sign-in with password-manager autofill (associated domains), sheet
+registered via the camera QR scanner, and the **first real BLE print succeeded on
+the first attempt** — CoreBluetooth link, auth, interrogate, upload, refresh.
 
-- BLE (simulator has no CoreBluetooth): add-sheet + printing paths are written but
-  field-untested. First device session: register a sheet by pasted link, then print.
-- Share-sheet UI flow (extension is built; tapping through Safari/Photos share needs hands).
-- QR scanning (DataScanner) and NFC tap-to-print (CoreNFC) — not built yet.
+## Still open
+
+- NFC tap-to-print (CoreNFC) — not built yet.
+- TestFlight: App Store Connect app record + archive upload, then the install
+  link on the cloud Updates page next to the APK.
 
 ## Build & run
 
