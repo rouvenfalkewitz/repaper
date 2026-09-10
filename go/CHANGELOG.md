@@ -1,3 +1,4 @@
+0.2.7 (10 Sep 2026) — Sign out in Settings: removes this phone from the fleet; sheets stay.
 0.2.6 (8 Sep 2026) — New option: cycle through sheets — jobs print on each in turn.
 0.2.5 (8 Sep 2026) — With a single sheet, jobs print without asking.
 0.2.4 (8 Sep 2026) — Tap a sheet with your phone to print on it (NFC).

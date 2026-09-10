@@ -14,6 +14,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.repaper.go.core.LandingUrl
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 
 /** Sheets and account plumbing live here — the main screen stays the printer, like the Dock. */
 class SettingsActivity : AppCompatActivity() {
@@ -152,11 +157,54 @@ class SettingsActivity : AppCompatActivity() {
                 })
             }
         })
+        if (cloud.claimed) {
+            listView.addView(Ui.card(this, ripple = true).apply {
+                addView(Ui.bodyText(this@SettingsActivity, "Sign out", 14f, Ui.RED).apply {
+                    gravity = Gravity.CENTER
+                    setTypeface(typeface, android.graphics.Typeface.BOLD)
+                    layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                })
+                setOnClickListener { confirmSignOut(cloud.org) }
+            })
+        }
         listView.addView(Ui.monoText(this, "RePaper Go $GO_VERSION", 11f).apply {
             gravity = Gravity.CENTER
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
                 .apply { topMargin = dp(24) }
         })
+    }
+
+    private fun confirmSignOut(org: String?) {
+        AlertDialog.Builder(this).setTitle("Sign out of RePaper Go?")
+            .setMessage("This phone is removed from ${org ?: "your fleet"}. Your sheets stay on this phone; signing in again brings it right back.")
+            .setPositiveButton("Sign out") { _, _ -> signOut() }
+            .setNegativeButton("Cancel", null).show()
+    }
+
+    /** Sign out = remove this device from the fleet server-side, then gate locally.
+     *  The next sign-in claims it right back (the identity is kept). */
+    private fun signOut() {
+        lifecycleScope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                try {
+                    val identity = Identity(this@SettingsActivity)
+                    val body = JSONObject().put("id", identity.deviceId).put("secret", identity.secret)
+                    val resp = OkHttpClient().newCall(Request.Builder()
+                        .url("${Prefs.cloudBase(this@SettingsActivity)}/api/device/unclaim")
+                        .post(body.toString().toRequestBody("application/json".toMediaType()))
+                        .build()).execute()
+                    resp.use { JSONObject(it.body?.string() ?: "{}").optBoolean("ok") }
+                } catch (e: Exception) { false }
+            }
+            if (!ok) {
+                Toast.makeText(this@SettingsActivity, "couldn't reach the cloud — try again", Toast.LENGTH_LONG).show()
+                return@launch
+            }
+            DiagLog.log("signed out — removed from fleet")
+            Prefs.setClaimed(this@SettingsActivity, false)
+            startActivity(android.content.Intent(this@SettingsActivity, AuthActivity::class.java))
+            finishAffinity()
+        }
     }
 
     private fun addSheetDialog() {

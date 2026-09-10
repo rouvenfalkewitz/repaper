@@ -12,6 +12,8 @@ struct SettingsView: View {
     @State private var addNote = ""
     @State private var adding = false
     @State private var showScanner = false
+    @State private var confirmSignOut = false
+    @State private var signOutNote = ""
 
     var body: some View {
         ScrollView {
@@ -111,11 +113,27 @@ struct SettingsView: View {
                     Spacer()
                     Text("v\(GO_IOS_VERSION)").font(Ui.mono(11)).foregroundColor(Ui.text3)
                 }.card()
+                Button { confirmSignOut = true } label: {
+                    Text("Sign out")
+                        .font(Ui.body(14, weight: 600)).foregroundColor(Ui.red)
+                        .frame(maxWidth: .infinity)
+                }
+                .card().padding(.top, 8)
+                if !signOutNote.isEmpty {
+                    Text(signOutNote).font(Ui.body(12)).foregroundColor(Ui.amber)
+                        .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 4)
+                }
             }
             .padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 28)
         }
         .background(Ui.bg.ignoresSafeArea())
         .onDisappear { Prefs.printerName = printerName }
+        .alert("Sign out of RePaper Go?", isPresented: $confirmSignOut) {
+            Button("Sign out", role: .destructive) { Task { await signOut() } }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This device is removed from \(cloud.org ?? "your fleet"). Your sheets stay on this device; signing in again brings it right back.")
+        }
         .sheet(isPresented: $showScanner) {
             ZStack(alignment: .bottom) {
                 QrScanView { link in
@@ -131,6 +149,32 @@ struct SettingsView: View {
                     .padding(.bottom, 28)
             }
         }
+    }
+
+    /// Sign out = remove this device from the fleet server-side, then gate locally.
+    /// The next sign-in claims it right back (the identity is kept).
+    private func signOut() async {
+        signOutNote = "Signing out…"
+        do {
+            var req = URLRequest(url: URL(string: "\(Prefs.cloudBase)/api/device/unclaim")!)
+            req.httpMethod = "POST"
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.httpBody = try JSONSerialization.data(withJSONObject: [
+                "id": Identity.shared.deviceId, "secret": Identity.shared.secret])
+            let (data, resp) = try await URLSession.shared.data(for: req)
+            let ok = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["ok"] as? Bool ?? false
+            guard ok || (resp as? HTTPURLResponse)?.statusCode == 404 else {   // 404 = already gone
+                signOutNote = "couldn't reach the cloud — check the connection and try again"
+                return
+            }
+        } catch {
+            signOutNote = "couldn't reach the cloud — check the connection and try again"
+            return
+        }
+        DiagLog.log("signed out — removed from fleet")
+        Prefs.claimed = false
+        cloud.claimed = false      // the root router swaps to the sign-in gate
+        dismiss()
     }
 
     private func addSheet() async {

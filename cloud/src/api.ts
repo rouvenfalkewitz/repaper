@@ -123,6 +123,20 @@ export const registerApi = (app: FastifyInstance) => {
       .send(createReadStream(apk));
   });
 
+  /* sign-out on the Go apps: the device removes itself from the fleet. Same
+     effect as the console's remove — the row vanishes, the next hello
+     re-registers it unclaimed, and the app's sign-in gate returns. */
+  app.post("/api/device/unclaim", async (req, reply) => {
+    const { id, secret } = (req.body ?? {}) as { id?: string; secret?: string };
+    if (typeof id !== "string" || typeof secret !== "string") return reply.code(400).send({ error: "bad request" });
+    const d = getDevice(id);
+    if (!d) return { ok: true };   // already gone — that IS signed out
+    if (!secretMatches(secret, d.secret_hash)) return reply.code(401).send({ error: "auth" });
+    deleteDevice(d.id);
+    dropDevice(d.id);
+    return { ok: true };
+  });
+
   /* Apple app ↔ site association: lets iOS password managers offer the
      repaper.schisch.net credentials inside RePaper Go (webcredentials). */
   app.get("/.well-known/apple-app-site-association", async (_req, reply) => {
