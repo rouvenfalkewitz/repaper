@@ -279,8 +279,8 @@ struct SettingsView: View {
             _ = try await SheetOps.describeAndRegister(landing, link: link)
             addLink = ""; showPaste = false
             switch SheetOps.lastTagProgrammed {
-            case .some(true): addNote = "Added \(landing.name) — its tag is programmed, tap it to print."
-            case .some(false): addNote = "Added \(landing.name) — its firmware couldn't program the tag, so tapping this sheet won't work."
+            case .some(true): addNote = "Added \(landing.name) — it prints, and you can tap it too."
+            case .some(false): addNote = "Added \(landing.name) — it prints fine. (Tap-to-print needs newer sheet firmware; choose it from the list for now.)"
             case .none: addNote = ""
             }
         } catch {
