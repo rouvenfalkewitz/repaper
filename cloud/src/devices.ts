@@ -4,7 +4,7 @@
    signed-in user enters their claim code in the console. */
 import type { WebSocket } from "ws";
 import { hashSecret, secretMatches } from "./auth.js";
-import { addEvent, deviceLabel, getDevice, getOrg, pendingMirrorJobs, registerDevice, saveDeviceStatus, saveDiag, setTargetVersion, touchDevice, upsertStat } from "./db.js";
+import { addEvent, deviceLabel, getDevice, getOrg, pendingMirrorJobs, registerDevice, saveDeviceStatus, saveDiag, setDeviceKind, setMirror, setTargetVersion, touchDevice, upsertStat } from "./db.js";
 
 const live = new Map<string, WebSocket>(); // device id → open socket
 const alive = new WeakMap<WebSocket, boolean>();
@@ -65,6 +65,11 @@ export const handleDeviceSocket = (ws: WebSocket, remote: string) => {
         }
         if (known.version && h.version && known.version !== String(h.version))
           addEvent(h.id, "updated", `${known.version} → ${h.version}`);
+        if (known.kind !== h.kind) {
+          setDeviceKind(h.id, h.kind);
+          if (h.kind !== "dock-light" && known.mirror_to) setMirror(h.id, null);   // no longer a Light: drop the mirror
+          addEvent(h.id, "kind_changed", `${known.kind} → ${h.kind}`);
+        }
         touchDevice(h.id, String(h.version ?? ""));
       } else {
         if (!CLAIM_RE.test(String(h.claim ?? ""))) return refuse("bad claim code");

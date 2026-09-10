@@ -326,6 +326,8 @@ export const deviceLabel = (d: DeviceRow): string => {
   return d.name || d.id.slice(0, 8);
 };
 export const renameDevice = (id: string, name: string) => db.prepare("UPDATE device SET name=? WHERE id=?").run(name, id);
+/** A device can change its kind (a Dock reconfigured as a Dock Light, say) — honor it on reconnect. */
+export const setDeviceKind = (id: string, kind: string) => db.prepare("UPDATE device SET kind=? WHERE id=?").run(kind, id);
 export const setTargetVersion = (id: string, v: string | null) => db.prepare("UPDATE device SET target_version=? WHERE id=?").run(v, id);
 export const setDeviceSite = (id: string, site: string | null) => db.prepare("UPDATE device SET site=? WHERE id=?").run(site, id);
 export const saveDiag = (id: string, diag: string) => db.prepare("UPDATE device SET diag=?, diag_at=? WHERE id=?").run(diag, now(), id);
