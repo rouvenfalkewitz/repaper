@@ -45,6 +45,30 @@ Technical build/run details live in `ios/README.md`; this doc is product + decis
    UserDefaults to the Keychain; job badge/notification when a share arrives while
    the app is closed; haptics on print done/failed.
 
+## Tag-fingerprint fallback + setup steps (10 Sep — iOS)
+
+Decision #1 resolved: tap-to-print works on today's no-NFC-endpoint sheets by
+remembering the tag's **hardware UID** (always readable, even on a blank/unreadable
+tag) instead of writing an NDEF sticker. It kicks in ONLY when the regular
+BLE-write way fails (the yellow message case):
+- iOS reader upgraded from `NFCNDEFReaderSession` to `NFCTagReaderSession`
+  (`.iso14443`/`.iso15693`) so it gets the UID + optional NDEF in one tap;
+  entitlement gained the `TAG` format (auto-provisioned fine).
+- Add flow: after a failed BLE tag-write, one "hold the sheet to the phone"
+  moment stores the UID (`keys.tag_uid`). Sheet options gained "Set up tapping" /
+  "Re-learn the tag".
+- Tap match: landing link first (programmed tags), UID fallback (fingerprinted).
+- Setup screen: the sentence became a "GETTING STARTED" numbered-steps card
+  (Settings → Scan QR → Print) + "Open Settings", matching the how-to card.
+- Also: main-screen state is now a coloured condensed-caps readout; how-to card
+  got "HOW TO USE" + numbered step badges. Softened the firmware-can't-program copy.
+
+**Android parity backlog** gains: NFCTagReaderSession has no Android analogue —
+Android's reader mode already exposes `tag.getId()` (UID) on every tap, so the
+fingerprint fallback is simpler there (store tag.id on failed BLE-write, match on
+tap). Plus the setup-steps card, the state readout typography, and the numbered
+how-to badges.
+
 ## Dock Light shipped (10 Sep — Dock 0.0.26 · cloud · Go iOS 0.1.4 · Go Android 0.2.11)
 
 A third product family, built end to end while Rouven was out. A Dock Light is

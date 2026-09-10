@@ -89,6 +89,8 @@ struct MainView: View {
                     }
                 } else if led == .ready {
                     howToPrint
+                } else if led == .setup {
+                    setupSteps
                 }
                 Spacer(minLength: 24)
             }
@@ -142,21 +144,21 @@ struct MainView: View {
     // ── tap-to-print: the sheet that touches the phone IS the sheet choice ──
 
     private func tapSheet() {
-        nfc.scan(prompt: "Hold the sheet to the top edge of the iPhone.") { uri in
-            guard let uri else { return }   // cancelled or unreadable tag
-            onSheetTap(uri)
+        nfc.scan(prompt: "Hold the sheet to the top edge of the iPhone.") { read in
+            guard let read else { return }   // cancelled or unreadable tag
+            onSheetTap(read)
         }
     }
 
-    private func onSheetTap(_ uri: String) {
-        guard let landing = try? Landing.parse(uri) else {
-            DiagLog.log("nfc tap unparseable: \(uri)")
-            info = "That tag doesn't look like a RePaper sheet.\n\nTag content:\n\(uri.prefix(140))"
+    private func onSheetTap(_ read: TagRead) {
+        // a sheet whose tag carries a landing link resolves the normal way; a sheet
+        // whose tag we fingerprinted (no link) matches by its hardware serial
+        let known: Sheet? = read.uri.flatMap { try? Landing.parse($0) }.flatMap { sheets.find($0) }
+            ?? sheets.findByUid(read.uid)
+        DiagLog.log("nfc tap: uid \(read.uid) → \(known?.name ?? "unknown")")
+        guard let known else {
+            info = "This sheet isn't set up for tapping on this iPhone yet — add it in Settings, or hold it there to set up tapping."
             return
-        }
-        DiagLog.log("nfc tap: \(landing.name)")
-        guard let known = sheets.find(landing) else {
-            info = "\(landing.name) isn't registered on this iPhone yet — add it in Settings."; return
         }
         guard let job = jobs.first else {
             info = "That's \(known.name) — nothing waiting to print."; return
@@ -201,6 +203,42 @@ struct MainView: View {
                     .overlay(RoundedRectangle(cornerRadius: 6).stroke(Ui.borderStrong, lineWidth: 1))
                 }
             }
+        }
+        .padding(.vertical, 16).padding(.horizontal, 16)
+        .frame(maxWidth: .infinity)
+        .background(RoundedRectangle(cornerRadius: 14).fill(Ui.surface))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Ui.border, lineWidth: 1))
+        .padding(.top, 18)
+    }
+
+    /// First-run steps, same numbered-tile language as the how-to card.
+    private var setupSteps: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("GETTING STARTED")
+                .font(Ui.display(11, weight: 700, width: 112)).kerning(1.6)
+                .foregroundColor(Ui.text3)
+            HStack(spacing: 0) {
+                howTile(step: 1, caption: "Settings") {
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 22)).foregroundColor(Ui.text)
+                }
+                howArrow
+                howTile(step: 2, caption: "Scan QR") {
+                    Image(systemName: "qrcode.viewfinder")
+                        .font(.system(size: 24)).foregroundColor(Ui.accent)
+                }
+                howArrow
+                howTile(step: 3, caption: "Print") {
+                    Image("Mark").resizable().scaledToFit().frame(width: 40, height: 40)
+                }
+            }
+            Button { showSettings = true } label: {
+                Text("Open Settings")
+                    .font(Ui.body(15, weight: 700)).foregroundColor(Ui.onAccent)
+                    .frame(maxWidth: .infinity).padding(.vertical, 12)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Ui.accent))
+            }
+            .padding(.top, 2)
         }
         .padding(.vertical, 16).padding(.horizontal, 16)
         .frame(maxWidth: .infinity)
@@ -288,7 +326,7 @@ struct MainView: View {
         case .err: return errorNote.isEmpty ? "Hold on — then just try again." : errorNote
         case .wait: return sheets.sheets.isEmpty ? "Add a sheet in Settings first."
                                                  : "Tap a job below and choose the sheet."
-        case .setup: return "Add your first sheet in Settings — the gear, top right."
+        case .setup: return ""   // the setup steps card below carries the message
         case .ready: return ""   // the how-to card below carries the message
         }
     }

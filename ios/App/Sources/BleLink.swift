@@ -291,7 +291,7 @@ enum SheetOps {
         }
         SheetStore.shared.add(Sheet(id: landing.name, name: landing.name, address: landing.name,
                                     keyHex: landing.keyHex, bleAddress: peripheral.identifier.uuidString,
-                                    landingUrl: rawLink,
+                                    landingUrl: rawLink, tagUid: nil,
                                     model: SheetModel(width: caps.viewedWidth, height: caps.viewedHeight,
                                                       palette: caps.scheme.paletteKey)))
         return caps

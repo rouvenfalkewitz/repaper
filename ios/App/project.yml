@@ -20,7 +20,7 @@ targets:
       path: RePaperGo.entitlements
       properties:
         com.apple.security.application-groups: [group.net.repaper.go]
-        com.apple.developer.nfc.readersession.formats: [NDEF]
+        com.apple.developer.nfc.readersession.formats: [NDEF, TAG]
         # lets iOS password managers offer repaper.schisch.net credentials in the app.
         # The plain entry validates via Apple's CDN (verified cached); the ?mode=developer
         # twin is ONLY honored when Settings→Developer→Associated Domains Development is

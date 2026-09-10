@@ -13,6 +13,7 @@ struct SettingsView: View {
     @State private var adding = false
     @State private var showScanner = false
     @State private var showPaste = false
+    @State private var nfc = NfcReader()
     @State private var confirmSignOut = false
     @State private var signOutNote = ""
     @State private var actionSheet: Sheet?
@@ -132,6 +133,12 @@ struct SettingsView: View {
                 Button("Re-program the NFC tag") {
                     let s = actionSheet; actionSheet = nil
                     if let s { Task { await reprogramTag(s) } }
+                }
+            }
+            if NfcReader.available {
+                Button(actionSheet?.tagUid == nil ? "Set up tapping" : "Re-learn the tag") {
+                    let s = actionSheet; actionSheet = nil
+                    if let s { learnTag(for: s.id) }
                 }
             }
             Button("Remove from this device", role: .destructive) {
@@ -279,14 +286,38 @@ struct SettingsView: View {
             _ = try await SheetOps.describeAndRegister(landing, link: link)
             addLink = ""; showPaste = false
             switch SheetOps.lastTagProgrammed {
-            case .some(true): addNote = "Added \(landing.name) — it prints, and you can tap it too."
-            case .some(false): addNote = "Added \(landing.name) — it prints fine. (Tap-to-print needs newer sheet firmware; choose it from the list for now.)"
-            case .none: addNote = ""
+            case .some(true):
+                addNote = "Added \(landing.name) — it prints, and you can tap it too."
+            case .some(false):
+                // the sheet's firmware can't fill its own tag — remember the tag's
+                // hardware serial instead, so tapping still works. One tap, right now.
+                if NfcReader.available {
+                    addNote = "Added \(landing.name). One more step for tap-to-print…"
+                    learnTag(for: landing.name)
+                } else {
+                    addNote = "Added \(landing.name) — it prints fine. Choose it from the list to print."
+                }
+            case .none:
+                addNote = ""
             }
         } catch {
             addNote = error.localizedDescription
         }
         adding = false
+    }
+
+    /// Fallback tap setup: remember the tag's hardware serial so tapping matches it
+    /// later — for sheets whose firmware can't fill their own NDEF sticker.
+    private func learnTag(for sheetId: String) {
+        nfc.scan(prompt: "Hold the sheet to the top edge of the iPhone to set up tapping.") { read in
+            guard let read, !read.uid.isEmpty else {
+                addNote = "Added — it prints fine. (Tapping wasn't set up; you can add it later from the sheet's options.)"
+                return
+            }
+            SheetStore.shared.setTagUid(sheetId, read.uid)
+            DiagLog.log("tag fingerprint learned for \(sheetId): \(read.uid)")
+            addNote = "All set — tapping this sheet prints on it."
+        }
     }
 
     private func reprogramTag(_ sheet: Sheet) async {

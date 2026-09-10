@@ -92,6 +92,7 @@ struct Sheet: Identifiable, Equatable {
     var keyHex: String?
     var bleAddress: String?
     var landingUrl: String?   // the original QR/NFC link — needed to (re)program the tag
+    var tagUid: String?       // the tag's hardware serial — fallback tap match when the tag has no landing link
     var model: SheetModel
 
     static func == (a: Sheet, b: Sheet) -> Bool { a.id == b.id }
@@ -124,6 +125,7 @@ struct Sheet: Identifiable, Equatable {
                          keyHex: (keys["key"] as? String).flatMap { $0.isEmpty ? nil : $0 },
                          bleAddress: (keys["ble_address"] as? String).flatMap { $0.isEmpty ? nil : $0 },
                          landingUrl: (keys["landing"] as? String).flatMap { $0.isEmpty ? nil : $0 },
+                         tagUid: (keys["tag_uid"] as? String).flatMap { $0.isEmpty ? nil : $0 },
                          model: SheetModel(width: w, height: h,
                                            palette: m["palette"] as? String ?? "BW",
                                            inset: m["inset"] as? [Int] ?? [0, 0, 0, 0]))
@@ -137,6 +139,7 @@ struct Sheet: Identifiable, Equatable {
             if let k = s.keyHex { keys["key"] = k }
             if let b = s.bleAddress { keys["ble_address"] = b }
             if let l = s.landingUrl { keys["landing"] = l }
+            if let u = s.tagUid { keys["tag_uid"] = u }
             obj[s.id] = ["name": s.name, "transport": "opendisplay-ble", "address": s.address, "keys": keys,
                          "model": ["width": s.model.width, "height": s.model.height,
                                    "palette": s.model.palette, "inset": s.model.inset]]
@@ -155,6 +158,14 @@ struct Sheet: Identifiable, Equatable {
     func find(_ landing: Landing) -> Sheet? {
         sheets.first { $0.id.caseInsensitiveCompare(landing.name) == .orderedSame
                     || $0.address.caseInsensitiveCompare(landing.name) == .orderedSame }
+    }
+    func findByUid(_ uid: String) -> Sheet? {
+        sheets.first { $0.tagUid?.caseInsensitiveCompare(uid) == .orderedSame }
+    }
+    /// Remember a tag's hardware serial for a sheet (the fallback-tap fingerprint).
+    func setTagUid(_ id: String, _ uid: String) {
+        guard let i = sheets.firstIndex(where: { $0.id == id }) else { return }
+        sheets[i].tagUid = uid; save()
     }
 }
 
