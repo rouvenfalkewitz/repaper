@@ -49,13 +49,19 @@ struct TechRow: View {
 }
 
 /// A tab screen's title header (the bottom bar replaced the old back-arrow headers).
-struct TabHeader: View {
+/// An optional trailing control sits opposite the title — e.g. the Sheets "+".
+struct TabHeader<Trailing: View>: View {
     let title: String
+    private let trailing: Trailing
+    init(title: String, @ViewBuilder trailing: () -> Trailing = { EmptyView() }) {
+        self.title = title
+        self.trailing = trailing()
+    }
     var body: some View {
         HStack {
             Text(title).font(Ui.display(24, weight: 800, width: 100)).foregroundColor(Ui.text)
             Spacer()
-            RingMark(size: 22)
+            trailing
         }
         .padding(.bottom, 4)
     }

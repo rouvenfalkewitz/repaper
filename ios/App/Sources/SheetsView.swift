@@ -1,8 +1,9 @@
 import SwiftUI
 import RePaperKit
 
-/// The Sheets tab: the e-paper this phone can print on — the library, adding by QR or
-/// pasted link, and the NFC-tap setup. (The sheet-link tech strip lives at the foot.)
+/// The Sheets tab: the e-paper this phone can print on. Compact device-style rows that
+/// surface the real facts about each sheet — its address, size, palette and whether
+/// tap-to-print is set up — with a "+" to add by QR or a pasted link.
 struct SheetsView: View {
     @EnvironmentObject var sheets: SheetStore
     @State private var addLink = ""
@@ -15,26 +16,27 @@ struct SheetsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 0) {
-                TabHeader(title: "Sheets")
+            VStack(spacing: 14) {
+                TabHeader(title: "Sheets") { addButton }
 
-                VStack(spacing: 0) {
-                    ForEach(sheets.sheets) { s in
-                        sheetRow(s)
-                        RowDivider()
+                if sheets.sheets.isEmpty {
+                    emptyState
+                } else {
+                    VStack(spacing: 0) {
+                        ForEach(sheets.sheets) { s in
+                            sheetRow(s)
+                            if s.id != sheets.sheets.last?.id { RowDivider() }
+                        }
                     }
-                    if sheets.sheets.isEmpty {
-                        Text("No sheets yet — scan the QR on a sheet to add your first.")
-                            .font(Ui.body(13)).foregroundColor(Ui.text3)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        RowDivider()
-                    }
-                    addRows
-                    RowDivider()
-                    TechRow(icon: "dot.radiowaves.left.and.right", title: "Sheet link",
-                            sub: "How pages reach the paper", chips: ["OpenDisplay BLE", "NFC tags"])
+                    .card()
                 }
-                .card()
+
+                if showPaste { pasteCard }
+                if adding || !addNote.isEmpty { statusLine }
+
+                TechRow(icon: "dot.radiowaves.left.and.right", title: "Sheet link",
+                        sub: "How pages reach the paper", chips: ["OpenDisplay BLE", "NFC tags"])
+                    .card()
             }
             .padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 28)
         }
@@ -63,71 +65,140 @@ struct SheetsView: View {
         .sheet(isPresented: $showScanner) { scannerSheet }
     }
 
-    /// A sheet as a sheet — address + inks up top, the panel at its real aspect ratio
-    /// in a carbon bezel, the name below.
-    private func sheetRow(_ s: Sheet) -> some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text(s.address.uppercased())
-                    .font(Ui.mono(11)).kerning(0.8).foregroundColor(Ui.text2)
-                Spacer()
-                PalDots(palette: s.model.palette)
-            }
-            let pw: CGFloat = 190
-            let ph = min(max(pw * CGFloat(s.model.height) / CGFloat(s.model.width), 28), 190)
-            ZStack {
-                RoundedRectangle(cornerRadius: 4).fill(Ui.epaperPanel)
-                Text("\(s.model.width)×\(s.model.height)").font(Ui.mono(11)).foregroundColor(Ui.ink)
-            }
-            .frame(width: pw, height: ph)
-            .padding(6)
-            .background(RoundedRectangle(cornerRadius: 10).fill(Ui.epaperBezel))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Ui.borderStrong, lineWidth: 1))
-            .padding(.top, 10).padding(.bottom, 8)
-            Text(s.name).font(Ui.body(16, weight: 600)).foregroundColor(Ui.text)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Text("hold for options").font(Ui.mono(10)).foregroundColor(Ui.text3)
-                .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 2)
+    /// The accent "+" that replaced the decorative ring — the primary way to add.
+    private var addButton: some View {
+        Button {
+            if QrScanView.available { showScanner = true }
+            else { withAnimation(.easeOut(duration: 0.2)) { showPaste = true } }
+        } label: {
+            Image(systemName: "plus")
+                .font(.system(size: 17, weight: .bold)).foregroundColor(Ui.onAccent)
+                .frame(width: 36, height: 36)
+                .background(Circle().fill(Ui.accent))
+                .shadow(color: Ui.accent.opacity(0.35), radius: 8, y: 2)
         }
-        .contentShape(Rectangle())
-        .onLongPressGesture { actionSheet = s }
+        .buttonStyle(.plain)
     }
 
-    /// Adding a sheet: camera first, pasting tucked away.
-    private var addRows: some View {
-        VStack(spacing: 10) {
+    /// A sheet as a compact row: a small e-paper chip at its true aspect ratio, the name,
+    /// a mono meta line (address · size), then the palette and a tap-ready badge.
+    private func sheetRow(_ s: Sheet) -> some View {
+        HStack(spacing: 14) {
+            epaperChip(s)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(s.name).font(Ui.body(16, weight: 600)).foregroundColor(Ui.text).lineLimit(1)
+                HStack(spacing: 7) {
+                    Text(s.address.uppercased()).font(Ui.mono(11)).kerning(0.5).foregroundColor(Ui.text3)
+                    Text("·").font(Ui.mono(11)).foregroundColor(Ui.text3)
+                    Text("\(s.model.width)×\(s.model.height)").font(Ui.mono(11)).foregroundColor(Ui.text3)
+                }
+                HStack(spacing: 8) {
+                    PalDots(palette: s.model.palette)
+                    if s.tagUid != nil { tapReadyChip }
+                }
+            }
+            Spacer(minLength: 4)
+            Button { actionSheet = s } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 17, weight: .semibold)).foregroundColor(Ui.text3)
+                    .frame(width: 34, height: 34)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.vertical, 12)
+        .contentShape(Rectangle())
+        .onTapGesture { actionSheet = s }
+    }
+
+    /// The label in miniature — carbon bezel, blank paper panel at the real aspect ratio.
+    /// Not a print preview (we don't hold one), just the shape and proportions of the sheet.
+    private func epaperChip(_ s: Sheet) -> some View {
+        let w: CGFloat = 52
+        let h = min(max(w * CGFloat(s.model.height) / CGFloat(s.model.width), 30), 52)
+        return RoundedRectangle(cornerRadius: 4).fill(Ui.epaperPanel)
+            .frame(width: w, height: h)
+            .padding(5)
+            .background(RoundedRectangle(cornerRadius: 9).fill(Ui.epaperBezel))
+            .overlay(RoundedRectangle(cornerRadius: 9).stroke(Ui.borderStrong, lineWidth: 1))
+            .frame(width: 62, height: 62)   // fixed cell so rows align regardless of aspect
+    }
+
+    /// A little accent chip that says tap-to-print is set up for this sheet.
+    private var tapReadyChip: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "wave.3.right").font(.system(size: 9, weight: .bold))
+            Text("TAP").font(Ui.display(9, weight: 700, width: 112)).kerning(0.8)
+        }
+        .foregroundColor(Ui.accent)
+        .padding(.horizontal, 7).padding(.vertical, 3)
+        .background(Capsule().fill(Ui.accentTint))
+    }
+
+    /// The empty state: a friendly label mark and a single clear call to action.
+    private var emptyState: some View {
+        VStack(spacing: 16) {
+            bigLabelMark
+            VStack(spacing: 6) {
+                Text("No sheets yet").font(Ui.body(17, weight: 700)).foregroundColor(Ui.text)
+                Text("Add your first RePaper sheet by scanning the QR code printed on it.")
+                    .font(Ui.body(13)).foregroundColor(Ui.text3).multilineTextAlignment(.center)
+            }
             if QrScanView.available {
-                UiButton(label: "Scan QR code", primary: true) { showScanner = true }.disabled(adding)
-            }
-            if !QrScanView.available || showPaste {
-                HStack(spacing: 8) {
-                    TextField("https://…", text: $addLink)
-                        .font(Ui.mono(12)).foregroundColor(Ui.text)
-                        .textInputAutocapitalization(.never).autocorrectionDisabled()
-                        .padding(.horizontal, 10).padding(.vertical, 10)
-                        .background(RoundedRectangle(cornerRadius: 10).fill(Ui.bg))
-                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Ui.borderStrong, lineWidth: 1))
-                    Button { Task { await addSheet() } } label: {
-                        Text("Add").font(Ui.body(14, weight: 700)).foregroundColor(Ui.onAccent)
-                            .padding(.horizontal, 16).padding(.vertical, 10)
-                            .background(RoundedRectangle(cornerRadius: 10).fill(Ui.accent))
-                    }.disabled(adding)
-                }
-            }
-            if adding || !addNote.isEmpty {
-                HStack(spacing: 8) {
-                    if adding { ProgressView().tint(Ui.accent).scaleEffect(0.8) }
-                    Text(adding && addNote.isEmpty ? "Reading the sheet — keep it nearby…" : addNote)
-                        .font(Ui.body(12)).foregroundColor(adding ? Ui.text2 : Ui.amber)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            if !showPaste && QrScanView.available {
-                Button { showPaste = true } label: {
-                    Text("or paste the sheet's link").font(Ui.mono(11)).foregroundColor(Ui.text3).underline()
+                UiButton(label: "Scan QR code", primary: true) { showScanner = true }
+            } else {
+                UiButton(label: "Add by pasting a link", primary: true) {
+                    withAnimation(.easeOut(duration: 0.2)) { showPaste = true }
                 }
             }
         }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40).padding(.horizontal, 24)
+        .card()
+    }
+
+    /// A larger version of the label motif, for the empty state.
+    private var bigLabelMark: some View {
+        VStack(spacing: 5) {
+            RoundedRectangle(cornerRadius: 2).fill(Ui.ink).frame(width: 42, height: 5)
+            RoundedRectangle(cornerRadius: 2).fill(Ui.epaperRed).frame(width: 26, height: 5)
+        }
+        .frame(width: 66, height: 44)
+        .background(RoundedRectangle(cornerRadius: 6).fill(Ui.epaperPanel))
+        .padding(8)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Ui.epaperBezel))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Ui.borderStrong, lineWidth: 1))
+    }
+
+    /// Pasting a link — revealed by "+" when the camera isn't available (or on demand).
+    private var pasteCard: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 8) {
+                TextField("https://…", text: $addLink)
+                    .font(Ui.mono(12)).foregroundColor(Ui.text)
+                    .textInputAutocapitalization(.never).autocorrectionDisabled()
+                    .padding(.horizontal, 10).padding(.vertical, 10)
+                    .background(RoundedRectangle(cornerRadius: 10).fill(Ui.bg))
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Ui.borderStrong, lineWidth: 1))
+                Button { Task { await addSheet() } } label: {
+                    Text("Add").font(Ui.body(14, weight: 700)).foregroundColor(Ui.onAccent)
+                        .padding(.horizontal, 16).padding(.vertical, 10)
+                        .background(RoundedRectangle(cornerRadius: 10).fill(Ui.accent))
+                }.disabled(adding)
+            }
+            Text("Paste the link from a sheet's QR code.")
+                .font(Ui.body(12)).foregroundColor(Ui.text3)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .card()
+    }
+
+    private var statusLine: some View {
+        HStack(spacing: 8) {
+            if adding { ProgressView().tint(Ui.accent).scaleEffect(0.8) }
+            Text(adding && addNote.isEmpty ? "Reading the sheet — keep it nearby…" : addNote)
+                .font(Ui.body(12)).foregroundColor(adding ? Ui.text2 : Ui.amber)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var scannerSheet: some View {
