@@ -1,15 +1,19 @@
 import SwiftUI
 
 /// The gate: a RePaper Go belongs to a RePaper account. Signing in claims this phone into
-/// your fleet automatically — no claim codes. The footer line is the on-prem entry point.
+/// your fleet automatically — no claim codes. Two stages: credentials, then (if the
+/// account has it) a dedicated two-factor screen. The footer line is the on-prem entry point.
 struct AuthView: View {
+    enum Stage { case credentials, twoFactor }
+
     @EnvironmentObject var cloud: CloudAgent
+    @State private var stage: Stage = .credentials
     @State private var email = ""
     @State private var password = ""
     @State private var code = ""
-    @State private var showCode = false
     @State private var note = ""
     @State private var noteColor = Ui.amber
+    @State private var busy = false
     @State private var consent: (org: String, admin: Bool)?
     @State private var showCloudSheet = false
     @State private var cloudUrl = ""
@@ -20,39 +24,21 @@ struct AuthView: View {
                 BrandLockup(height: 40)
                     .padding(.top, 48)
 
-                Text("Sign in with your RePaper account — this \(deviceWord) joins your fleet automatically.")
-                    .font(Ui.body(14)).foregroundColor(Ui.text2)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 8).padding(.top, 10).padding(.bottom, 18)
-
-                field("Email", text: $email, keyboard: .emailAddress, content: .username)
-                field("Password", text: $password, secure: true, content: .password).padding(.top, 10)
-                if showCode {
-                    field("Code from your authenticator app", text: $code, keyboard: .numberPad, content: .oneTimeCode).padding(.top, 10)
+                switch stage {
+                case .credentials: credentials.transition(.opacity)
+                case .twoFactor: twoFactor.transition(.asymmetric(insertion: .move(edge: .trailing), removal: .opacity))
                 }
-
-                if !note.isEmpty {
-                    Text(note).font(Ui.body(13)).foregroundColor(noteColor)
-                        .multilineTextAlignment(.center).padding(.top, 10)
-                }
-
-                UiButton(label: "Sign in", primary: true) { Task { await signIn() } }.padding(.top, 16)
-                UiButton(label: "Create account", primary: false) {
-                    if let url = URL(string: "\(Prefs.cloudBase)/register") { UIApplication.shared.open(url) }
-                }.padding(.top, 8)
-
-                // the footer line doubles as the on-prem entry point: tapping the server name
-                // opens the reconfigure dialog — invisible to everyone who doesn't need it
-                Text(cloudLabel)
-                    .font(Ui.mono(11)).foregroundColor(Ui.text3)
-                    .padding(.vertical, 10).padding(.horizontal, 16)
-                    .padding(.top, 14)
-                    .onTapGesture { cloudUrl = Prefs.cloudBase; showCloudSheet = true }
             }
             .padding(.horizontal, 24).padding(.bottom, 28)
+            .animation(.easeInOut(duration: 0.28), value: stage)
         }
         .background(Ui.bg.ignoresSafeArea())
-        .onAppear { cloud.start() }   // the device channel connects meanwhile, so claiming is instant
+        .onAppear {
+            cloud.start()   // the device channel connects meanwhile, so claiming is instant
+            if ProcessInfo.processInfo.arguments.contains("--twofa-preview") {
+                email = "you@example.com"; stage = .twoFactor   // screenshot hook
+            }
+        }
         .alert("Add this \(deviceWord) to \(consent?.org ?? "")?", isPresented: .init(
             get: { consent != nil }, set: { if !$0 { consent = nil } })) {
             Button("Add this \(deviceWord)") { let c = consent; consent = nil; Task { await activate(admin: c?.admin ?? true) } }
@@ -62,6 +48,84 @@ struct AuthView: View {
                  + ((consent?.admin ?? true) ? "" : "\n\nAn administrator of \(consent?.org ?? "your organisation") must approve it before you can print."))
         }
         .sheet(isPresented: $showCloudSheet) { cloudSheet }
+    }
+
+    // ── stage 1: email + password ────────────────────────────────────────────
+
+    private var credentials: some View {
+        VStack(spacing: 0) {
+            Text("Sign in with your RePaper account — this \(deviceWord) joins your fleet automatically.")
+                .font(Ui.body(14)).foregroundColor(Ui.text2)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 8).padding(.top, 10).padding(.bottom, 18)
+
+            field("Email", text: $email, keyboard: .emailAddress, content: .username)
+            field("Password", text: $password, secure: true, content: .password).padding(.top, 10)
+
+            note(where: .credentials)
+
+            UiButton(label: busy ? "Signing in…" : "Sign in", primary: true) { Task { await signIn() } }
+                .padding(.top, 16).disabled(busy)
+            UiButton(label: "Create account", primary: false) {
+                if let url = URL(string: "\(Prefs.cloudBase)/register") { UIApplication.shared.open(url) }
+            }.padding(.top, 8)
+
+            // the footer line doubles as the on-prem entry point: tapping the server name
+            // opens the reconfigure dialog — invisible to everyone who doesn't need it
+            Text(cloudLabel)
+                .font(Ui.mono(11)).foregroundColor(Ui.text3)
+                .padding(.vertical, 10).padding(.horizontal, 16)
+                .padding(.top, 14)
+                .onTapGesture { cloudUrl = Prefs.cloudBase; showCloudSheet = true }
+        }
+    }
+
+    // ── stage 2: the dedicated two-factor screen ─────────────────────────────
+
+    private var twoFactor: some View {
+        VStack(spacing: 0) {
+            // shield hero — signals "this is a security step"
+            ZStack {
+                Circle().fill(Ui.accentTint).frame(width: 72, height: 72)
+                Image(systemName: "lock.shield.fill")
+                    .font(.system(size: 34)).foregroundColor(Ui.accent)
+            }
+            .padding(.top, 24)
+
+            Text("TWO-STEP VERIFICATION")
+                .font(Ui.display(13, weight: 800, width: 94)).kerning(0.6)
+                .foregroundColor(Ui.text)
+                .padding(.top, 16)
+            Text("Enter the 6-digit code from your authenticator app for \(email).")
+                .font(Ui.body(14)).foregroundColor(Ui.text2)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 12).padding(.top, 6)
+
+            CodeField(code: $code, length: 6) { Task { await verifyCode() } }
+                .padding(.top, 26)
+
+            note(where: .twoFactor)
+
+            UiButton(label: busy ? "Verifying…" : "Verify", primary: true) { Task { await verifyCode() } }
+                .padding(.top, 18)
+                .disabled(busy || code.count < 6)
+            Button {
+                code = ""; note = ""; stage = .credentials
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "chevron.left").font(.system(size: 12, weight: .semibold))
+                    Text("Back to sign in").font(Ui.body(14, weight: 600))
+                }.foregroundColor(Ui.text2)
+            }
+            .padding(.top, 16)
+        }
+    }
+
+    @ViewBuilder private func note(where stage: Stage) -> some View {
+        if self.stage == stage, !note.isEmpty {
+            Text(note).font(Ui.body(13)).foregroundColor(noteColor)
+                .multilineTextAlignment(.center).padding(.top, 12)
+        }
     }
 
     private var deviceWord: String { UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone" }
@@ -106,34 +170,52 @@ struct AuthView: View {
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Ui.borderStrong, lineWidth: 1))
     }
 
-    // ── the sign-in flow, mirroring Android's AuthActivity ───────────────────
+    // ── the sign-in flow ─────────────────────────────────────────────────────
 
     private func signIn() async {
         let em = email.trimmingCharacters(in: .whitespaces)
         if em.isEmpty || password.isEmpty { note = "Email and password, please."; return }
-        noteColor = Ui.amber; note = "Signing in…"
+        noteColor = Ui.amber; note = "Signing in…"; busy = true
+        defer { busy = false }
         do {
             let base = Prefs.cloudBase
-            if showCode {
-                let r = try await post("\(base)/api/login/2fa", ["code": code.trimmingCharacters(in: .whitespaces)])
-                guard r["ok"] as? Bool == true else { throw Err(r["error"] as? String ?? "that code didn't match") }
-            } else {
-                let r = try await post("\(base)/api/login", ["email": em, "password": password])
-                if r["twofa"] as? Bool == true {
-                    showCode = true
-                    note = "Enter the code from your authenticator app."
-                    return
-                }
-                guard r["ok"] as? Bool == true else { throw Err(r["error"] as? String ?? "sign in failed") }
+            let r = try await post("\(base)/api/login", ["email": em, "password": password])
+            if r["twofa"] as? Bool == true {
+                note = ""; code = ""
+                stage = .twoFactor
+                return
             }
-            // who am I → the consent dialog names the workspace this phone would join
+            guard r["ok"] as? Bool == true else { throw Err(r["error"] as? String ?? "sign in failed") }
+            await afterAuthenticated(base)
+        } catch {
+            note = error.localizedDescription
+        }
+    }
+
+    private func verifyCode() async {
+        guard code.count == 6, !busy else { return }
+        noteColor = Ui.amber; note = "Verifying…"; busy = true
+        defer { busy = false }
+        do {
+            let base = Prefs.cloudBase
+            let r = try await post("\(base)/api/login/2fa", ["code": code.trimmingCharacters(in: .whitespaces)])
+            guard r["ok"] as? Bool == true else { throw Err(r["error"] as? String ?? "that code didn't match") }
+            await afterAuthenticated(base)
+        } catch {
+            noteColor = Ui.red; note = error.localizedDescription; code = ""
+        }
+    }
+
+    /// who am I → the consent dialog names the workspace this phone would join
+    private func afterAuthenticated(_ base: String) async {
+        do {
             let me = try await get("\(base)/api/me")
             let org = (me["org"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "your fleet"
             let isAdmin = me["role"] as? String == "admin" || me["personal"] as? Bool == true
             note = ""
             consent = (org, isAdmin)
         } catch {
-            note = error.localizedDescription
+            noteColor = Ui.red; note = error.localizedDescription
         }
     }
 
@@ -184,5 +266,50 @@ struct AuthView: View {
         let message: String
         init(_ m: String) { message = m }
         var errorDescription: String? { message }
+    }
+}
+
+/// A segmented 6-box code entry: an invisible field captures the digits (and autofill),
+/// the boxes show them, the active box glows in the accent. Auto-submits when full.
+struct CodeField: View {
+    @Binding var code: String
+    var length = 6
+    var onComplete: () -> Void
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        ZStack {
+            TextField("", text: $code)
+                .keyboardType(.numberPad)
+                .textContentType(.oneTimeCode)
+                .focused($focused)
+                .foregroundColor(.clear).accentColor(.clear)
+                .frame(width: 1, height: 1).opacity(0.01)
+                .onChange(of: code) { v in
+                    let digits = String(v.filter(\.isNumber).prefix(length))
+                    if digits != code { code = digits }
+                    if code.count == length { focused = false; onComplete() }
+                }
+            HStack(spacing: 9) {
+                ForEach(0..<length, id: \.self) { box($0) }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture { focused = true }
+        }
+        .onAppear { DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { focused = true } }
+    }
+
+    private func box(_ i: Int) -> some View {
+        let chars = Array(code)
+        let filled = i < chars.count
+        let active = i == chars.count && focused
+        return Text(filled ? String(chars[i]) : "")
+            .font(Ui.display(24, weight: 700))
+            .foregroundColor(Ui.text)
+            .frame(width: 46, height: 58)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Ui.bg))
+            .overlay(RoundedRectangle(cornerRadius: 12)
+                .stroke(active ? Ui.accent : Ui.borderStrong, lineWidth: active ? 2 : 1))
+            .shadow(color: active ? Ui.accent.opacity(0.3) : .clear, radius: 8)
     }
 }
