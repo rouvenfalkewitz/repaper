@@ -22,82 +22,86 @@ struct MainView: View {
     @State private var pickMirrorFor: MirrorPending? // a Print2Go job waiting for a sheet choice
     @State private var mirrorAutoTried: Set<String> = []
     @State private var offerP2G = false              // one-time Print2Go offer on first launch
+    @State private var showHelp = false              // the how-to lives behind the help button
 
     var body: some View {
         GeometryReader { geo in
-        ScrollView {
+        ZStack(alignment: .top) {
             VStack(spacing: 0) {
+                // fixed top bar: the lockup, and a help button that reveals the how-to
                 HStack {
                     BrandLockup(height: 26)
                     Spacer()
+                    if hasHelp { helpButton }
                 }
+                .padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 2)
 
-                // the hero sits at a FIXED offset (per device, never per state): every
-                // slot below has a reserved height, so the ring never moves when the
-                // state, texts or buttons change.
-                Spacer().frame(height: max(24, geo.size.height * 0.055))
+                // the hero — ring, state readout and action — centred in what's left
+                ScrollView {
+                    VStack(spacing: 0) {
+                        Spacer(minLength: 20)
+                        // the ring in its box — the device outcut, like the Dock's page
+                        RingBox { RingView(led: led) }
+                        pill
+                            .frame(height: 26)
+                            .padding(.top, 18)
+                        // the state as a readout: big condensed display caps, tracked, in
+                        // the state's own colour — it reads as a live status, not a heading
+                        Text(title.uppercased())
+                            .font(Ui.display(26, weight: 800, width: 94)).kerning(0.5)
+                            .foregroundColor(stateColor)
+                            .frame(height: 34)
+                            .padding(.top, 6)
+                        Text(subtitle)
+                            .font(Ui.body(14)).foregroundColor(Ui.text2)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 16).padding(.top, 4)
+                            .frame(height: 58, alignment: .top)
 
-                // the ring in its box — the device outcut, exactly like the Dock's page
-                RingBox { RingView(led: led) }
-                pill
-                    .frame(height: 26)
-                    .padding(.top, 18)
-                // the state as a readout: big condensed display caps, tracked, in the
-                // state's own colour — it reads as a live status, not a heading
-                Text(title.uppercased())
-                    .font(Ui.display(26, weight: 800, width: 94)).kerning(0.5)
-                    .foregroundColor(stateColor)
-                    .frame(height: 34)
-                    .padding(.top, 6)
-                Text(subtitle)
-                    .font(Ui.body(14)).foregroundColor(Ui.text2)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 16).padding(.top, 4)
-                    .frame(height: 58, alignment: .top)
-
-                // action slot — reserved even when empty, so the layout stays put.
-                // tap-to-print appears only when a job actually needs a sheet CHOICE
-                // (several sheets, cycling off); choosing from the list is the fallback.
-                VStack(spacing: 8) {
-                    if led == .wait, sheets.sheets.count > 1, !Prefs.cycleSheets {
-                        if NfcReader.available {
-                            nfcTapButton
-                            Button { pickFor = jobs.first } label: {
-                                Text("or choose from the list")
-                                    .font(Ui.mono(11)).foregroundColor(Ui.text3).underline()
+                        // action slot — reserved even when empty, so the layout stays put.
+                        // tap-to-print appears only when a job actually needs a sheet CHOICE
+                        // (several sheets, cycling off); the list is the fallback.
+                        VStack(spacing: 8) {
+                            if led == .wait, sheets.sheets.count > 1, !Prefs.cycleSheets {
+                                if NfcReader.available {
+                                    nfcTapButton
+                                    Button { pickFor = jobs.first } label: {
+                                        Text("or choose from the list")
+                                            .font(Ui.mono(11)).foregroundColor(Ui.text3).underline()
+                                    }
+                                } else {
+                                    UiButton(label: "Choose the sheet", primary: true) { pickFor = jobs.first }
+                                }
                             }
-                        } else {
-                            UiButton(label: "Choose the sheet", primary: true) { pickFor = jobs.first }
                         }
-                    }
-                }
-                .frame(height: 84, alignment: .top)
-                .padding(.top, 10)
+                        .frame(height: 84, alignment: .top)
+                        .padding(.top, 10)
 
-                if !jobs.isEmpty || !cloud.pending.isEmpty {
-                    SectionHeader(text: "Waiting to print")
-                    ForEach(cloud.pending) { p in
-                        MirrorCard(pending: p)
-                            .onTapGesture { pickMirrorFor = p }
-                    }
-                    ForEach(jobs, id: \.self) { job in
-                        JobCard(job: job)
-                            .onTapGesture { pickFor = job }
-                            .contextMenu {
-                                Button(role: .destructive) {
-                                    try? FileManager.default.removeItem(at: job); refresh()
-                                } label: { Label("Discard", systemImage: "trash") }
+                        if !jobs.isEmpty || !cloud.pending.isEmpty {
+                            SectionHeader(text: "Waiting to print")
+                            ForEach(cloud.pending) { p in
+                                MirrorCard(pending: p)
+                                    .onTapGesture { pickMirrorFor = p }
                             }
+                            ForEach(jobs, id: \.self) { job in
+                                JobCard(job: job)
+                                    .onTapGesture { pickFor = job }
+                                    .contextMenu {
+                                        Button(role: .destructive) {
+                                            try? FileManager.default.removeItem(at: job); refresh()
+                                        } label: { Label("Discard", systemImage: "trash") }
+                                    }
+                            }
+                        }
+                        Spacer(minLength: 20)
                     }
-                } else if led == .ready {
-                    howToPrint
-                } else if led == .setup {
-                    setupSteps
+                    .padding(.horizontal, 20)
+                    .frame(minHeight: geo.size.height - 76, alignment: .center)
                 }
-                Spacer(minLength: 24)
             }
-            .padding(.horizontal, 20).padding(.top, 16)
-            .frame(minHeight: geo.size.height - 40, alignment: .top)
+
+            // the how-to, revealed by the help button: it fades in over the top
+            if showHelp { helpOverlay }
         }
         }
         .background(Ui.bg.ignoresSafeArea())
@@ -131,6 +135,7 @@ struct MainView: View {
             // visual-test hooks: `simctl launch … --open-settings`/`--open-sheets` jump straight there
             if ProcessInfo.processInfo.arguments.contains("--open-settings") { nav.tab = .settings }
             if ProcessInfo.processInfo.arguments.contains("--open-sheets") { nav.tab = .sheets }
+            if ProcessInfo.processInfo.arguments.contains("--show-help") { showHelp = true }
         }
         .onChange(of: scenePhase) { p in if p == .active { refresh() } }   // a share may have spooled a job
     }
@@ -192,6 +197,42 @@ struct MainView: View {
         print(job: job, on: known)
     }
 
+    // ── help: the how-to hides until you ask for it ──────────────────────────
+
+    /// There's a how-to to show only in the two "resting" states.
+    private var hasHelp: Bool { led == .ready || led == .setup }
+
+    /// A small round help button, top-right — the only way to the how-to.
+    private var helpButton: some View {
+        Button { withAnimation(.easeOut(duration: 0.22)) { showHelp = true } } label: {
+            Image(systemName: "questionmark")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundColor(Ui.text2)
+                .frame(width: 34, height: 34)
+                .background(Circle().fill(Ui.surface))
+                .overlay(Circle().stroke(Ui.border, lineWidth: 1))
+        }
+    }
+
+    /// The how-to, fading in over the top of the screen (setup steps in setup,
+    /// the print how-to when ready). Tap anywhere or "Got it" to dismiss.
+    private var helpOverlay: some View {
+        ZStack(alignment: .top) {
+            Color.black.opacity(0.6).ignoresSafeArea()
+                .onTapGesture { withAnimation(.easeOut(duration: 0.18)) { showHelp = false } }
+                .transition(.opacity)
+            VStack(spacing: 14) {
+                if led == .setup { setupSteps } else { howToPrint }
+                Button { withAnimation(.easeOut(duration: 0.18)) { showHelp = false } } label: {
+                    Text("Got it").font(Ui.body(14, weight: 700)).foregroundColor(Ui.text2)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 74)
+            .transition(.move(edge: .top).combined(with: .opacity))
+        }
+    }
+
     /// How printing works, told in pictures: share → the app → e-paper.
     /// Numbered steps under a "HOW TO USE" header (Rouven, 10 Sep).
     private var howToPrint: some View {
@@ -221,7 +262,7 @@ struct MainView: View {
         .frame(maxWidth: .infinity)
         .background(RoundedRectangle(cornerRadius: 14).fill(Ui.surface))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Ui.border, lineWidth: 1))
-        .padding(.top, 18)
+        .shadow(color: .black.opacity(0.5), radius: 20, y: 10)
     }
 
     /// First-run steps, same numbered-tile language as the how-to card — but in the
@@ -249,7 +290,7 @@ struct MainView: View {
         .frame(maxWidth: .infinity)
         .background(RoundedRectangle(cornerRadius: 14).fill(Ui.surface))
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Ui.border, lineWidth: 1))
-        .padding(.top, 18)
+        .shadow(color: .black.opacity(0.5), radius: 20, y: 10)
     }
 
     private var howArrow: some View {
