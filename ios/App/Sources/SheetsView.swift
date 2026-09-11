@@ -248,33 +248,22 @@ struct SheetsView: View {
     /// Add a sheet: scan first, with a paste fallback that's always there for when the
     /// camera can't read the code.
     private var addOverlay: some View {
-        ZStack(alignment: .bottom) {
+        let canScan = QrScanView.available
+        return ZStack(alignment: .bottom) {
             scrim { hideAdd() }
             VStack(alignment: .leading, spacing: 16) {
                 grabber
-                Text("Add a sheet").font(Ui.body(18, weight: 700)).foregroundColor(Ui.text)
-                if QrScanView.available {
-                    UiButton(label: "Scan QR code", primary: true) { showScanner = true }.disabled(adding)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Add a sheet").font(Ui.body(18, weight: 700)).foregroundColor(Ui.text)
+                    Text(canScan ? "Scan the QR printed on the sheet — or paste its link."
+                                 : "Paste the link from the sheet's QR code to add it.")
+                        .font(Ui.body(13)).foregroundColor(Ui.text3)
+                }
+                if canScan {
+                    scanCard
                     orDivider
                 }
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(QrScanView.available ? "Can't scan it? Paste the link instead"
-                                              : "Paste the sheet's link")
-                        .font(Ui.body(13, weight: 600)).foregroundColor(Ui.text2)
-                    HStack(spacing: 8) {
-                        TextField("https://…", text: $addLink)
-                            .font(Ui.mono(12)).foregroundColor(Ui.text)
-                            .textInputAutocapitalization(.never).autocorrectionDisabled()
-                            .padding(.horizontal, 10).padding(.vertical, 10)
-                            .background(RoundedRectangle(cornerRadius: 10).fill(Ui.bg))
-                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Ui.borderStrong, lineWidth: 1))
-                        Button { Task { await addSheet() } } label: {
-                            Text("Add").font(Ui.body(14, weight: 700)).foregroundColor(Ui.onAccent)
-                                .padding(.horizontal, 16).padding(.vertical, 10)
-                                .background(RoundedRectangle(cornerRadius: 10).fill(Ui.accent))
-                        }.disabled(adding)
-                    }
-                }
+                pasteField
                 if adding || !addNote.isEmpty { statusLine }
             }
             .padding(20).padding(.bottom, 12)
@@ -286,6 +275,55 @@ struct SheetsView: View {
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
         .zIndex(3)
+    }
+
+    /// The primary way in: a big accent card with the QR viewfinder — an invitation, not
+    /// a plain button.
+    private var scanCard: some View {
+        Button { showScanner = true } label: {
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Ui.onAccent.opacity(0.16))
+                    Image(systemName: "qrcode.viewfinder").font(.system(size: 26, weight: .semibold))
+                        .foregroundColor(Ui.onAccent)
+                }
+                .frame(width: 52, height: 52)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Scan QR code").font(Ui.body(16, weight: 700)).foregroundColor(Ui.onAccent)
+                    Text("Point the camera at the sheet").font(Ui.body(12)).foregroundColor(Ui.onAccent.opacity(0.65))
+                }
+                Spacer()
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity)
+            .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Ui.accent))
+            .shadow(color: Ui.accent.opacity(0.3), radius: 12, y: 3)
+        }
+        .buttonStyle(PressScale(scale: 0.97))
+        .disabled(adding)
+    }
+
+    /// A modern one-line input: a link glyph, the field, and a circular submit that lights
+    /// up once there's something to add.
+    private var pasteField: some View {
+        let empty = addLink.trimmingCharacters(in: .whitespaces).isEmpty
+        return HStack(spacing: 10) {
+            Image(systemName: "link").font(.system(size: 14, weight: .semibold)).foregroundColor(Ui.text3)
+            TextField("Paste the sheet's link", text: $addLink)
+                .font(Ui.mono(13)).foregroundColor(Ui.text)
+                .textInputAutocapitalization(.never).autocorrectionDisabled()
+                .onSubmit { Task { await addSheet() } }
+            Button { Task { await addSheet() } } label: {
+                Image(systemName: "arrow.right").font(.system(size: 15, weight: .bold)).foregroundColor(Ui.onAccent)
+                    .frame(width: 34, height: 34).background(Circle().fill(Ui.accent))
+                    .opacity(empty ? 0.4 : 1)
+            }
+            .buttonStyle(PressScale(scale: 0.85))
+            .disabled(adding || empty)
+        }
+        .padding(.leading, 14).padding(.trailing, 6).padding(.vertical, 6)
+        .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Ui.bg))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Ui.borderStrong, lineWidth: 1))
     }
 
     /// Our own per-sheet configure panel — replaces the system action sheet, docks at the
