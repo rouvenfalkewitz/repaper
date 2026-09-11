@@ -137,18 +137,9 @@ class AuthActivity : AppCompatActivity() {
                     }
                     if (!r.optBoolean("ok")) throw Exception(r.optString("error", "sign in failed"))
                 }
-                // who am I → the consent dialog names the workspace this phone would join
-                val meInfo = withContext(Dispatchers.IO) { get("$base/api/me") }
-                val org = meInfo.optString("org", "your fleet")
-                val isAdmin = meInfo.optString("role") == "admin" || meInfo.optBoolean("personal")
-                note.text = ""
-                AlertDialog.Builder(this@AuthActivity)
-                    .setTitle("Add this phone to $org?")
-                    .setMessage("It appears in the fleet as “${Prefs.printerName(this@AuthActivity)}”." +
-                        if (isAdmin) "" else "\n\nAn administrator of $org must approve it before you can print.")
-                    .setPositiveButton("Add this phone") { _, _ -> activate(base) }
-                    .setNegativeButton("Not now") { _, _ -> note.text = "Signed in — the phone was not added." }
-                    .show()
+                // signing in IS joining the fleet (decision A) — no repeated prompt.
+                // A member simply lands on the "waiting for approval" screen.
+                activate(base)
             } catch (e: Exception) { note.text = e.message ?: "sign in failed" }
         }
     }

@@ -1,3 +1,4 @@
+0.2.12 (11 Sep 2026) — Print2Go: print the jobs sent to a Dock on this phone (choose the Dock in Settings). Signing in now joins the fleet directly.
 0.2.11 (10 Sep 2026) — Receives jobs mirrored from a RePaper Dock Light and prints them like any shared page. Ready-screen how-to reads above the pictures.
 0.2.10 (10 Sep 2026) — Tap-to-print reads even mangled NFC tags; unreadable tags show what they contain; sheet adding reports whether the tag was programmed.
 0.2.9 (10 Sep 2026) — Sheets program their own NFC tag over Bluetooth when added (and can be re-programmed from the sheet options) — tapping a sheet now always works; a fresh tap-to-print look.

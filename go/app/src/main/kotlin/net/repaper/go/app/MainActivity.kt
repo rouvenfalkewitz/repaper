@@ -184,23 +184,33 @@ class MainActivity : AppCompatActivity() {
     /** The LED language, app edition: Printing > flash (Printed/Failed) > Job waiting > Setup > Ready. */
     private fun refresh() {
         val waiting = jobs.list()
+        val pending = CloudAgent.get(this).pending
         val f = flash
         // automatic sheet choice: one sheet decides itself; with "cycle through sheets" on,
         // several take turns. One attempt each — a failure shows red and waits for a tap.
         val ids = registry.ids()
         val auto = ids.size == 1 || (Prefs.cycleSheets(this) && ids.size > 1)
-        if (!busy && f == null && waiting.isNotEmpty() && auto && ids.isNotEmpty()) {
-            val job = waiting.first()
-            if (autoTried.add(job.name)) {
-                val pick = if (ids.size == 1) ids[0] else ids[Prefs.cycleIx(this) % ids.size]
-                printJob(job, pick, advanceCycle = ids.size > 1); return
+        if (!busy && f == null && auto && ids.isNotEmpty()) {
+            if (waiting.isNotEmpty()) {
+                val job = waiting.first()
+                if (autoTried.add(job.name)) {
+                    val pick = if (ids.size == 1) ids[0] else ids[Prefs.cycleIx(this) % ids.size]
+                    printJob(job, pick, advanceCycle = ids.size > 1); return
+                }
+            } else if (pending.isNotEmpty()) {
+                val p = pending.first()
+                if (autoTried.add(p.id)) {
+                    val pick = if (ids.size == 1) ids[0] else ids[Prefs.cycleIx(this) % ids.size]
+                    printMirror(p, pick, advanceCycle = ids.size > 1); return
+                }
             }
         }
+        val anyWaiting = waiting.isNotEmpty() || pending.isNotEmpty()
         when {
             busy -> setState(RingView.Led.BUSY, "Printing…", "Keep the sheet nearby.")
             f == RingView.Led.DONE -> setState(f, "Printed", "Take a look at the sheet.")
             f == RingView.Led.ERR -> setState(f, "Not printed", "Hold on — then just try again.")
-            waiting.isNotEmpty() -> setState(RingView.Led.WAIT, "Job waiting",
+            anyWaiting -> setState(RingView.Led.WAIT, "Job waiting",
                 if (registry.ids().isEmpty()) "Add a sheet in Settings first."
                 else if (android.nfc.NfcAdapter.getDefaultAdapter(this) != null) "Tap the sheet with this phone — or choose it below."
                 else "Choose the sheet to print it on.")
@@ -211,8 +221,27 @@ class MainActivity : AppCompatActivity() {
         }
 
         jobList.removeAllViews()
-        if (waiting.isNotEmpty()) {
+        if (anyWaiting) {
             jobList.addView(Ui.sectionHeader(this, "Waiting to print"))
+            for (p in pending) {
+                val card = Ui.card(this, ripple = true)
+                card.orientation = LinearLayout.HORIZONTAL; card.gravity = Gravity.CENTER_VERTICAL
+                card.addView(ImageView(this).apply {
+                    setImageResource(R.drawable.ic_share); setColorFilter(Ui.ACCENT)
+                    background = android.graphics.drawable.GradientDrawable().apply {
+                        setColor(Ui.SURFACE_2); cornerRadius = dp(10).toFloat(); setStroke(dp(1), Ui.BORDER_STRONG)
+                    }
+                    setPadding(dp(9), dp(9), dp(9), dp(9))
+                    layoutParams = LinearLayout.LayoutParams(dp(52), dp(46)).apply { rightMargin = dp(12) }
+                })
+                card.addView(LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_VERTICAL
+                    addView(Ui.displayText(this@MainActivity, p.name, 16f, Ui.TEXT, weight = 600))
+                    addView(Ui.monoText(this@MainActivity, "from ${p.from} · tap to choose a sheet", 11f).apply { setPadding(0, dp(3), 0, 0) })
+                }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                card.setOnClickListener { pickSheetForMirror(p) }
+                jobList.addView(card)
+            }
             for (job in waiting) {
                 val card = Ui.card(this, ripple = true)
                 card.orientation = LinearLayout.HORIZONTAL
@@ -351,6 +380,37 @@ class MainActivity : AppCompatActivity() {
                 if (advanceCycle) Prefs.bumpCycleIx(this@MainActivity)
                 busy = false; flashState(RingView.Led.DONE, 3000)
             } catch (e: Exception) {
+                busy = false; flashState(RingView.Led.ERR, 6000); toast(e.message ?: "print failed")
+            }
+        }
+    }
+
+    private fun pickSheetForMirror(p: CloudAgent.Pending) {
+        val ids = registry.ids()
+        if (ids.isEmpty()) { toast("Add a sheet in Settings first."); return }
+        AlertDialog.Builder(this).setTitle("Print on which sheet?")
+            .setItems(ids.map { registry.name(it) }.toTypedArray()) { _, which -> printMirror(p, ids[which]) }
+            .setNegativeButton("Cancel", null).show()
+    }
+
+    /** A Print2Go job: claim it (first to print wins), then print like any page. */
+    private fun printMirror(p: CloudAgent.Pending, sheetId: String, advanceCycle: Boolean = false) {
+        lifecycleScope.launch {
+            busy = true; refresh()
+            val cloud = CloudAgent.get(this@MainActivity)
+            val file = withContext(Dispatchers.IO) { cloud.takeJob(p.id) }
+            if (file == null) { busy = false; refresh(); return@launch }   // another device grabbed it
+            try {
+                withContext(Dispatchers.IO) {
+                    printFlow.printPdf(file, sheetId) { phase -> runOnUiThread { statusSub.text = phase } }
+                    cloud.jobDone(p.id)
+                }
+                file.delete()
+                if (advanceCycle) Prefs.bumpCycleIx(this@MainActivity)
+                busy = false; flashState(RingView.Led.DONE, 3000)
+            } catch (e: Exception) {
+                withContext(Dispatchers.IO) { cloud.jobReleased(p.id) }   // couldn't print — back to the pool
+                file.delete()
                 busy = false; flashState(RingView.Led.ERR, 6000); toast(e.message ?: "print failed")
             }
         }

@@ -7,8 +7,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
@@ -35,6 +37,10 @@ class CloudAgent(private val context: Context) {
     @Volatile var approved: Boolean = true; private set
     @Volatile var org: String? = null; private set
     val claimCode: String get() = identity.claimCode
+
+    /** A Print2Go job offered but not yet claimed — first to actually print wins. */
+    data class Pending(val id: String, val name: String, val from: String)
+    @Volatile var pending: List<Pending> = emptyList(); private set
 
     fun start() {
         if (state != "off") return
@@ -95,38 +101,60 @@ class CloudAgent(private val context: Context) {
                 sendStatus(socket)
             }
             "identify" -> {} // a phone has no LED ring; the app could vibrate later
+            "signed_out" -> {
+                claimed = false; Prefs.setClaimed(context, false)   // the sign-in gate returns
+                onJobArrived?.invoke()
+            }
             "mirror_job" -> {
-                // a Dock Light somewhere printed a page for THIS device — fetch and spool it
-                val job = msg.optJSONObject("job")
-                if (job != null) scope.launch { fetchMirrorJob(job.optString("id"), job.optString("name", "job")) }
+                // a Dock offered a job to the pool — remember it; we only claim when we print
+                val job = msg.optJSONObject("job") ?: return
+                val id = job.optString("id")
+                if (id.isNotEmpty() && pending.none { it.id == id }) {
+                    pending = pending + Pending(id, job.optString("name", "job"), job.optString("from", "a Dock"))
+                    onJobArrived?.invoke()
+                }
+            }
+            "mirror_taken", "mirror_done" -> {
+                val id = msg.optJSONObject("job")?.optString("id") ?: return
+                pending = pending.filterNot { it.id == id }
+                onJobArrived?.invoke()
             }
             "diag" -> socket.send(JSONObject().put("t", "diag").put("log", DiagLog.dump()).toString())
         }
     }
 
-    /** The main screen (when open) refreshes the moment a mirror job lands. */
+    /** The main screen (when open) refreshes the moment the pending set changes. */
     @Volatile var onJobArrived: (() -> Unit)? = null
 
-    private fun fetchMirrorJob(id: String, name: String) {
-        if (id.isEmpty()) return
-        try {
-            val body = JSONObject().put("id", identity.deviceId).put("secret", identity.secret)
-            val resp = client.newCall(okhttp3.Request.Builder()
-                .url("${Prefs.cloudBase(context)}/api/device/mirror-job/$id")
-                .post(okhttp3.RequestBody.create(null, body.toString()))
-                .header("Content-Type", "application/json")
-                .build()).execute()
-            val obj = resp.use { JSONObject(it.body?.string() ?: "{}") }
-            if (!obj.optBoolean("ok")) { DiagLog.log("mirror job $id: fetch refused"); return }
-            val bytes = android.util.Base64.decode(obj.optString("data"), android.util.Base64.DEFAULT)
-            val ext = if (obj.optString("type") == "pdf") "pdf" else "png"
-            JobStore(context).newJob(name, ext).writeBytes(bytes)
-            DiagLog.log("mirror job spooled: $name (${bytes.size} B)")
-            onJobArrived?.invoke()
-        } catch (e: Exception) {
-            DiagLog.log("mirror job $id failed: ${e.message}")
-        }
+    /** Claim a job + get its page (first wins). Returns the spooled file, or null if lost. */
+    fun takeJob(id: String): java.io.File? {
+        pending = pending.filterNot { it.id == id }
+        val obj = post("mirror-job/$id/take") ?: return null
+        if (!obj.optBoolean("ok")) { DiagLog.log("take $id: lost the race or gone"); return null }
+        val bytes = android.util.Base64.decode(obj.optString("data"), android.util.Base64.DEFAULT)
+        val ext = if (obj.optString("type") == "pdf") "pdf" else "png"
+        return JobStore(context).newJob(obj.optString("name", "job"), ext).apply { writeBytes(bytes) }
     }
+    fun jobDone(id: String) { post("mirror-job/$id/done") }
+    fun jobReleased(id: String) { post("mirror-job/$id/release") }
+
+    /** The org's Print2Go Docks this phone can print from. */
+    fun print2goDocks(): List<JSONObject> {
+        val arr = post("print2go-docks")?.optJSONArray("docks") ?: return emptyList()
+        return (0 until arr.length()).map { arr.getJSONObject(it) }
+    }
+    fun setMirrorFrom(dockId: String?): Boolean =
+        post("mirror-from", JSONObject().put("dock_id", dockId ?: JSONObject.NULL))?.optBoolean("ok") == true
+
+    private fun post(path: String, extra: JSONObject = JSONObject()): JSONObject? = try {
+        val body = JSONObject().put("id", identity.deviceId).put("secret", identity.secret)
+        for (k in extra.keys()) body.put(k, extra.get(k))
+        val resp = client.newCall(Request.Builder()
+            .url("${Prefs.cloudBase(context)}/api/device/$path")
+            .post(body.toString().toRequestBody("application/json".toMediaType()))
+            .build()).execute()
+        resp.use { JSONObject(it.body?.string() ?: "{}") }
+    } catch (e: Exception) { DiagLog.log("post $path failed: ${e.message}"); null }
 
     private fun sendStatus(socket: WebSocket) {
         val reg = Registry(context)

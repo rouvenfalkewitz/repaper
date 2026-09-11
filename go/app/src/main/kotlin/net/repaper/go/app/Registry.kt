@@ -7,7 +7,7 @@ import org.json.JSONObject
 import java.io.File
 import java.security.SecureRandom
 
-const val GO_VERSION = "0.2.11"
+const val GO_VERSION = "0.2.12"
 
 /** Same shape as the Dock's ~/.repaper/sheets.json: id → {name, transport, address, keys, model}.
  *  The AES key from the QR link lives only here. */
@@ -85,6 +85,13 @@ object Prefs {
     /** With several sheets: print on each in turn instead of asking. */
     fun cycleSheets(context: android.content.Context): Boolean = p(context).getBoolean("sheet_cycle", false)
     fun setCycleSheets(context: android.content.Context, v: Boolean) = p(context).edit().putBoolean("sheet_cycle", v).apply()
+
+    /** Print2Go: the Dock this phone prints from (name, display cache; cloud is the truth). */
+    fun print2goDock(context: android.content.Context): String? = p(context).getString("print2go_dock", null)
+    fun setPrint2goDock(context: android.content.Context, name: String?) =
+        p(context).edit().apply { if (name == null) remove("print2go_dock") else putString("print2go_dock", name) }.apply()
+    fun print2goOffered(context: android.content.Context): Boolean = p(context).getBoolean("print2go_offered", false)
+    fun setPrint2goOffered(context: android.content.Context, v: Boolean) = p(context).edit().putBoolean("print2go_offered", v).apply()
     fun cycleIx(context: android.content.Context): Int = p(context).getInt("cycle_ix", 0)
     fun bumpCycleIx(context: android.content.Context) = p(context).edit().putInt("cycle_ix", cycleIx(context) + 1).apply()
 

@@ -118,6 +118,31 @@ class SettingsActivity : AppCompatActivity() {
         })
 
         val cloud = CloudAgent.get(this)
+
+        // Print2Go: this phone can also print the jobs sent to a Dock
+        listView.addView(Ui.sectionHeader(this, "Print2Go"))
+        listView.addView(Ui.card(this).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            addView(LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(Ui.displayText(this@SettingsActivity, "Print jobs from a Dock", 15f, Ui.TEXT, weight = 600))
+                val src = Prefs.print2goDock(this@SettingsActivity)
+                addView(Ui.bodyText(this@SettingsActivity,
+                    src?.let { "Printing jobs sent to $it, on this phone's sheets." }
+                        ?: "This phone prints the jobs sent to the Dock you pick.", 12f).apply { setPadding(0, dp(2), 0, 0) })
+            }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(android.widget.Switch(this@SettingsActivity).apply {
+                isChecked = Prefs.print2goDock(this@SettingsActivity) != null
+                setOnCheckedChangeListener { btn, on ->
+                    if (!btn.isPressed) return@setOnCheckedChangeListener
+                    if (on) pickPrint2goDock() else lifecycleScope.launch {
+                        withContext(Dispatchers.IO) { cloud.setMirrorFrom(null) }
+                        Prefs.setPrint2goDock(this@SettingsActivity, null); refresh()
+                    }
+                }
+            })
+        })
+
         listView.addView(Ui.sectionHeader(this, "Cloud"))
         listView.addView(Ui.card(this).apply {
             addView(LinearLayout(context).apply {
@@ -167,6 +192,31 @@ class SettingsActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
                 .apply { topMargin = dp(24) }
         })
+    }
+
+    /** Pick which Dock this phone prints from (Print2Go). */
+    private fun pickPrint2goDock() {
+        lifecycleScope.launch {
+            val cloud = CloudAgent.get(this@SettingsActivity)
+            val docks = withContext(Dispatchers.IO) { cloud.print2goDocks() }
+            if (docks.isEmpty()) {
+                toast("No Docks in your fleet have Print2Go on yet — turn it on in a Dock's settings first.")
+                refresh(); return@launch   // reverts the switch (nothing is set)
+            }
+            val names = docks.map { it.optString("name") + if (it.optBoolean("online")) "" else " (offline)" }.toTypedArray()
+            AlertDialog.Builder(this@SettingsActivity).setTitle("Print jobs from which Dock?")
+                .setItems(names) { _, which ->
+                    val dock = docks[which]
+                    lifecycleScope.launch {
+                        val ok = withContext(Dispatchers.IO) { cloud.setMirrorFrom(dock.optString("id")) }
+                        if (ok) { Prefs.setPrint2goDock(this@SettingsActivity, dock.optString("name")); toast("Jobs sent to ${dock.optString("name")} now print here too.") }
+                        else toast("Couldn't set that up — check the connection.")
+                        refresh()
+                    }
+                }
+                .setOnCancelListener { refresh() }
+                .show()
+        }
     }
 
     private fun confirmSignOut(org: String?) {
