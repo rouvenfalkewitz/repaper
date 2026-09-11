@@ -253,12 +253,6 @@ struct SheetsView: View {
             scrim { hideAdd() }
             VStack(alignment: .leading, spacing: 16) {
                 grabber
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Add a sheet").font(Ui.body(18, weight: 700)).foregroundColor(Ui.text)
-                    Text(canScan ? "Scan the QR printed on the sheet — or paste its link."
-                                 : "Paste the link from the sheet's QR code to add it.")
-                        .font(Ui.body(13)).foregroundColor(Ui.text3)
-                }
                 if canScan {
                     scanCard
                     orDivider
@@ -283,15 +277,12 @@ struct SheetsView: View {
         Button { showScanner = true } label: {
             HStack(spacing: 14) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Ui.onAccent.opacity(0.16))
-                    Image(systemName: "qrcode.viewfinder").font(.system(size: 26, weight: .semibold))
+                    RoundedRectangle(cornerRadius: 11, style: .continuous).fill(Ui.onAccent.opacity(0.16))
+                    Image(systemName: "qrcode.viewfinder").font(.system(size: 24, weight: .semibold))
                         .foregroundColor(Ui.onAccent)
                 }
-                .frame(width: 52, height: 52)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Scan QR code").font(Ui.body(16, weight: 700)).foregroundColor(Ui.onAccent)
-                    Text("Point the camera at the sheet").font(Ui.body(12)).foregroundColor(Ui.onAccent.opacity(0.65))
-                }
+                .frame(width: 46, height: 46)
+                Text("Scan QR code").font(Ui.body(16, weight: 700)).foregroundColor(Ui.onAccent)
                 Spacer()
             }
             .padding(14)

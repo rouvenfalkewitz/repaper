@@ -69,8 +69,12 @@ struct TabHeader<Trailing: View>: View {
         self.trailing = trailing()
     }
     var body: some View {
-        HStack {
-            Text(title).font(Ui.display(24, weight: 800, width: 100)).foregroundColor(Ui.text)
+        HStack(alignment: .center) {
+            // the tab name as a wordmark, in the CI letterforms (Archivo wght 800 / wdth
+            // 125, −0.03 em) — the same face as the RE|PAPER GO lockup and the GO button
+            Text(title.uppercased())
+                .font(Ui.display(26, weight: 800, width: 125)).kerning(-0.6)
+                .foregroundColor(Ui.text)
             Spacer()
             trailing
         }
