@@ -4,7 +4,7 @@
    signed-in user enters their claim code in the console. */
 import type { WebSocket } from "ws";
 import { hashSecret, secretMatches } from "./auth.js";
-import { addEvent, deviceLabel, getDevice, getOrg, mirrorPhones, openMirrorJobsFor, registerDevice, saveDeviceStatus, saveDiag, setDeviceKind, setDevicePlatform, setPushToken, setTargetVersion, touchDevice, upsertStat } from "./db.js";
+import { addEvent, deviceLabel, dockSheets, getDevice, getOrg, mirrorPhones, openMirrorJobsFor, registerDevice, saveDeviceStatus, saveDiag, setDeviceKind, setDevicePlatform, setDockSheetNfc, setPushToken, setTargetVersion, syncDockSheets, touchDevice, upsertStat } from "./db.js";
 
 const live = new Map<string, WebSocket>(); // device id → open socket
 const alive = new WeakMap<WebSocket, boolean>();
@@ -41,6 +41,17 @@ export const dropDevice = (id: string) => live.get(id)?.close(4001, "removed");
 export const notifyDockPeers = (dockId: string) => {
   const peers = mirrorPhones(dockId).map((p) => ({ name: deviceLabel(p), online: live.has(p.id) }));
   sendToDevice(dockId, { t: "print2go_peers", peers });
+};
+
+/** Send a paired phone the Dock's sheet set (Dock-Labels). An empty/blank dockId
+ *  sends an empty set — used to clear the phone's labels on unpair. */
+export const pushDockSheets = (phoneId: string, dockId: string) => {
+  const dock = dockId ? getDevice(dockId) : undefined;
+  const sheets = dockId ? dockSheets(dockId).map((r) => ({
+    id: r.sheet_id, name: r.name, address: r.address, link: r.link, model: r.model,
+    tag_uid: r.tag_uid, tag_programmed: !!r.tag_programmed,
+  })) : [];
+  sendToDevice(phoneId, { t: "dock_sheets", dock: dockId || null, dock_name: dock ? deviceLabel(dock) : null, sheets });
 };
 
 type Hello = { t: "hello"; id: string; secret: string; claim: string; kind: string; name: string; version: string; platform?: string };
@@ -103,6 +114,8 @@ export const handleDeviceSocket = (ws: WebSocket, remote: string) => {
       // Print2Go: a Dock gets its current peer list; a phone's Dock learns it came online
       if (d.kind === "dock" || d.kind === "dock-light") notifyDockPeers(d.id);
       else if (d.kind === "go" && d.mirror_from) notifyDockPeers(d.mirror_from);
+      // a paired phone inherits its Dock's sheets (Dock-Labels) on connect
+      if (claimed && d.kind === "go" && d.mirror_from) pushDockSheets(d.id, d.mirror_from);
       return;
     }
 
@@ -122,6 +135,31 @@ export const handleDeviceSocket = (ws: WebSocket, remote: string) => {
       const token = String(msg.token ?? "").replace(/[^0-9a-fA-F]/g, "").slice(0, 200);
       const env = msg.env === "production" ? "production" : "sandbox";
       if (token) setPushToken(deviceId, token, env);
+    }
+    if (msg.t === "sheets") {
+      // a Dock publishes its full sheet snapshot; the cloud diffs it and relays to paired phones
+      const d = getDevice(deviceId);
+      if (d && (d.kind === "dock" || d.kind === "dock-light")) {
+        const incoming = (Array.isArray(msg.sheets) ? msg.sheets : [])
+          .filter((s: { id?: unknown }) => typeof s.id === "string");
+        syncDockSheets(deviceId, incoming);
+        for (const p of mirrorPhones(deviceId)) pushDockSheets(p.id, deviceId);
+      }
+    }
+    if (msg.t === "sheet_nfc") {
+      // the one bidirectional field — a phone edits its paired Dock's sheet; a Dock edits its own
+      const sheetId = String(msg.sheet_id ?? "");
+      const d = getDevice(deviceId);
+      const dockId = (d?.kind === "dock" || d?.kind === "dock-light") ? deviceId : (d?.mirror_from ?? "");
+      if (dockId && sheetId) {
+        const uid = msg.uid == null ? null : String(msg.uid).replace(/[^0-9a-fA-F]/g, "").slice(0, 64);
+        const row = setDockSheetNfc(dockId, sheetId, uid, !!msg.programmed);
+        if (row) {
+          const note = { t: "sheet_nfc", sheet_id: sheetId, uid: row.tag_uid, programmed: !!row.tag_programmed };
+          sendToDevice(dockId, note);
+          for (const p of mirrorPhones(dockId)) if (p.id !== deviceId) sendToDevice(p.id, note);
+        }
+      }
     }
     if (msg.t === "diag") {
       saveDiag(deviceId, String(msg.log ?? "").slice(0, 64 * 1024));

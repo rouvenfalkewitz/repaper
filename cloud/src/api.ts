@@ -24,7 +24,7 @@ import {
 import { apnsConfigured, sendPush } from "./apns.js";
 import { COOKIE, endSession, hashPassword, loginAllowed, loginFailed, loginOk, requireUser, secretMatches, startSession, verifyPassword } from "./auth.js";
 import { mailEnabled, sendInviteMail, sendRegisterMail, sendResetMail } from "./mail/index.js";
-import { dropDevice, isOnline, notifyDockPeers, onlineCount, sendToDevice, setUpdateOffer } from "./devices.js";
+import { dropDevice, isOnline, notifyDockPeers, onlineCount, pushDockSheets, sendToDevice, setUpdateOffer } from "./devices.js";
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -256,6 +256,7 @@ export const registerApi = (app: FastifyInstance) => {
     addEvent(d.id, "print2go_source", dockId ? deviceLabel(getDevice(dockId)!) : "cleared");
     if (prev && prev !== dockId) notifyDockPeers(prev);   // the old Dock loses this phone
     if (dockId) notifyDockPeers(dockId);                   // the new Dock gains it
+    pushDockSheets(d.id, dockId ?? "");                    // inherit the new Dock's sheets (empty clears)
     return { ok: true, from: dockId ? deviceLabel(getDevice(dockId)!) : null };
   });
 
