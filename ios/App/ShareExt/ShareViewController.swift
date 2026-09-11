@@ -170,15 +170,11 @@ final class ShareViewController: UIViewController {
                 self.iconWrap.layer.borderColor = self.accent.cgColor
                 self.glyph.image = UIImage(systemName: "checkmark", withConfiguration: cfg)
                 self.glyph.tintColor = self.bg
-                self.titleLabel.text = "Ready to print"
-                self.status.text = "Opening RePaper Go…"
+                self.titleLabel.text = "Added to RePaper Go"
+                self.status.text = "Open the app to put it on a sheet."
                 self.popIcon()
-                // open the app, then dismiss the sheet
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
-                    self.openContainerApp()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        self.extensionContext?.completeRequest(returningItems: nil)
-                    }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) {
+                    self.extensionContext?.completeRequest(returningItems: nil)
                 }
             } else {
                 self.iconWrap.layer.borderColor = self.red.cgColor
@@ -200,29 +196,5 @@ final class ShareViewController: UIViewController {
                        initialSpringVelocity: 0.8, options: []) {
             self.iconWrap.transform = .identity
         }
-    }
-
-    /// Open the containing app via a custom URL scheme by walking the responder chain to
-    /// the UIApplication instance (a share extension can't call UIApplication.shared
-    /// directly). We look for an actual UIApplication and ask it to open the URL.
-    @objc @discardableResult
-    private func openURL(_ url: URL) -> Bool {
-        var responder: UIResponder? = self
-        while let r = responder {
-            if let application = r as? UIApplication {
-                return application.perform(#selector(openURL(_:)), with: url) != nil
-            }
-            responder = r.next
-        }
-        return false
-    }
-
-    private func openContainerApp() {
-        guard let url = URL(string: "repaper-go://print") else { return }
-        // documented path first (some hosts honour it), then the responder-chain fallback
-        extensionContext?.open(url) { [weak self] ok in
-            if !ok { _ = self?.openURL(url) }
-        }
-        openURL(url)
     }
 }

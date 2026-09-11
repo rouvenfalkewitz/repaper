@@ -18,13 +18,6 @@ struct RePaperGoApp: App {
             .environmentObject(cloud)
             .environmentObject(sheets)
             .preferredColorScheme(.dark)
-            .onOpenURL { url in
-                // the share extension launches us at repaper-go://print — land on the
-                // printer with the freshly shared job ready to go
-                if url.scheme == "repaper-go" {
-                    NotificationCenter.default.post(name: .openPrinter, object: nil)
-                }
-            }
         }
     }
 }

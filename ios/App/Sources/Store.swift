@@ -2,7 +2,7 @@ import Foundation
 import UIKit
 import RePaperKit
 
-let GO_IOS_VERSION = "0.1.19"
+let GO_IOS_VERSION = "0.1.20"
 
 /// App-level preferences — the Android app's Prefs, UserDefaults edition.
 enum Prefs {
