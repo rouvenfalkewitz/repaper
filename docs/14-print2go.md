@@ -62,10 +62,21 @@ through the "Waiting for approval" screen; admins get an in-app **Approve**.)
    push 0.0.27 when it's back on the network (was asleep at build time).**
 4. ✅ Seat-preserving sign-out (cloud side): dormant device keeps its seat; re-sign-in
    reactivates. iOS app still needs the `signed_out` push handling + one-time consent (A).
-3. ⏳ iOS Go: Print2Go setting + first-launch offer + Dock picker; **claim-on-print**
-   (take → print → done/release, NOT claim-on-receive — first to actually print wins);
-   handle the `signed_out` push; drop the repeated consent dialog (decision A).
-5. Android parity — the whole thing, in the final Android pass.
+3. ✅ iOS Go (0.1.5): Print2Go setting + first-launch offer + Dock picker; claim-on-print
+   (take → print → done/release); `signed_out` push; consent A. Settings render verified.
+   **Not yet installed on the iPhone — build after the break.**
+5. ✅ Android Go (0.2.12, deployed): the same — pending list, claim-on-print, Print2Go
+   settings section + Dock picker, consent A, signed_out. Emulator render verified.
+
+## Still open
+
+- **Pilot Pi → 0.0.27** (was asleep at build time; push when reachable).
+- **End-to-end field test** (Rouven, after the break): a Dock with Print2Go on forwards
+  a job → the phone shows it "from <Dock>" → choosing a sheet claims + prints; first to
+  grab wins. Needs the iPhone + the pilot + a sheet.
+- **Android cosmetic backlog** (separate final pass, not Print2Go): two-step 2FA +
+  segmented code, state-readout typography, setup/how-to numbered cards, tag-fingerprint
+  tap fallback, autofill assetlinks. See docs/13 backlog.
 
 **iOS claim semantics note:** the phone must NOT claim on receiving the push (an idle
 open app would hog every job). It keeps a pending list from `mirror_job`, and only calls
