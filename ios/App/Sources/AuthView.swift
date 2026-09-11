@@ -61,7 +61,7 @@ struct AuthView: View {
 
             note(where: .credentials)
 
-            UiButton(label: busy ? "Signing in…" : "Sign in", primary: true) { Task { await signIn() } }
+            UiButton(label: "Sign in", primary: true, loading: busy) { Task { await signIn() } }
                 .padding(.top, 16).disabled(busy)
             UiButton(label: "Create account", primary: false) {
                 if let url = URL(string: "\(Prefs.cloudBase)/register") { UIApplication.shared.open(url) }
@@ -103,7 +103,7 @@ struct AuthView: View {
 
             note(where: .twoFactor)
 
-            UiButton(label: busy ? "Verifying…" : "Verify", primary: true) { Task { await verifyCode() } }
+            UiButton(label: "Verify", primary: true, loading: busy) { Task { await verifyCode() } }
                 .padding(.top, 18)
                 .disabled(busy || code.count < 6)
             Button {
@@ -171,8 +171,8 @@ struct AuthView: View {
 
     private func signIn() async {
         let em = email.trimmingCharacters(in: .whitespaces)
-        if em.isEmpty || password.isEmpty { note = "Email and password, please."; return }
-        noteColor = Ui.amber; note = "Signing in…"; busy = true
+        if em.isEmpty || password.isEmpty { noteColor = Ui.amber; note = "Email and password, please."; return }
+        note = ""; busy = true          // the button shows a spinner; no status line
         defer { busy = false }
         do {
             let base = Prefs.cloudBase
@@ -185,13 +185,13 @@ struct AuthView: View {
             guard r["ok"] as? Bool == true else { throw Err(r["error"] as? String ?? "sign in failed") }
             await afterAuthenticated(base)
         } catch {
-            note = error.localizedDescription
+            noteColor = Ui.red; note = error.localizedDescription
         }
     }
 
     private func verifyCode() async {
         guard code.count == 6, !busy else { return }
-        noteColor = Ui.amber; note = "Verifying…"; busy = true
+        note = ""; busy = true          // spinner on the Verify button carries it
         defer { busy = false }
         do {
             let base = Prefs.cloudBase
@@ -217,7 +217,7 @@ struct AuthView: View {
     }
 
     private func activate(admin: Bool) async {
-        noteColor = Ui.amber; note = "Adding this \(deviceWord) to your fleet…"
+        note = ""   // the button spinner is still up; the gate cross-fades in a moment
         do {
             let approved = try await claimSelf()
             Prefs.claimed = true; Prefs.approved = approved
@@ -226,7 +226,7 @@ struct AuthView: View {
             cloud.approved = approved
             cloud.claimed = true              // the root router takes it from here (cross-fades)
         } catch {
-            note = error.localizedDescription
+            noteColor = Ui.red; note = error.localizedDescription
         }
     }
 

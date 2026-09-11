@@ -145,21 +145,29 @@ struct CardStyle: ViewModifier {
 }
 extension View { func card() -> some View { modifier(CardStyle()) } }
 
-/// Pill buttons: primary = accent fill, outline = hairline.
+/// Pill buttons: primary = accent fill, outline = hairline. When `loading`, the label is
+/// replaced by a spinner (and the button should be disabled by the caller).
 struct UiButton: View {
     let label: String
     var primary = true
+    var loading = false
     let action: () -> Void
     var body: some View {
         Button(action: action) {
-            Text(label)
-                .font(Ui.body(15, weight: 700))
-                .foregroundColor(primary ? Ui.onAccent : Ui.text2)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(RoundedRectangle(cornerRadius: 12).fill(primary ? Ui.accent : .clear))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(primary ? .clear : Ui.borderStrong, lineWidth: 1))
-                .shadow(color: primary ? Ui.accent.opacity(0.25) : .clear, radius: 10, y: 2)
+            ZStack {
+                Text(label)
+                    .font(Ui.body(15, weight: 700))
+                    .foregroundColor(primary ? Ui.onAccent : Ui.text2)
+                    .opacity(loading ? 0 : 1)
+                if loading {
+                    ProgressView().tint(primary ? Ui.onAccent : Ui.text2).scaleEffect(0.9)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(RoundedRectangle(cornerRadius: 12).fill(primary ? Ui.accent : .clear))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(primary ? .clear : Ui.borderStrong, lineWidth: 1))
+            .shadow(color: primary ? Ui.accent.opacity(0.25) : .clear, radius: 10, y: 2)
         }
         .buttonStyle(PressScale(scale: 0.97))
     }
