@@ -75,11 +75,26 @@ On the Dock: **Settings → RePaper Cloud → Cloud address** =
 enter it in the console under **Claim a device**. Printing never depends on any
 of this — an unreachable cloud only means the fleet view goes stale.
 
-## Updating after changes
+## Updating after changes (redeploy)
+
+The box is `repaper.schisch.net` (a.k.a. "the Hetzner box" — same machine). Push to
+GitHub first, then on the box pull and rebuild **only the `cloud` compose project**:
 
 ```bash
-cd repaper/cloud && git pull && docker compose up -d --build
+# locally
+git push origin main
+# on the box
+ssh root@repaper.schisch.net
+cd /root/repaper && git pull --ff-only origin main
+cd /root/repaper/cloud && docker compose up -d --build      # ~a few min; compiles better-sqlite3
+curl -s https://repaper.schisch.net/api/health              # → {"status":"ok"}
 ```
+
+**Only ever run compose from `/root/repaper/cloud`.** Other Docker Compose projects share
+this box and must stay up: `rally`, `erabeats`, and `traefik` (the shared reverse proxy).
+The image bundles the Dock release at the repo's `__version__` and auto-publishes it on
+startup, so a redeploy also makes that Dock version available OTA. DB is `data/cloud.db`
+in the `cloud-data` volume; migrations run on startup.
 
 ## Data & backup
 
