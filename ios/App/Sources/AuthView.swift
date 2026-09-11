@@ -48,10 +48,14 @@ struct AuthView: View {
             Text("Sign in with your RePaper account — this \(deviceWord) joins your fleet automatically.")
                 .font(Ui.body(14)).foregroundColor(Ui.text2)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 8).padding(.top, 10).padding(.bottom, 18)
+                .padding(.horizontal, 8).padding(.top, 12).padding(.bottom, 20)
 
-            field("Email", text: $email, keyboard: .emailAddress, content: .username)
-            field("Password", text: $password, secure: true, content: .password).padding(.top, 10)
+            VStack(spacing: 10) {
+                AuthField(icon: "envelope.fill", hint: "Email", text: $email,
+                          keyboard: .emailAddress, content: .username)
+                AuthField(icon: "lock.fill", hint: "Password", text: $password,
+                          secure: true, content: .password) { Task { await signIn() } }
+            }
 
             note(where: .credentials)
 
@@ -84,7 +88,7 @@ struct AuthView: View {
             .padding(.top, 24)
 
             Text("TWO-STEP VERIFICATION")
-                .font(Ui.display(13, weight: 800, width: 94)).kerning(0.6)
+                .font(Ui.display(14, weight: 800, width: 125)).kerning(0.4)
                 .foregroundColor(Ui.text)
                 .padding(.top, 16)
             Text("Enter the 6-digit code from your authenticator app for \(email).")
@@ -257,6 +261,42 @@ struct AuthView: View {
         let message: String
         init(_ m: String) { message = m }
         var errorDescription: String? { message }
+    }
+}
+
+/// A sign-in field with a leading glyph that lights up, and a border that turns accent
+/// while focused.
+private struct AuthField: View {
+    let icon: String
+    let hint: String
+    @Binding var text: String
+    var secure = false
+    var keyboard: UIKeyboardType = .default
+    var content: UITextContentType? = nil
+    var onSubmit: (() -> Void)? = nil
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        HStack(spacing: 11) {
+            Image(systemName: icon).font(.system(size: 15, weight: .medium))
+                .foregroundColor(focused ? Ui.accent : Ui.text3).frame(width: 20)
+            Group {
+                if secure { SecureField(hint, text: $text) }
+                else {
+                    TextField(hint, text: $text).keyboardType(keyboard)
+                        .textInputAutocapitalization(.never).autocorrectionDisabled()
+                }
+            }
+            .textContentType(content)
+            .font(Ui.body(15)).foregroundColor(Ui.text)
+            .focused($focused)
+            .onSubmit { onSubmit?() }
+        }
+        .padding(.horizontal, 14).padding(.vertical, 13)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Ui.bg))
+        .overlay(RoundedRectangle(cornerRadius: 12)
+            .stroke(focused ? Ui.accent : Ui.borderStrong, lineWidth: focused ? 1.5 : 1))
+        .animation(.easeOut(duration: 0.15), value: focused)
     }
 }
 

@@ -159,7 +159,9 @@ struct UiButton: View {
                 .padding(.vertical, 12)
                 .background(RoundedRectangle(cornerRadius: 12).fill(primary ? Ui.accent : .clear))
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(primary ? .clear : Ui.borderStrong, lineWidth: 1))
+                .shadow(color: primary ? Ui.accent.opacity(0.25) : .clear, radius: 10, y: 2)
         }
+        .buttonStyle(PressScale(scale: 0.97))
     }
 }
 
