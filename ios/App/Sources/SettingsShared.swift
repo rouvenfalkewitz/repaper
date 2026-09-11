@@ -48,6 +48,17 @@ struct TechRow: View {
     }
 }
 
+/// A press effect that scales instead of fading — so a button never turns translucent
+/// and reveals whatever sits behind it. Shared by the bottom bar and the sheet controls.
+struct PressScale: ButtonStyle {
+    var scale: CGFloat = 0.9
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? scale : 1)
+            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: configuration.isPressed)
+    }
+}
+
 /// A tab screen's title header (the bottom bar replaced the old back-arrow headers).
 /// An optional trailing control sits opposite the title — e.g. the Sheets "+".
 struct TabHeader<Trailing: View>: View {

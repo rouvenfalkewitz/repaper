@@ -104,13 +104,3 @@ private struct FloatingBar: View {
         .buttonStyle(PressScale())
     }
 }
-
-/// A press effect that scales instead of fading — so a raised button never turns
-/// translucent and reveals the bar behind it.
-private struct PressScale: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.9 : 1)
-            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: configuration.isPressed)
-    }
-}

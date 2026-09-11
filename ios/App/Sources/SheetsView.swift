@@ -14,6 +14,7 @@ struct SheetsView: View {
     @State private var showAdd = false        // our add panel (scan + paste fallback)
     @State private var showInfo = false        // "how sheets connect" panel
     @State private var configuring: Sheet?     // our per-sheet configure panel
+    @State private var dragY: CGFloat = 0       // live drag offset for a bottom panel
     @State private var nfc = NfcReader()
 
     var body: some View {
@@ -95,34 +96,63 @@ struct SheetsView: View {
     private func sheetRow(_ s: Sheet) -> some View {
         HStack(spacing: 14) {
             epaperChip(s)
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 7) {
                 Text(s.name).font(Ui.body(16, weight: 600)).foregroundColor(Ui.text).lineLimit(1)
-                HStack(spacing: 7) {
-                    // the address is the sheet's id; only show it when it adds something
-                    if s.address.caseInsensitiveCompare(s.name) != .orderedSame {
-                        Text(s.address.uppercased()).font(Ui.mono(11)).kerning(0.5).foregroundColor(Ui.text3)
-                        Text("·").font(Ui.mono(11)).foregroundColor(Ui.text3)
-                    }
+                // one line: the palette as a single segmented dot, then the pixel size
+                HStack(spacing: 8) {
+                    paletteDot(s.model.palette)
                     Text("\(s.model.width)×\(s.model.height)").font(Ui.mono(11)).foregroundColor(Ui.text3)
                 }
-                HStack(spacing: 8) {
-                    PalDots(palette: s.model.palette)
-                    if s.tagUid != nil { nfcBadge }
-                }
+                // NFC gets its own row — the chip stands on its own when tap is set up
+                if s.tagUid != nil { nfcBadge }
             }
             Spacer(minLength: 4)
-            Button { openConfigure(s) } label: {
-                Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 15, weight: .semibold)).foregroundColor(Ui.text2)
-                    .frame(width: 36, height: 36)
-                    .background(Circle().fill(Ui.surface2))
-                    .overlay(Circle().stroke(Ui.border, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
+            configureButton(s)
         }
         .padding(.vertical, 12)
         .contentShape(Rectangle())
         .onTapGesture { openConfigure(s) }
+    }
+
+    /// The per-sheet configure control: a tuning glyph on a raised tile, with a press scale.
+    private func configureButton(_ s: Sheet) -> some View {
+        Button { openConfigure(s) } label: {
+            Image(systemName: "slider.horizontal.3")
+                .font(.system(size: 16, weight: .semibold)).foregroundColor(Ui.text)
+                .frame(width: 38, height: 38)
+                .background(Circle().fill(LinearGradient(colors: [Ui.surface2, Ui.bg],
+                                                         startPoint: .topLeading, endPoint: .bottomTrailing)))
+                .overlay(Circle().stroke(Ui.borderStrong, lineWidth: 1))
+        }
+        .buttonStyle(PressScale(scale: 0.85))
+    }
+
+    /// The palette as one dot: a circle sliced into the sheet's colours.
+    private func paletteDot(_ palette: String) -> some View {
+        let cols = paletteColors(palette)
+        var stops: [Gradient.Stop] = []
+        let n = max(cols.count, 1)
+        for (i, c) in cols.enumerated() {
+            stops.append(.init(color: c, location: Double(i) / Double(n)))
+            stops.append(.init(color: c, location: Double(i + 1) / Double(n)))
+        }
+        return Circle()
+            .fill(AngularGradient(gradient: Gradient(stops: stops), center: .center, angle: .degrees(-90)))
+            .frame(width: 14, height: 14)
+            .overlay(Circle().stroke(Ui.borderStrong, lineWidth: 1))
+    }
+
+    private func paletteColors(_ palette: String) -> [Color] {
+        let mapped = palette.uppercased().compactMap { ch -> Color? in
+            switch ch {
+            case "B": return Ui.ink
+            case "W": return Ui.epaperPanel
+            case "R": return Ui.epaperRed
+            case "Y": return Ui.epaperYellow
+            default:  return nil
+            }
+        }
+        return mapped.isEmpty ? [Ui.ink, Ui.epaperPanel] : mapped
     }
 
     /// The label in miniature — carbon bezel, blank paper panel at the real aspect ratio.
@@ -251,6 +281,8 @@ struct SheetsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .panelBackground()
             .padding(.horizontal, 10).padding(.bottom, 8)
+            .offset(y: dragY)
+            .gesture(dragToDismiss { hideAdd() })
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
         .zIndex(3)
@@ -298,9 +330,22 @@ struct SheetsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .panelBackground()
             .padding(.horizontal, 10).padding(.bottom, 8)
+            .offset(y: dragY)
+            .gesture(dragToDismiss { hideConfigure() })
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
         .zIndex(3)
+    }
+
+    /// A downward drag on a bottom panel: follow the finger, and past a threshold let go
+    /// (the panel slides out via its transition); otherwise spring back.
+    private func dragToDismiss(_ close: @escaping () -> Void) -> some Gesture {
+        DragGesture()
+            .onChanged { dragY = max(0, $0.translation.height) }
+            .onEnded { v in
+                if v.translation.height > 110 { close() }
+                else { withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { dragY = 0 } }
+            }
     }
 
     private func configRow(icon: String, label: String, tint: Color = Ui.text,
@@ -313,7 +358,6 @@ struct SheetsView: View {
                     .overlay(RoundedRectangle(cornerRadius: 9).stroke(Ui.border, lineWidth: 1))
                 Text(label).font(Ui.body(15, weight: 600)).foregroundColor(tint)
                 Spacer()
-                Image(systemName: "chevron.right").font(.system(size: 12, weight: .semibold)).foregroundColor(Ui.text3)
             }
             .contentShape(Rectangle())
         }
@@ -360,10 +404,10 @@ struct SheetsView: View {
 
     // ── actions ──────────────────────────────────────────────────────────────
 
-    private func openAdd() { addNote = ""; withAnimation(.easeOut(duration: 0.22)) { showAdd = true } }
-    private func hideAdd() { withAnimation(.easeOut(duration: 0.18)) { showAdd = false; addNote = "" } }
-    private func openConfigure(_ s: Sheet) { withAnimation(.easeOut(duration: 0.22)) { configuring = s } }
-    private func hideConfigure() { withAnimation(.easeOut(duration: 0.18)) { configuring = nil } }
+    private func openAdd() { addNote = ""; dragY = 0; withAnimation(.easeOut(duration: 0.22)) { showAdd = true } }
+    private func hideAdd() { withAnimation(.easeOut(duration: 0.22)) { showAdd = false }; addNote = "" }
+    private func openConfigure(_ s: Sheet) { dragY = 0; withAnimation(.easeOut(duration: 0.22)) { configuring = s } }
+    private func hideConfigure() { withAnimation(.easeOut(duration: 0.22)) { configuring = nil } }
 
     private func paletteName(_ p: String) -> String {
         switch p.uppercased() {
