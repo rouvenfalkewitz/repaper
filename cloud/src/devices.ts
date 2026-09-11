@@ -4,7 +4,7 @@
    signed-in user enters their claim code in the console. */
 import type { WebSocket } from "ws";
 import { hashSecret, secretMatches } from "./auth.js";
-import { addEvent, deviceLabel, getDevice, getOrg, mirrorPhones, openMirrorJobsFor, registerDevice, saveDeviceStatus, saveDiag, setDeviceKind, setTargetVersion, touchDevice, upsertStat } from "./db.js";
+import { addEvent, deviceLabel, getDevice, getOrg, mirrorPhones, openMirrorJobsFor, registerDevice, saveDeviceStatus, saveDiag, setDeviceKind, setDevicePlatform, setTargetVersion, touchDevice, upsertStat } from "./db.js";
 
 const live = new Map<string, WebSocket>(); // device id → open socket
 const alive = new WeakMap<WebSocket, boolean>();
@@ -43,7 +43,7 @@ export const notifyDockPeers = (dockId: string) => {
   sendToDevice(dockId, { t: "print2go_peers", peers });
 };
 
-type Hello = { t: "hello"; id: string; secret: string; claim: string; kind: string; name: string; version: string };
+type Hello = { t: "hello"; id: string; secret: string; claim: string; kind: string; name: string; version: string; platform?: string };
 
 const ID_RE = /^[a-f0-9-]{8,64}$/;
 const CLAIM_RE = /^[A-Z0-9]{4}-[A-Z0-9]{4}$/;
@@ -82,6 +82,8 @@ export const handleDeviceSocket = (ws: WebSocket, remote: string) => {
         addEvent(h.id, "registered", remote);
         console.log(`device ${h.id} (${h.kind}) registered from ${remote} — unclaimed, code ${h.claim}`);
       }
+      // a Go app reports its platform so the Updates page can tab it as iOS or Android
+      if (h.kind === "go" && (h.platform === "ios" || h.platform === "android")) setDevicePlatform(h.id, h.platform);
       deviceId = h.id;
       live.get(deviceId)?.close(4002, "replaced"); // a reconnect supersedes a stale socket
       live.set(deviceId, ws);

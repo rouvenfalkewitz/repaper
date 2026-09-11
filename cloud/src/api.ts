@@ -32,7 +32,7 @@ type Authed = FastifyRequest & { user: UserRow };
 
 const publicDevice = (d: DeviceRow) => ({
   id: d.id, kind: d.kind, name: d.name, version: d.version, site: d.site, target_version: d.target_version,
-  approved: !!d.approved, dormant: !!d.dormant,
+  platform: d.platform, approved: !!d.approved, dormant: !!d.dormant,
   online: isOnline(d.id), last_seen: d.last_seen, claimed_at: d.claimed_at,
   status: JSON.parse(d.status || "{}"),
   stats: deviceStats(d.id).reverse(),

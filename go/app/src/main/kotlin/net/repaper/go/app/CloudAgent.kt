@@ -60,7 +60,7 @@ class CloudAgent(private val context: Context) {
                 override fun onOpen(webSocket: WebSocket, response: Response) {
                     webSocket.send(JSONObject()
                         .put("t", "hello").put("id", identity.deviceId).put("secret", identity.secret)
-                        .put("claim", identity.claimCode).put("kind", "go")
+                        .put("claim", identity.claimCode).put("kind", "go").put("platform", "android")
                         .put("version", GO_VERSION).toString())
                     opened.complete(true)
                 }

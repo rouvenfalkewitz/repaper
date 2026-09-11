@@ -53,7 +53,7 @@ struct MirrorPending: Identifiable, Equatable {
             var heartbeat: Task<Void, Never>?
             do {
                 try await send(["t": "hello", "id": Identity.shared.deviceId, "secret": Identity.shared.secret,
-                                "claim": Identity.shared.claimCode, "kind": "go", "version": GO_IOS_VERSION])
+                                "claim": Identity.shared.claimCode, "kind": "go", "platform": "ios", "version": GO_IOS_VERSION])
                 state = "online"; backoff = 2
                 heartbeat = Task { [weak self] in
                     while !Task.isCancelled {

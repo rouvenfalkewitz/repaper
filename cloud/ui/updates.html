@@ -15,17 +15,29 @@
   <main class="main">
     <div class="pagehead"><h1>Updates</h1><button class="btn outline small" id="uploadBtn" onclick="openUpload()" hidden></button></div>
 
-    <div id="hero"></div>
+    <nav class="tabs" id="tabs">
+      <a href="#docks" data-tab="docks"><span class="tabic" data-ic="dock"></span>Docks</a>
+      <a href="#ios" data-tab="ios"><span class="tabic" data-ic="apple"></span>iOS</a>
+      <a href="#android" data-tab="android"><span class="tabic" data-ic="android"></span>Android</a>
+    </nav>
 
-    <h2>Docks</h2>
-    <div class="card" id="devs"></div>
+    <section data-sec="docks">
+      <div id="hero"></div>
+      <h2>Docks &amp; Dock Lights</h2>
+      <div class="card" id="devs"></div>
+      <h2>What's new on the Dock</h2>
+      <div class="card" id="news"></div>
+    </section>
 
-    <h2>What's new on the Dock</h2>
-    <div class="card" id="news"></div>
+    <section data-sec="ios" hidden>
+      <h2>RePaper Go for iPhone &amp; iPad</h2>
+      <div class="card" id="iosCard"></div>
+    </section>
 
-    <h2>Mobile apps</h2>
-    <div class="card" id="apk"><div class="devmeta">Loading…</div></div>
-    <div class="card" id="ios"></div>
+    <section data-sec="android" hidden>
+      <h2>RePaper Go for Android</h2>
+      <div class="card" id="apk"><div class="devmeta">Loading…</div></div>
+    </section>
 
     <p class="trustline">Updates are verified before anything changes, install next to the running software, and undo themselves if a device doesn't come back healthy. Printing never depends on an update.</p>
   </main>
@@ -44,8 +56,18 @@ el("hero").innerHTML = `<div class="card"><div class="twofa"><span class="skl av
 el("devs").innerHTML = skeletons("rows", 2);
 el("news").innerHTML = skeletons("rows", 2);
 
+/* tabs: hash-routed sections, same pattern as the account page */
+function showTab(name) {
+  if (!document.querySelector(`[data-sec="${name}"]`)) name = "docks";
+  document.querySelectorAll("[data-sec]").forEach(s => s.hidden = s.dataset.sec !== name);
+  document.querySelectorAll("#tabs a").forEach(a => a.classList.toggle("active", a.dataset.tab === name));
+}
+document.querySelectorAll(".tabic").forEach(s => s.innerHTML = ICON[s.dataset.ic] || "");
+window.addEventListener("hashchange", () => showTab(location.hash.slice(1) || "docks"));
+showTab(location.hash.slice(1) || "docks");
+
 const fmtDate = (ts) => new Date(ts * 1000).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
-const isDock = (d) => d.kind === "dock";
+const isDock = (d) => d.kind === "dock" || d.kind === "dock-light";   // Dock Lights live with the Docks
 const installing = (d) => d.target_version && d.target_version !== d.version;
 const behind = (d) => isDock(d) && R.latest && d.version !== R.latest && !installing(d);
 
@@ -85,7 +107,8 @@ function deviceRow(d) {
     state = `<span class="stat ok">${ICON.check}Up to date</span>`;
   }
   const sub = d.online ? "online" : `last seen ${ago(d.last_seen)}`;
-  return `<div class="member"><span class="mrow">${icon}<span class="who2"><b>${name}</b><span class="mono">${sub}${ME?.vendor ? ` · v${esc(d.version || "?")}` : ""}</span></span></span>
+  const tag = d.kind === "dock-light" ? `<span class="minitag">Light</span>` : "";
+  return `<div class="member"><span class="mrow">${icon}<span class="who2"><b>${name}${tag}</b><span class="mono">${sub}${ME?.vendor ? ` · v${esc(d.version || "?")}` : ""}</span></span></span>
     <span class="row" style="gap:8px;flex-wrap:nowrap">${state}${action}</span></div>`;
 }
 
@@ -106,15 +129,21 @@ function render() {
   if (ME) { el("uploadBtn").hidden = !ME.vendor; el("uploadBtn").innerHTML = ICON.plus + "<span>Upload release</span>"; }
 }
 
-/* Android and iOS ship on their own cadences — each platform card carries
-   its own version stream and changelog. */
-function androidCard(a, phones) {
-  const phoneRows = phones.map(d => {
+/* Android and iOS ship on their own cadences — each platform card carries its own
+   version stream, connected phones, and changelog, in the same row style. */
+function phoneRows(phones, iconKey, appVersion) {
+  return phones.map(d => {
     const name = esc(d.name || (d.status || {}).printer || d.id);
-    return `<div class="member"><span class="mrow"><span class="okic ${d.online ? "" : "off"}" style="width:32px;height:32px">${ICON.android}</span>
-      <span class="who2"><b>${name}</b><span class="mono">${d.online ? "online" : "seen " + ago(d.last_seen)}${d.version ? " · v" + esc(d.version) : ""}</span></span></span>
-      <span class="stat ${d.version === a?.version ? "ok" : "mute"}">${d.version === a?.version ? ICON.check + "Up to date" : ICON.phone + "Update via the app"}</span></div>`;
+    const sub = `${d.online ? "online" : "seen " + ago(d.last_seen)}${d.version ? " · v" + esc(d.version) : ""}`;
+    const stat = appVersion
+      ? (d.version === appVersion ? `<span class="stat ok">${ICON.check}Up to date</span>` : `<span class="stat mute">${ICON.phone}Update via the app</span>`)
+      : `<span class="stat mute">${ICON.phone}Managed on the phone</span>`;
+    return `<div class="member"><span class="mrow"><span class="okic ${d.online ? "" : "off"}" style="width:32px;height:32px">${ICON[iconKey]}</span>
+      <span class="who2"><b>${name}</b><span class="mono">${sub}</span></span></span>${stat}</div>`;
   }).join("");
+}
+
+function androidCard(a, phones) {
   const dl = (!a || !a.version)
     ? `<div class="devmeta">The Android app appears here with the next deploy.</div>`
     : `<div class="twofa"><span class="okic">${ICON.android}</span>
@@ -122,13 +151,17 @@ function androidCard(a, phones) {
     <span>Print to sheets straight from a phone — no Dock needed. Sign in with this account and the phone joins your fleet.</span>
     <span class="mono" style="display:block;margin-top:4px">v${esc(a.version)} · ${(a.size / 1024 / 1024).toFixed(1)} MB · Android 8.0+</span></div>
     <a class="btn primary" href="/dl/repaper-go.apk" download>${ICON.download}<span>Download</span></a></div>`;
-  return dl + (phoneRows ? `<div style="margin-top:12px">${phoneRows}</div>` : "") + appNews(a?.notes);
+  const rows = phoneRows(phones, "android", a?.version);
+  return dl + (rows ? `<div style="margin-top:12px">${rows}</div>` : "") + appNews(a?.notes);
 }
 
-function iosCard() {
-  return `<div class="twofa"><span class="okic off">${ICON.apple}</span>
+function iosCard(phones) {
+  const info = `<div class="twofa"><span class="okic off">${ICON.apple}</span>
     <div style="flex:1"><b>RePaper Go for iPhone &amp; iPad</b>
-    <span>In the works — arriving via TestFlight, with its own updates and changelog here. Until then, iPhones print through any Dock.</span></div></div>`;
+    <span>Print to sheets from an iPhone — share a page or tap a sheet. Sign in with this account and the phone joins your fleet; it updates through TestFlight.</span></div></div>`;
+  const rows = phoneRows(phones, "apple", null);
+  return info + (rows ? `<div style="margin-top:12px">${rows}</div>`
+                      : `<div class="devmeta" style="margin-top:12px">No iPhones signed in yet — they appear here once they join your fleet.</div>`);
 }
 
 function appNews(notes) {
@@ -144,8 +177,9 @@ function appNews(notes) {
 async function load() {
   const [rel, fleet, apk] = await Promise.all([api("/api/releases"), api("/api/fleet"), api("/api/app-release").catch(() => null)]);
   R = rel; DEVICES = fleet.devices;
-  setHTML("apk", androidCard(apk, fleet.devices.filter(d => !isDock(d))));
-  setHTML("ios", iosCard());
+  const phones = fleet.devices.filter(d => !isDock(d));
+  setHTML("apk", androidCard(apk, phones.filter(d => d.platform !== "ios")));   // android + legacy/unknown
+  setHTML("iosCard", iosCard(phones.filter(d => d.platform === "ios")));
   render();
 }
 

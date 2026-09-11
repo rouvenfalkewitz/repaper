@@ -131,6 +131,7 @@ if (!dcols.includes("claimed_by")) db.exec("ALTER TABLE device ADD COLUMN claime
   )`);
   if (!dcols.includes("diag_at")) db.exec("ALTER TABLE device ADD COLUMN diag_at REAL");
   if (!dcols.includes("dormant")) db.exec("ALTER TABLE device ADD COLUMN dormant INTEGER NOT NULL DEFAULT 0"); // signed out but still a seat
+  if (!dcols.includes("platform")) db.exec("ALTER TABLE device ADD COLUMN platform TEXT"); // ios | android for Go apps
 }
 db.exec(`
 CREATE TABLE IF NOT EXISTS device_stat (
@@ -207,6 +208,7 @@ export type DeviceRow = {
   claim_code: string; version: string; status: string; created: number; claimed_at: number | null; last_seen: number | null;
   site: string | null; diag: string | null; diag_at: number | null; target_version: string | null;
   approved: number; claimed_by: number | null; mirror_to: string | null; mirror_from: string | null; dormant: number;
+  platform: string | null;
 };
 export type MirrorJobRow = { id: string; dock_id: string; name: string; type: string; path: string; created: number; claimed_by: string | null; claimed_at: number | null };
 
@@ -313,6 +315,9 @@ export const touchDevice = (id: string, version?: string) =>
     : db.prepare("UPDATE device SET last_seen=?, version=? WHERE id=?").run(now(), version, id);
 export const saveDeviceStatus = (id: string, status: string) =>
   db.prepare("UPDATE device SET status=?, last_seen=? WHERE id=?").run(status, now(), id);
+/** Which mobile platform a Go app runs on (ios | android) — for the Updates page tabs. */
+export const setDevicePlatform = (id: string, platform: string) =>
+  db.prepare("UPDATE device SET platform=? WHERE id=? AND (platform IS NULL OR platform!=?)").run(platform, id, platform);
 
 // ── Print2Go: a Dock's jobs print on the phones mirroring it (shared pool) ─────
 /** A Go device pulls jobs from this Dock (or null to stop). */

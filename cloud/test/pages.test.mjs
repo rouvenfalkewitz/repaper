@@ -28,7 +28,7 @@ function makeEnv(fixtures) {
   const env = {
     el,
     document: { addEventListener() {}, querySelector: () => null, querySelectorAll: () => [], body: { dataset: { page: "test" } } },
-    window: {}, localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
+    window: { addEventListener() {} }, localStorage: { getItem: () => null, setItem() {}, removeItem() {} },
     setInterval: () => 0, setTimeout: (fn) => 0, clearTimeout() {},
     api: async (path) => {
       const key = path.split("?")[0];
@@ -45,7 +45,7 @@ function makeEnv(fixtures) {
     toast: () => {}, busy: () => () => {}, setModal() {}, closeModal() {},
     openModal() {}, fact: (k, v) => (v ? `${k}:${v};` : ""),
     wait: async () => {}, avatarHtml: () => "", copyBtnHtml: () => "", wireCopyBtn() {},
-    location: { hostname: "test" }, history: { replaceState() {} },
+    location: { hostname: "test", hash: "" }, history: { replaceState() {} },
     console, structuredClone,
   };
   env.globalThis = env;
@@ -115,7 +115,7 @@ await runPage("updates.html", FIXTURES, {
   "dock rows show docks only": () => (out.devs || "").includes("Pilot") && !(out.devs || "").includes("Pixel"),
   "phones live in the mobile card": () => (out.apk || "").includes("Pixel"),
   "android changelog inside the android card": () => (out.apk || "").includes("test note"),
-  "ios has its own card": () => (out.ios || "").includes("TestFlight"),
+  "ios has its own card": () => (out.iosCard || "").includes("TestFlight"),
 });
 
 if (failures) { console.error(`\n${failures} failure(s)`); process.exit(1); }
