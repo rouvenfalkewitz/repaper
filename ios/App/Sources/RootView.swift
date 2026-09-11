@@ -27,8 +27,10 @@ struct RootView: View {
 private struct FloatingBar: View {
     @Binding var tab: RootTab
 
-    private let pillHeight: CGFloat = 56
-    private let discSize: CGFloat = 62
+    private let pillHeight: CGFloat = 60
+    private let discSize: CGFloat = 64
+    // the CI ring: the logo's stroke is ~9.6% of its ring diameter — match it here
+    private let ringStroke: CGFloat = 6
 
     var body: some View {
         ZStack {
@@ -52,13 +54,11 @@ private struct FloatingBar: View {
                     .shadow(color: .black.opacity(0.5), radius: 18, y: 8)
             )
 
-            // the printer home — a raised round button wearing the glowing brand ring
+            // the printer home — centred in the pill, wearing the glowing brand ring
             printerButton
-                .offset(y: -discSize * 0.3)
         }
         .padding(.horizontal, 22)
-        .padding(.top, discSize * 0.3 + 4)   // headroom for the button that breaks the top
-        .padding(.bottom, 6)
+        .padding(.vertical, 10)   // room for the glow to bloom, top and bottom
     }
 
     private func tabItem(_ t: RootTab, _ icon: String, _ label: String) -> some View {
@@ -75,7 +75,7 @@ private struct FloatingBar: View {
             .frame(width: 62)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressScale())
     }
 
     private var printerButton: some View {
@@ -89,18 +89,28 @@ private struct FloatingBar: View {
                     .fill(LinearGradient(colors: [Ui.surface2, Ui.bg],
                                          startPoint: .topLeading, endPoint: .bottomTrailing))
                     .frame(width: discSize, height: discSize)
-                // the glowing brand ring, as the button's own outer ring
+                // the glowing brand ring, as the button's own outer ring — thick like the logo
                 Circle()
-                    .stroke(Ui.accent, lineWidth: 2.5)
-                    .frame(width: discSize, height: discSize)
+                    .stroke(Ui.accent, lineWidth: ringStroke)
+                    .frame(width: discSize - ringStroke, height: discSize - ringStroke)
                     .shadow(color: Ui.accent.opacity(active ? 0.8 : 0.55),
                             radius: active ? 16 : 11)
                 // GO in the CI letterforms (Archivo wght 800 / wdth 125, like the lockup)
                 Text("GO")
-                    .font(Ui.display(19, weight: 800, width: 125)).kerning(-0.5)
+                    .font(Ui.display(22, weight: 800, width: 125)).kerning(-0.5)
                     .foregroundColor(active ? Ui.accent : Ui.text)
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressScale())
+    }
+}
+
+/// A press effect that scales instead of fading — so a raised button never turns
+/// translucent and reveals the bar behind it.
+private struct PressScale: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.9 : 1)
+            .animation(.spring(response: 0.25, dampingFraction: 0.6), value: configuration.isPressed)
     }
 }
