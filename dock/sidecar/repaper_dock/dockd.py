@@ -277,6 +277,7 @@ class Dock:
         base = re.sub(r"[^a-z0-9]+", "-", (name or address).lower()).strip("-") or "sheet"; sid = base; n = 2
         while sid in self.registry.ids(): sid = f"{base}-{n}"; n += 1
         self.registry.add(sid, ref, model, serial=serial)
+        self.cloud.mark_sheets_dirty()   # paired phones inherit the new sheet
         return {"id": sid, "size": f"{model.width}×{model.height} {model.palette}"}
 
     def update_sheet(self, sid: str, data: dict) -> None:
@@ -289,10 +290,12 @@ class Dock:
             if len(vals) != 4 or min(vals) < 0 or vals[0] + vals[2] >= model.width or vals[1] + vals[3] >= model.height: raise ValueError("inset must be four numbers: left, top, right, bottom")
             model.inset = tuple(vals)
         self.registry.add(sid, ref, model, serial=serial)
+        self.cloud.mark_sheets_dirty()   # a rename/inset change flows to paired phones
 
     def remove_sheet(self, sid: str) -> None:
         d = self.registry.all(); d.pop(sid); self.registry._data = d; self.registry.save()
         with self._status_lock: self.sheet_status.pop(sid, None)
+        self.cloud.mark_sheets_dirty()   # the sheet disappears from paired phones
 
     def sheet_action(self, sid: str, what: str) -> str:
         from .render import render_for_sheet

@@ -37,6 +37,7 @@ class CloudAgent(threading.Thread):
         self.claimed: bool | None = None
         self.org: str | None = None
         self._updating = False
+        self._sheets_dirty = True            # publish the sheet snapshot on (re)connect
         self.updating_version: str | None = None
         self.peers: list = []               # Print2Go: the phones printing from this Dock
         threading.Thread(target=self._update_check_loop, daemon=True, name="update-check").start()
@@ -98,6 +99,7 @@ class CloudAgent(threading.Thread):
                     log.info("cloud: connected to %s (%s)", url,
                              f"claimed by {self.org}" if self.claimed else f"not claimed yet — code {self.identity['claim_code']}")
                     await ws.send(json.dumps(self._status())); last = time.time()
+                    self._sheets_dirty = True   # publish the current sheet set on every fresh connection
                     while (self.dock.cfg.get("cloud_url") or "").strip() == url:   # a URL change in Settings drops the link
                         try: raw = await asyncio.wait_for(ws.recv(), timeout=5)
                         except asyncio.TimeoutError: raw = None
@@ -108,6 +110,9 @@ class CloudAgent(threading.Thread):
                                 import traceback
                                 r = None; log.warning("cloud: message handling failed: %s\n%s", e, traceback.format_exc())
                             if r: await ws.send(json.dumps(r))
+                        if self._sheets_dirty:   # a local sheet add/remove/rename → re-publish the snapshot
+                            self._sheets_dirty = False
+                            await ws.send(json.dumps({"t": "sheets", "sheets": self.dock.registry.snapshot()}))
                         if time.time() - last >= self.dock.cfg.get("status_refresh_seconds", 60):
                             await ws.send(json.dumps(self._status())); last = time.time()
             except Exception as e:
@@ -116,6 +121,10 @@ class CloudAgent(threading.Thread):
                 await asyncio.sleep(backoff); backoff = min(backoff * 2, 60)
             else:
                 await asyncio.sleep(1)   # clean drop (URL change / server close) → reconnect promptly
+
+    def mark_sheets_dirty(self) -> None:
+        """A local sheet change happened; the run loop re-publishes the snapshot next tick."""
+        self._sheets_dirty = True
 
     def _on_message(self, msg: dict) -> dict | None:
         t = msg.get("t")
@@ -143,6 +152,11 @@ class CloudAgent(threading.Thread):
             if self._updating: return None
             self._start_update(version, url, sha)
             return {"t": "updating", "version": version}
+        elif t == "sheet_nfc":
+            # the cloud fanned out an NFC tag learned elsewhere (a phone) → adopt it so the
+            # Dock's RC522 can recognise the physical sheet by UID
+            sid = msg.get("sheet_id")
+            if sid: self.dock.registry.set_tag(sid, msg.get("uid"), bool(msg.get("programmed")))
         elif t == "print2go_peers":
             self.peers = msg.get("peers") or []
         elif t == "mirror_taken":

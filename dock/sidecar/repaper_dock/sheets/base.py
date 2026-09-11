@@ -153,3 +153,28 @@ class SheetRegistry:
         return None
 
     def all(self) -> dict[str, dict]: return dict(self._data)
+
+    def snapshot(self) -> list[dict]:
+        """The sheet set the Dock publishes to the cloud so paired phones inherit it as
+        Dock-Labels. `link` is the QR/landing URL (carries the BLE key); `model` is a JSON
+        string; the NFC fields are the one bidirectional zone."""
+        out = []
+        for sid, e in self._data.items():
+            keys = e.get("keys", {})
+            out.append({
+                "id": sid,
+                "name": e.get("name") or sid,
+                "address": e.get("address", ""),
+                "link": keys.get("landing", ""),
+                "model": json.dumps(e.get("model", {})),
+                "tag_uid": keys.get("tag_uid"),
+                "tag_programmed": bool(keys.get("tag_programmed", False)),
+            })
+        return out
+
+    def set_tag(self, sheet_id: str, uid: Optional[str], programmed: bool) -> bool:
+        """Learn/clear a sheet's NFC tag (from a phone's write-back or a local read). Returns
+        False for an unknown sheet."""
+        if sheet_id not in self._data: return False
+        self.update_keys(sheet_id, tag_uid=uid, tag_programmed=bool(programmed))
+        return True
