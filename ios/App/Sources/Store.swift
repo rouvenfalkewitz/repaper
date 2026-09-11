@@ -2,7 +2,7 @@ import Foundation
 import UIKit
 import RePaperKit
 
-let GO_IOS_VERSION = "0.1.28"
+let GO_IOS_VERSION = "0.1.29"
 
 /// Which APNs environment this build's push tokens belong to. Development/Xcode
 /// builds get sandbox tokens; flip to "production" for TestFlight/App Store.
@@ -110,15 +110,48 @@ struct Sheet: Identifiable, Equatable {
     var landingUrl: String?   // the original QR/NFC link — needed to (re)program the tag
     var tagUid: String?       // the tag's hardware serial — fallback tap match when the tag has no landing link
     var model: SheetModel
+    var dockName: String? = nil   // non-nil ⇒ inherited from that Dock (a Dock-Label)
 
+    var isDockLabel: Bool { dockName != nil }
     static func == (a: Sheet, b: Sheet) -> Bool { a.id == b.id }
 }
 
+extension Sheet {
+    /// Build an inherited (Dock-Label) sheet from a cloud `dock_sheets` entry. The AES key
+    /// comes from parsing the landing link (same as a QR scan); the BLE address is
+    /// discovered by name at print time, so it stays nil here.
+    init?(fromCloud d: [String: Any], dockName: String?) {
+        guard let id = d["id"] as? String, !id.isEmpty else { return nil }
+        let link = (d["link"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+        let landing = link.flatMap { try? Landing.parse($0) }
+        var model = SheetModel(width: 0, height: 0, palette: "BW")
+        if let ms = d["model"] as? String,
+           let md = try? JSONSerialization.jsonObject(with: Data(ms.utf8)) as? [String: Any],
+           let w = md["width"] as? Int, let h = md["height"] as? Int {
+            model = SheetModel(width: w, height: h, palette: md["palette"] as? String ?? "BW",
+                               inset: md["inset"] as? [Int] ?? [0, 0, 0, 0])
+        }
+        self.init(id: id,
+                  name: (d["name"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? id,
+                  address: (d["address"] as? String) ?? id,
+                  keyHex: landing?.keyHex,
+                  bleAddress: nil,
+                  landingUrl: link,
+                  tagUid: (d["tag_uid"] as? String).flatMap { $0.isEmpty ? nil : $0 },
+                  model: model,
+                  dockName: dockName)
+    }
+}
+
 /// sheets.json in Application Support: id → {name, transport, address, keys, model}.
-/// The AES key from the QR link lives only here.
+/// The AES key from the QR link lives only here. This store holds the phone's OWN
+/// (local) sheets, persisted; sheets inherited from a paired Dock (Dock-Labels) are kept
+/// in memory and merged in for display and printing. `sheets` is the merged, de-duped view.
 @MainActor final class SheetStore: ObservableObject {
     static let shared = SheetStore()
-    @Published private(set) var sheets: [Sheet] = []
+    @Published private(set) var sheets: [Sheet] = []   // merged: local + inherited, de-duped by landing name
+    private var localSheets: [Sheet] = []              // phone-owned, persisted
+    private var dockSheetsList: [Sheet] = []           // inherited from the paired Dock, in-memory
     private let file: URL
 
     private init() {
@@ -128,10 +161,25 @@ struct Sheet: Identifiable, Equatable {
         load()
     }
 
+    /// Union by landing name (case-insensitive). A sheet present on the Dock wins (so it
+    /// carries `dockName` and reads as a Dock-Label); a tag learned on either side survives.
+    static func mergeSheets(local: [Sheet], dock: [Sheet]) -> [Sheet] {
+        var byId: [String: Sheet] = [:]
+        for s in local { byId[s.id.lowercased()] = s }
+        for d in dock {
+            var merged = d
+            if merged.tagUid == nil { merged.tagUid = byId[d.id.lowercased()]?.tagUid }
+            byId[d.id.lowercased()] = merged
+        }
+        return Array(byId.values).sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    private func refresh() { sheets = Self.mergeSheets(local: localSheets, dock: dockSheetsList) }
+
     private func load() {
         guard let data = try? Data(contentsOf: file),
               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: [String: Any]] else { return }
-        sheets = obj.compactMap { id, e in
+        localSheets = obj.compactMap { id, e in
             guard let m = e["model"] as? [String: Any],
                   let w = m["width"] as? Int, let h = m["height"] as? Int else { return nil }
             let keys = e["keys"] as? [String: Any] ?? [:]
@@ -146,11 +194,12 @@ struct Sheet: Identifiable, Equatable {
                                            palette: m["palette"] as? String ?? "BW",
                                            inset: m["inset"] as? [Int] ?? [0, 0, 0, 0]))
         }.sorted { $0.id < $1.id }
+        refresh()
     }
 
-    private func save() {
+    private func save() {   // persists ONLY the phone's local sheets, never inherited ones
         var obj: [String: Any] = [:]
-        for s in sheets {
+        for s in localSheets {
             var keys: [String: Any] = [:]
             if let k = s.keyHex { keys["key"] = k }
             if let b = s.bleAddress { keys["ble_address"] = b }
@@ -166,11 +215,15 @@ struct Sheet: Identifiable, Equatable {
     }
 
     func add(_ sheet: Sheet) {
-        sheets.removeAll { $0.id == sheet.id }
-        sheets.append(sheet); sheets.sort { $0.id < $1.id }
-        save()
+        localSheets.removeAll { $0.id == sheet.id }
+        localSheets.append(sheet); localSheets.sort { $0.id < $1.id }
+        save(); refresh()
     }
-    func remove(_ id: String) { sheets.removeAll { $0.id == id }; save() }
+    func remove(_ id: String) { localSheets.removeAll { $0.id == id }; save(); refresh() }
+
+    /// Replace the inherited set from the paired Dock (empty when unpaired).
+    func setDockSheets(_ list: [Sheet]) { dockSheetsList = list; refresh() }
+
     func find(_ landing: Landing) -> Sheet? {
         sheets.first { $0.id.caseInsensitiveCompare(landing.name) == .orderedSame
                     || $0.address.caseInsensitiveCompare(landing.name) == .orderedSame }
@@ -178,10 +231,12 @@ struct Sheet: Identifiable, Equatable {
     func findByUid(_ uid: String) -> Sheet? {
         sheets.first { $0.tagUid?.caseInsensitiveCompare(uid) == .orderedSame }
     }
-    /// Remember a tag's hardware serial for a sheet (the fallback-tap fingerprint).
+    /// Remember a tag's hardware serial — applies to the local and/or inherited copy and
+    /// persists the local one. (Propagation to the Dock is the caller's job, over the socket.)
     func setTagUid(_ id: String, _ uid: String) {
-        guard let i = sheets.firstIndex(where: { $0.id == id }) else { return }
-        sheets[i].tagUid = uid; save()
+        if let i = localSheets.firstIndex(where: { $0.id == id }) { localSheets[i].tagUid = uid; save() }
+        if let j = dockSheetsList.firstIndex(where: { $0.id == id }) { dockSheetsList[j].tagUid = uid }
+        refresh()
     }
 }
 

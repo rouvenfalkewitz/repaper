@@ -124,11 +124,26 @@ struct MirrorPending: Identifiable, Equatable {
                 pending.removeAll { $0.id == id }
                 NotificationCenter.default.post(name: .mirrorJobArrived, object: nil)
             }
+        case "dock_sheets":
+            // the paired Dock's sheets — inherited as Dock-Labels (replaced wholesale)
+            let arr = (msg["sheets"] as? [[String: Any]]) ?? []
+            let dockName = (msg["dock_name"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+            SheetStore.shared.setDockSheets(arr.compactMap { Sheet(fromCloud: $0, dockName: dockName) })
+        case "sheet_nfc":
+            // a tag learned elsewhere (Dock or another phone) — adopt it on the matching sheet
+            if let id = msg["sheet_id"] as? String, let uid = msg["uid"] as? String, !uid.isEmpty {
+                SheetStore.shared.setTagUid(id, uid)
+            }
         case "diag":
             try? await send(["t": "diag", "log": DiagLog.dump()])
         default:
             break
         }
+    }
+
+    /// Relay a learned NFC tag up to the cloud so the paired Dock and other phones converge.
+    func sendSheetNfc(sheetId: String, uid: String, programmed: Bool) async {
+        try? await send(["t": "sheet_nfc", "sheet_id": sheetId, "uid": uid, "programmed": programmed])
     }
 
     /// Claim a pending job and get its page bytes — first to call this wins it.

@@ -104,7 +104,12 @@ struct SheetsView: View {
                     Text("\(s.model.width)×\(s.model.height)").font(Ui.mono(11)).foregroundColor(Ui.text3)
                 }
                 // NFC gets its own row — the chip stands on its own when tap is set up
-                if s.tagUid != nil { nfcBadge }
+                if s.dockName != nil || s.tagUid != nil {
+                    HStack(spacing: 8) {
+                        if let dn = s.dockName { dockBadge(dn) }
+                        if s.tagUid != nil { nfcBadge }
+                    }
+                }
             }
             Spacer(minLength: 4)
             configureButton(s)
@@ -176,6 +181,19 @@ struct SheetsView: View {
         .foregroundColor(Ui.accent)
         .padding(.horizontal, 7).padding(.vertical, 3)
         .background(Capsule().fill(Ui.accentTint))
+    }
+
+    /// A neutral chip marking a sheet inherited from a Dock (a Dock-Label). The Dock's
+    /// name lives in the configure panel, so the chip stays compact.
+    private func dockBadge(_ dock: String) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: "shippingbox.fill").font(.system(size: 9, weight: .bold))
+            Text("DOCK").font(Ui.display(9, weight: 700, width: 112)).kerning(0.8)
+        }
+        .foregroundColor(Ui.text2)
+        .padding(.horizontal, 7).padding(.vertical, 3)
+        .background(Capsule().fill(Ui.surface2))
+        .overlay(Capsule().stroke(Ui.border, lineWidth: 1))
     }
 
     // ── empty state ──────────────────────────────────────────────────────────
@@ -330,7 +348,11 @@ struct SheetsView: View {
                         Text(s.name).font(Ui.body(18, weight: 700)).foregroundColor(Ui.text)
                         Text("\(s.model.width)×\(s.model.height) · \(paletteName(s.model.palette))")
                             .font(Ui.mono(11)).foregroundColor(Ui.text3)
-                        HStack(spacing: 8) { PalDots(palette: s.model.palette); if s.tagUid != nil { nfcBadge } }
+                        HStack(spacing: 8) {
+                            PalDots(palette: s.model.palette)
+                            if let dn = s.dockName { dockBadge(dn) }
+                            if s.tagUid != nil { nfcBadge }
+                        }
                     }
                     Spacer()
                 }
@@ -347,12 +369,16 @@ struct SheetsView: View {
                             hideConfigure(); learnTag(for: s.id)
                         }
                     }
-                    configRow(icon: "trash", label: "Remove from this device",
-                              tint: Ui.red, iconBg: Ui.redTint) {
-                        hideConfigure(); sheets.remove(s.id)
+                    if !s.isDockLabel {
+                        configRow(icon: "trash", label: "Remove from this device",
+                                  tint: Ui.red, iconBg: Ui.redTint) {
+                            hideConfigure(); sheets.remove(s.id)
+                        }
                     }
                 }
-                Text("Removing only forgets the sheet here — it keeps what it currently shows.")
+                Text(s.isDockLabel
+                     ? "This label lives on \(s.dockName ?? "a Dock"). It updates from there; it stays until removed on the Dock."
+                     : "Removing only forgets the sheet here — it keeps what it currently shows.")
                     .font(Ui.body(12)).foregroundColor(Ui.text3)
             }
             .padding(20).padding(.bottom, 12)
@@ -480,6 +506,9 @@ struct SheetsView: View {
                 return
             }
             SheetStore.shared.setTagUid(sheetId, read.uid)
+            // share the tag up so the paired Dock and other phones converge (NFC is the
+            // one field that syncs back); harmless for a purely-local sheet
+            Task { await CloudAgent.shared.sendSheetNfc(sheetId: sheetId, uid: read.uid, programmed: false) }
             DiagLog.log("tag fingerprint learned for \(sheetId): \(read.uid)")
             addNote = "All set — tapping this sheet prints on it."
         }
