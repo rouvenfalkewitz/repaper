@@ -19,7 +19,17 @@ struct RootView: View {
         }
         .environmentObject(nav)
         .safeAreaInset(edge: .bottom, spacing: 0) { FloatingBar(tab: $nav.tab) }
+        .onReceive(NotificationCenter.default.publisher(for: .openPrinter)) { _ in
+            withAnimation(.easeOut(duration: 0.2)) { nav.tab = .printer }
+        }
+        .onAppear { AppDelegate.requestAuthorization() }   // so share-extension nudges can show
     }
+}
+
+extension Notification.Name {
+    /// Posted when a notification (share extension, later Print2Go push) asks to show
+    /// the printer with a job ready.
+    static let openPrinter = Notification.Name("openPrinter")
 }
 
 /// A floating rounded pill: a soft carbon capsule with a hairline and a drop shadow that

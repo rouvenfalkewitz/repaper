@@ -1,5 +1,6 @@
 import UIKit
 import UniformTypeIdentifiers
+import UserNotifications
 
 /// The share-sheet intake: whatever arrives (PDF or image) is spooled into the app
 /// group's jobs folder, then we open RePaper Go so the job is ready to print. The panel
@@ -22,6 +23,7 @@ final class ShareViewController: UIViewController {
     private let titleLabel = UILabel()
     private let status = UILabel()
     private var spinning = false
+    private var jobName = "Your page"
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -146,6 +148,7 @@ final class ShareViewController: UIViewController {
                 guard let self else { return }
                 guard let url else { return self.finish(ok: false) }
                 let label = url.deletingPathExtension().lastPathComponent
+                self.jobName = label
                 let target = JobStore.newJobURL(label: label, ext: url.pathExtension.isEmpty ? ext
                                                     : url.pathExtension.lowercased())
                 do {
@@ -171,8 +174,9 @@ final class ShareViewController: UIViewController {
                 self.glyph.image = UIImage(systemName: "checkmark", withConfiguration: cfg)
                 self.glyph.tintColor = self.bg
                 self.titleLabel.text = "Added to RePaper Go"
-                self.status.text = "Open the app to put it on a sheet."
+                self.status.text = "Tap the notification to put it on a sheet."
                 self.popIcon()
+                self.notifyReady()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) {
                     self.extensionContext?.completeRequest(returningItems: nil)
                 }
@@ -196,5 +200,18 @@ final class ShareViewController: UIViewController {
                        initialSpringVelocity: 0.8, options: []) {
             self.iconWrap.transform = .identity
         }
+    }
+
+    /// A local notification so the person can jump back into the app and print — the
+    /// sanctioned way for a share extension to hand off to its container app. It only
+    /// shows if the app was granted notification permission; the job is spooled either way.
+    private func notifyReady() {
+        let content = UNMutableNotificationContent()
+        content.title = "Ready to print"
+        content.body = "\(jobName) is waiting in RePaper Go — tap to put it on a sheet."
+        content.sound = .default
+        content.userInfo = ["action": "print"]
+        let req = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(req, withCompletionHandler: nil)
     }
 }
