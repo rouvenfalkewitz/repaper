@@ -59,6 +59,12 @@ object Ui {
         setPadding(0, c.dp(22), 0, c.dp(8))
     }
 
+    /** A tab-screen title in the CI letterforms (Archivo wght 800 / wdth 125, uppercase) —
+     *  the same face as the RE|PAPER GO lockup and the GO button. */
+    fun wordmark(c: Context, text: String) = displayText(c, text.uppercase(), 26f, TEXT, weight = 800, width = 125).apply {
+        letterSpacing = -0.01f
+    }
+
     private fun rounded(fill: Int, stroke: Int = Color.TRANSPARENT, radiusDp: Int = 14, c: Context? = null, strokeW: Int = 1) =
         GradientDrawable().apply {
             setColor(fill)

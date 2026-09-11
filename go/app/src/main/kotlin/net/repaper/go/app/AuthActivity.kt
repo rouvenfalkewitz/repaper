@@ -152,7 +152,7 @@ class AuthActivity : AppCompatActivity() {
                 Prefs.setClaimed(this@AuthActivity, true)
                 Prefs.setApproved(this@AuthActivity, approved)
                 startActivity(Intent(this@AuthActivity,
-                    if (approved) MainActivity::class.java else PendingActivity::class.java))
+                    if (approved) ShellActivity::class.java else PendingActivity::class.java))
                 finish()
             } catch (e: Exception) { note.text = e.message ?: "claiming failed" }
         }

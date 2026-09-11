@@ -52,7 +52,7 @@ class PendingActivity : AppCompatActivity() {
                     startActivity(Intent(this@PendingActivity, AuthActivity::class.java)); finish(); return@launch
                 }
                 if (Prefs.isApproved(this@PendingActivity)) {
-                    startActivity(Intent(this@PendingActivity, MainActivity::class.java)); finish(); return@launch
+                    startActivity(Intent(this@PendingActivity, ShellActivity::class.java)); finish(); return@launch
                 }
             }
         }

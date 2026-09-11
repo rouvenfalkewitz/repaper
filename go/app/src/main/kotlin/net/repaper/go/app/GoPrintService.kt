@@ -67,7 +67,7 @@ class GoPrintService : PrintService() {
         if (android.os.Build.VERSION.SDK_INT >= 26) {
             nm.createNotificationChannel(NotificationChannel("jobs", "Print jobs", NotificationManager.IMPORTANCE_HIGH))
         }
-        val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java),
+        val open = PendingIntent.getActivity(this, 0, Intent(this, ShellActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         nm.notify(1, Notification.Builder(this, "jobs")
             .setSmallIcon(R.drawable.ic_repaper)
