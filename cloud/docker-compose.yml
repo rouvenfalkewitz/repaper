@@ -26,6 +26,7 @@ services:
       - APNS_TEAM_ID=${APNS_TEAM_ID:-8DPLCLHB27}
       - APNS_TOPIC=${APNS_TOPIC:-net.repaper.go.ios}
       - APNS_HOST=${APNS_HOST:-}
+      - FCM_SERVICE_ACCOUNT=${FCM_SERVICE_ACCOUNT:-}
     volumes:
       - cloud-data:/app/data
     labels:

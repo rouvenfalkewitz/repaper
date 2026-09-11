@@ -22,6 +22,7 @@ import {
   setMirrorFrom, staleMirrorJobs,
 } from "./db.js";
 import { apnsConfigured, sendPush } from "./apns.js";
+import { fcmConfigured, sendFcm } from "./fcm.js";
 import { COOKIE, endSession, hashPassword, loginAllowed, loginFailed, loginOk, requireUser, secretMatches, startSession, verifyPassword } from "./auth.js";
 import { mailEnabled, sendInviteMail, sendRegisterMail, sendResetMail } from "./mail/index.js";
 import { dropDevice, isOnline, notifyDockPeers, onlineCount, pushDockSheets, sendToDevice, setUpdateOffer } from "./devices.js";
@@ -160,11 +161,17 @@ export const registerApi = (app: FastifyInstance) => {
     const msg = { t: "mirror_job", job: { id: j.id, name: j.name, from } };
     let phones = 0;
     for (const p of mirrorPhones(j.dock_id)) {
-      if (sendToDevice(p.id, msg)) phones++;            // online: the app shows the card
-      else if (p.push_token && apnsConfigured()) {      // offline: wake it with a push
-        sendPush(p.push_token, p.push_env,
-          { title: "Ready to print", body: `A page from ${from} is waiting — tap to put it on a sheet.` },
-          { warn: (s: string) => app.log.warn(s) })
+      if (sendToDevice(p.id, msg)) { phones++; continue; }   // online: the app shows the card
+      // offline: wake it with a push — Android via FCM, iOS via APNs
+      if (!p.push_token) continue;
+      const alert = { title: "Ready to print", body: `A page from ${from} is waiting — tap to put it on a sheet.` };
+      const warn = { warn: (s: string) => app.log.warn(s) };
+      if (p.platform === "android" && fcmConfigured()) {
+        sendFcm(p.push_token, alert, warn)
+          .then((r) => { if (r.status === 404 || r.reason === "UNREGISTERED") clearPushToken(p.id); })
+          .catch(() => {});
+      } else if (apnsConfigured()) {
+        sendPush(p.push_token, p.push_env, alert, warn)
           .then((r) => { if (r.status === 410) clearPushToken(p.id); })   // dead token — forget it
           .catch(() => {});
       }
