@@ -49,7 +49,7 @@ class AuthActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL; setBackgroundColor(Ui.BG)
-            setPadding(dp(24), dp(20), dp(24), dp(28)); gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(dp(24), dp(20), dp(24), dp(28)); gravity = Gravity.CENTER   // vertically centred, like iOS
         }
 
         root.addView(ImageView(this).apply {
@@ -58,8 +58,8 @@ class AuthActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, dp(40))
         })
 
-        root.addView(Ui.bodyText(this, "Sign in with your RePaper account — this phone joins your fleet automatically.", 14f).apply {
-            gravity = Gravity.CENTER; setPadding(dp(8), dp(10), dp(8), dp(18))
+        root.addView(Ui.bodyText(this, "Sign in to your RePaper account to print from this phone.", 14f).apply {
+            gravity = Gravity.CENTER; setPadding(dp(8), dp(12), dp(8), dp(20))
         })
 
         email = field("Email", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS)
@@ -95,7 +95,7 @@ class AuthActivity : AppCompatActivity() {
             setOnClickListener { cloudDialog() }
         })
 
-        setContentView(ScrollView(this).apply { setBackgroundColor(Ui.BG); addView(root) })
+        setContentView(ScrollView(this).apply { setBackgroundColor(Ui.BG); isFillViewport = true; addView(root) })
         CloudAgent.get(this).start()     // the device channel connects meanwhile, so claiming is instant
     }
 

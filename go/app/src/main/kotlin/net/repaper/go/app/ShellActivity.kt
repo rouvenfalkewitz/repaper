@@ -46,8 +46,19 @@ class ShellActivity : AppCompatActivity() {
         root.addView(bottomBar(), FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM))
         setContentView(root)
+        requestBlePermissions()
         CloudAgent.get(this).start()
         select(Tab.PRINTER)
+    }
+
+    private fun requestBlePermissions() {
+        val wanted = buildList {
+            if (android.os.Build.VERSION.SDK_INT >= 31) { add(android.Manifest.permission.BLUETOOTH_SCAN); add(android.Manifest.permission.BLUETOOTH_CONNECT) }
+            else add(android.Manifest.permission.ACCESS_FINE_LOCATION)
+            if (android.os.Build.VERSION.SDK_INT >= 33) add(android.Manifest.permission.POST_NOTIFICATIONS)
+        }.toTypedArray()
+        val missing = wanted.filter { checkSelfPermission(it) != android.content.pm.PackageManager.PERMISSION_GRANTED }
+        if (missing.isNotEmpty()) androidx.core.app.ActivityCompat.requestPermissions(this, missing.toTypedArray(), 1)
     }
 
     override fun onResume() {
