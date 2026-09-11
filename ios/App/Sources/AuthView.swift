@@ -14,7 +14,6 @@ struct AuthView: View {
     @State private var note = ""
     @State private var noteColor = Ui.amber
     @State private var busy = false
-    @State private var consent: (org: String, admin: Bool)?
     @State private var showCloudSheet = false
     @State private var cloudUrl = ""
 
@@ -38,14 +37,6 @@ struct AuthView: View {
             if ProcessInfo.processInfo.arguments.contains("--twofa-preview") {
                 email = "you@example.com"; stage = .twoFactor   // screenshot hook
             }
-        }
-        .alert("Add this \(deviceWord) to \(consent?.org ?? "")?", isPresented: .init(
-            get: { consent != nil }, set: { if !$0 { consent = nil } })) {
-            Button("Add this \(deviceWord)") { let c = consent; consent = nil; Task { await activate(admin: c?.admin ?? true) } }
-            Button("Not now", role: .cancel) { consent = nil; note = "Signed in — the \(deviceWord) was not added." }
-        } message: {
-            Text("It appears in the fleet as “\(Prefs.printerName)”."
-                 + ((consent?.admin ?? true) ? "" : "\n\nAn administrator of \(consent?.org ?? "your organisation") must approve it before you can print."))
         }
         .sheet(isPresented: $showCloudSheet) { cloudSheet }
     }
@@ -206,14 +197,14 @@ struct AuthView: View {
         }
     }
 
-    /// who am I → the consent dialog names the workspace this phone would join
+    /// Signing in IS joining the fleet (decision A) — no repeated "add this device?"
+    /// prompt. The device is claimed automatically; a member simply lands on the
+    /// "Waiting for approval" screen, which explains the rest.
     private func afterAuthenticated(_ base: String) async {
         do {
             let me = try await get("\(base)/api/me")
-            let org = (me["org"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "your fleet"
             let isAdmin = me["role"] as? String == "admin" || me["personal"] as? Bool == true
-            note = ""
-            consent = (org, isAdmin)
+            await activate(admin: isAdmin)
         } catch {
             noteColor = Ui.red; note = error.localizedDescription
         }

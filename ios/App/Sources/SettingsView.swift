@@ -17,6 +17,10 @@ struct SettingsView: View {
     @State private var confirmSignOut = false
     @State private var signOutNote = ""
     @State private var actionSheet: Sheet?
+    @State private var p2gOn = Prefs.print2goDock != nil
+    @State private var p2gDocks: [(id: String, name: String, online: Bool, current: Bool)] = []
+    @State private var p2gBusy = false
+    @State private var p2gNote = ""
 
     var body: some View {
         ScrollView {
@@ -85,6 +89,10 @@ struct SettingsView: View {
                 }
                 .card()
 
+                // Print2Go: this phone can also print the jobs sent to a Dock
+                SectionHeader(text: "Print2Go")
+                print2goCard
+
                 SectionHeader(text: "Cloud")
                 VStack(spacing: 0) {
                     HStack(spacing: 10) {
@@ -149,6 +157,79 @@ struct SettingsView: View {
             Text("Removing only forgets the sheet here — it keeps what it currently shows.")
         }
         .sheet(isPresented: $showScanner) { scannerSheet }
+    }
+
+    /// Print2Go on the phone: a toggle + a Dock picker. Source of truth is the cloud;
+    /// the chosen Dock's name is cached locally for display.
+    private var print2goCard: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                settingIcon("arrow.down.doc.fill")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Print jobs from a Dock").font(Ui.body(14, weight: 600)).foregroundColor(Ui.text)
+                    Text("This phone prints the jobs sent to the Dock you pick, on its own sheets.")
+                        .font(Ui.body(12)).foregroundColor(Ui.text3)
+                }
+                Spacer()
+                Toggle("", isOn: $p2gOn).labelsHidden().tint(Ui.accent)
+                    .onChange(of: p2gOn) { on in
+                        if on { Task { await loadDocks() } }
+                        else { Task { await chooseDock(nil) } }
+                    }
+            }
+            if p2gOn {
+                divider
+                if p2gBusy && p2gDocks.isEmpty {
+                    HStack { ProgressView().tint(Ui.accent).scaleEffect(0.8); Text("Finding Docks…").font(Ui.body(13)).foregroundColor(Ui.text2) }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else if p2gDocks.isEmpty {
+                    Text("No Docks in your fleet have Print2Go on yet. Turn it on in a Dock's settings first.")
+                        .font(Ui.body(13)).foregroundColor(Ui.text3)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    ForEach(p2gDocks, id: \.id) { dock in
+                        Button { Task { await chooseDock(dock.id) } } label: {
+                            HStack(spacing: 10) {
+                                Circle().fill(dock.online ? Ui.accent : Ui.text3).frame(width: 8, height: 8)
+                                Text(dock.name).font(Ui.body(14, weight: dock.current ? 700 : 500))
+                                    .foregroundColor(dock.current ? Ui.accent : Ui.text)
+                                Spacer()
+                                if dock.current { Image(systemName: "checkmark").font(.system(size: 13, weight: .bold)).foregroundColor(Ui.accent) }
+                            }
+                            .padding(.vertical, 6)
+                        }
+                        if dock.id != p2gDocks.last?.id { Rectangle().fill(Ui.border).frame(height: 1) }
+                    }
+                }
+                if !p2gNote.isEmpty {
+                    Text(p2gNote).font(Ui.body(12)).foregroundColor(Ui.amber)
+                        .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 6)
+                }
+            }
+        }
+        .card()
+        .task { if p2gOn { await loadDocks() } }
+    }
+
+    private func loadDocks() async {
+        p2gBusy = true
+        p2gDocks = await cloud.print2goDocks()
+        p2gBusy = false
+        if p2gDocks.isEmpty { p2gNote = "" }
+    }
+
+    private func chooseDock(_ id: String?) async {
+        p2gBusy = true
+        let ok = await cloud.setMirrorFrom(id)
+        p2gBusy = false
+        if ok {
+            Prefs.print2goDock = id == nil ? nil : (p2gDocks.first { $0.id == id }?.name ?? "a Dock")
+            p2gNote = id == nil ? "" : "Jobs sent to that Dock now print here too."
+            await loadDocks()
+        } else {
+            p2gNote = "Couldn't set that up — check the connection."
+            if id == nil { p2gOn = Prefs.print2goDock != nil }   // revert the toggle on failure
+        }
     }
 
     private var divider: some View {

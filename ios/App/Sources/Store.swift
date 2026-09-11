@@ -2,7 +2,7 @@ import Foundation
 import UIKit
 import RePaperKit
 
-let GO_IOS_VERSION = "0.1.4"
+let GO_IOS_VERSION = "0.1.5"
 
 /// App-level preferences — the Android app's Prefs, UserDefaults edition.
 enum Prefs {
@@ -38,6 +38,18 @@ enum Prefs {
     static var cycleSheets: Bool {
         get { d.bool(forKey: "sheet_cycle") }
         set { d.set(newValue, forKey: "sheet_cycle") }
+    }
+
+    /// Print2Go: the name of the Dock this phone prints from (nil = off). Display cache;
+    /// the cloud holds the real relationship.
+    static var print2goDock: String? {
+        get { d.string(forKey: "print2go_dock") }
+        set { newValue == nil ? d.removeObject(forKey: "print2go_dock") : d.set(newValue, forKey: "print2go_dock") }
+    }
+    /// One-time: has the phone been offered Print2Go on first launch?
+    static var print2goOffered: Bool {
+        get { d.bool(forKey: "print2go_offered") }
+        set { d.set(newValue, forKey: "print2go_offered") }
     }
     static var cycleIx: Int { d.integer(forKey: "cycle_ix") }
     static func bumpCycleIx() { d.set(cycleIx + 1, forKey: "cycle_ix") }

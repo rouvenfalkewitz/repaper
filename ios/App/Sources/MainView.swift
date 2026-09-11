@@ -19,6 +19,9 @@ struct MainView: View {
     @State private var nfc = NfcReader()
     @State private var info = ""                     // transient tap-result message
     @State private var pendingAdd: Landing?          // unknown sheet tapped → offer to add
+    @State private var pickMirrorFor: MirrorPending? // a Print2Go job waiting for a sheet choice
+    @State private var mirrorAutoTried: Set<String> = []
+    @State private var offerP2G = false              // one-time Print2Go offer on first launch
 
     var body: some View {
         GeometryReader { geo in
@@ -76,8 +79,12 @@ struct MainView: View {
                 .frame(height: 84, alignment: .top)
                 .padding(.top, 10)
 
-                if !jobs.isEmpty {
+                if !jobs.isEmpty || !cloud.pending.isEmpty {
                     SectionHeader(text: "Waiting to print")
+                    ForEach(cloud.pending) { p in
+                        MirrorCard(pending: p)
+                            .onTapGesture { pickMirrorFor = p }
+                    }
                     ForEach(jobs, id: \.self) { job in
                         JobCard(job: job)
                             .onTapGesture { pickFor = job }
@@ -107,16 +114,40 @@ struct MainView: View {
             }
             Button("Cancel", role: .cancel) { pickFor = nil }
         }
+        .confirmationDialog("Print on which sheet?", isPresented: .init(
+            get: { pickMirrorFor != nil }, set: { if !$0 { pickMirrorFor = nil } }), titleVisibility: .visible) {
+            ForEach(sheets.sheets) { s in
+                Button(s.name) { if let p = pickMirrorFor { pickMirrorFor = nil; printMirror(p, on: s) } }
+            }
+            Button("Cancel", role: .cancel) { pickMirrorFor = nil }
+        }
         .alert(info, isPresented: .init(get: { !info.isEmpty }, set: { if !$0 { info = "" } })) {
             Button("OK", role: .cancel) { info = "" }
         }
         .onReceive(NotificationCenter.default.publisher(for: .mirrorJobArrived)) { _ in refresh() }
+        .alert("Print jobs from a Dock?", isPresented: $offerP2G) {
+            Button("Set up") { Prefs.print2goOffered = true; showSettings = true }
+            Button("Not now", role: .cancel) { Prefs.print2goOffered = true }
+        } message: {
+            Text("This iPhone can also print the jobs people send to one of your RePaper Docks — on its own sheets. You can set it up in Settings any time.")
+        }
         .onAppear {
             cloud.start(); refresh()
+            maybeOfferPrint2Go()
             // visual-test hook: `simctl launch … --open-settings` jumps straight there
             if ProcessInfo.processInfo.arguments.contains("--open-settings") { showSettings = true }
         }
         .onChange(of: scenePhase) { p in if p == .active { refresh() } }   // a share may have spooled a job
+    }
+
+    /// Offer Print2Go once, shortly after the first launch, if a Dock in the fleet has it on.
+    private func maybeOfferPrint2Go() {
+        guard !Prefs.print2goOffered, Prefs.print2goDock == nil else { return }
+        Task {
+            try? await Task.sleep(nanoseconds: 1_500_000_000)   // let the device channel settle
+            if !(await cloud.print2goDocks()).isEmpty { offerP2G = true }
+            else { Prefs.print2goOffered = true }   // nothing to offer — don't nag later
+        }
     }
 
     /// The tap-to-print button: an accent capsule with the contactless glyph,
@@ -277,7 +308,7 @@ struct MainView: View {
     private var led: RingView.Led {
         if busy { return .busy }
         if let f = flash { return f }
-        if !jobs.isEmpty { return .wait }
+        if !jobs.isEmpty || !cloud.pending.isEmpty { return .wait }
         return sheets.sheets.isEmpty ? .setup : .ready
     }
 
@@ -333,11 +364,16 @@ struct MainView: View {
         // on, several take turns. One attempt each — a failure waits for a tap.
         let ids = sheets.sheets
         let auto = ids.count == 1 || (Prefs.cycleSheets && ids.count > 1)
-        if !busy, flash == nil, let job = jobs.first, auto, !ids.isEmpty,
-           !autoTried.contains(job.lastPathComponent) {
+        guard !busy, flash == nil, !ids.isEmpty else { return }
+        if let job = jobs.first, auto, !autoTried.contains(job.lastPathComponent) {
             autoTried.insert(job.lastPathComponent)
             let pick = ids.count == 1 ? ids[0] : ids[Prefs.cycleIx % ids.count]
             print(job: job, on: pick, advanceCycle: ids.count > 1)
+        } else if jobs.isEmpty, auto, let p = cloud.pending.first, !mirrorAutoTried.contains(p.id) {
+            // a Print2Go job + one sheet (or cycling): claim and print it automatically
+            mirrorAutoTried.insert(p.id)
+            let pick = ids.count == 1 ? ids[0] : ids[Prefs.cycleIx % ids.count]
+            printMirror(p, on: pick, advanceCycle: ids.count > 1)
         }
     }
 
@@ -358,12 +394,61 @@ struct MainView: View {
         }
     }
 
+    /// Print a Print2Go job: claim it first (first-to-print wins), then print like any
+    /// page; tell the pool done/release afterwards.
+    private func printMirror(_ p: MirrorPending, on sheet: Sheet, advanceCycle: Bool = false) {
+        busy = true; phase = "claiming the job…"
+        Task {
+            guard let (name, ext, bytes) = await cloud.takeJob(p.id) else {
+                busy = false; refresh()   // another device grabbed it — just move on
+                return
+            }
+            do {
+                let url = JobStore.newJobURL(label: name, ext: ext)
+                try bytes.write(to: url)
+                try await PrintFlow.printJob(url, sheet: sheet) { phase = $0 }
+                try? FileManager.default.removeItem(at: url)
+                await cloud.jobDone(p.id)
+                if advanceCycle { Prefs.bumpCycleIx() }
+                busy = false; flashState(.done, seconds: 3)
+            } catch {
+                await cloud.jobReleased(p.id)   // couldn't print — back to the pool
+                busy = false; errorNote = error.localizedDescription; flashState(.err, seconds: 6)
+            }
+        }
+    }
+
     private func flashState(_ f: RingView.Led, seconds: Double) {
         flash = f; refresh()
         Task {
             try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
             flash = nil; errorNote = ""; refresh()
         }
+    }
+}
+
+/// A Print2Go job waiting from a Dock — no local preview (we don't hold the page
+/// until we claim it), just the name and where it came from.
+struct MirrorCard: View {
+    let pending: MirrorPending
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10).fill(Ui.surface2)
+                Image(systemName: "arrow.down.circle")
+                    .font(.system(size: 22)).foregroundColor(Ui.accent)
+            }
+            .frame(width: 56, height: 52)
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Ui.borderStrong, lineWidth: 1))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(pending.name)
+                    .font(Ui.body(16, weight: 600)).foregroundColor(Ui.text).lineLimit(1)
+                Text("from \(pending.from) · tap to choose a sheet")
+                    .font(Ui.mono(11)).foregroundColor(Ui.text3)
+            }
+            Spacer()
+        }
+        .card().padding(.top, 8)
     }
 }
 
