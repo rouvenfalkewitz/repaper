@@ -42,6 +42,15 @@ class CloudAgent(private val context: Context) {
     data class Pending(val id: String, val name: String, val from: String)
     @Volatile var pending: List<Pending> = emptyList(); private set
 
+    /** The FCM registration token — handed over so a closed app can be woken for a Dock job.
+     *  Set from the Firebase messaging service; relayed to the cloud on each connect. */
+    @Volatile private var pushToken: String? = null
+    fun setPushToken(token: String) { pushToken = token; sendPushToken() }
+    private fun sendPushToken() {
+        val t = pushToken ?: return
+        ws?.send(JSONObject().put("t", "push_token").put("token", t).put("env", "fcm").toString())
+    }
+
     fun start() {
         if (state != "off") return
         state = "connecting"
@@ -73,6 +82,7 @@ class CloudAgent(private val context: Context) {
             ws = socket
             if (opened.await()) {
                 state = "online"; backoff = 2_000L
+                sendPushToken()   // hand over the FCM token (if we have one) each connect
                 // status heartbeat while the link lives
                 scope.launch {
                     while (state == "online" && !closed.isCompleted) { sendStatus(socket); delay(300_000) }
