@@ -23,7 +23,6 @@ final class ShareViewController: UIViewController {
     private let titleLabel = UILabel()
     private let status = UILabel()
     private var spinning = false
-    private var jobName = "Your page"
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -148,7 +147,6 @@ final class ShareViewController: UIViewController {
                 guard let self else { return }
                 guard let url else { return self.finish(ok: false) }
                 let label = url.deletingPathExtension().lastPathComponent
-                self.jobName = label
                 let target = JobStore.newJobURL(label: label, ext: url.pathExtension.isEmpty ? ext
                                                     : url.pathExtension.lowercased())
                 do {
@@ -208,7 +206,7 @@ final class ShareViewController: UIViewController {
     private func notifyReady() {
         let content = UNMutableNotificationContent()
         content.title = "Ready to print"
-        content.body = "\(jobName) is waiting in RePaper Go — tap to put it on a sheet."
+        content.body = "A shared page is waiting in RePaper Go — tap to put it on a sheet."
         content.sound = .default
         content.userInfo = ["action": "print"]
         let req = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
