@@ -56,9 +56,19 @@ through the "Waiting for approval" screen; admins get an in-app **Approve**.)
 
 ## Build order
 
-1. Cloud model + relay (phone-initiated pairing, fan-out, atomic claim) + tests.
-2. Dock: Print2Go setting, status flag, shared-pool claim in the run loop,
-   connected-devices list.
-3. iOS Go: Print2Go setting + first-launch offer + Dock picker; claim on receive.
-4. Seat-preserving sign-out + one-time consent (decision A).
+1. ✅ Cloud model + relay (phone-initiated pairing, fan-out, atomic claim) — 27-check test green, deployed.
+2. ✅ Dock (0.0.27): Print2Go toggle, status flag, shared-pool claim in the run loop,
+   connected-phones list. Local boot + render verified. **Pilot Pi still on 0.0.26 —
+   push 0.0.27 when it's back on the network (was asleep at build time).**
+4. ✅ Seat-preserving sign-out (cloud side): dormant device keeps its seat; re-sign-in
+   reactivates. iOS app still needs the `signed_out` push handling + one-time consent (A).
+3. ⏳ iOS Go: Print2Go setting + first-launch offer + Dock picker; **claim-on-print**
+   (take → print → done/release, NOT claim-on-receive — first to actually print wins);
+   handle the `signed_out` push; drop the repeated consent dialog (decision A).
 5. Android parity — the whole thing, in the final Android pass.
+
+**iOS claim semantics note:** the phone must NOT claim on receiving the push (an idle
+open app would hog every job). It keeps a pending list from `mirror_job`, and only calls
+`/take` (claim + page handover) when it actually starts printing (auto-print or user
+choice); `/done` on success, `/release` on failure. `mirror_taken` removes a pending
+entry another device grabbed.
