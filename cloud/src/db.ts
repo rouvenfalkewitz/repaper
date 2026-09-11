@@ -183,6 +183,17 @@ CREATE TABLE IF NOT EXISTS recovery_code (
   code_hash TEXT NOT NULL,
   used_at REAL
 );
+CREATE TABLE IF NOT EXISTS dock_sheet (
+  dock_id TEXT NOT NULL,
+  sheet_id TEXT NOT NULL,
+  name TEXT NOT NULL DEFAULT '',
+  address TEXT NOT NULL DEFAULT '',
+  link TEXT NOT NULL DEFAULT '',
+  model TEXT NOT NULL DEFAULT '{}',
+  tag_uid TEXT,
+  tag_programmed INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (dock_id, sheet_id)
+);
 `);
 
 const now = () => Date.now() / 1000;
@@ -325,6 +336,43 @@ export const setPushToken = (id: string, token: string, env: string) =>
   db.prepare("UPDATE device SET push_token=?, push_env=? WHERE id=?").run(token, env, id);
 export const clearPushToken = (id: string) =>
   db.prepare("UPDATE device SET push_token=NULL WHERE id=?").run(id);
+
+// ── Print2Go: a Dock's sheets, inherited by its paired phones as Dock-Labels ──
+export type DockSheetRow = {
+  dock_id: string; sheet_id: string; name: string; address: string;
+  link: string; model: string; tag_uid: string | null; tag_programmed: number;
+};
+export const dockSheets = (dockId: string): DockSheetRow[] =>
+  db.prepare("SELECT * FROM dock_sheet WHERE dock_id=? ORDER BY sheet_id").all(dockId) as DockSheetRow[];
+
+type IncomingSheet = { id: string; name?: string; address?: string; link?: string; model?: string; tag_uid?: string | null; tag_programmed?: boolean };
+/** Snapshot upsert: the Dock owns the definition zone. Rows it no longer lists are
+ *  dropped; a snapshot that omits NFC leaves a phone-learned tag intact. */
+export const syncDockSheets = (dockId: string, sheets: IncomingSheet[]): void => {
+  const keep = new Set(sheets.map((s) => s.id));
+  const existing = new Map(dockSheets(dockId).map((r) => [r.sheet_id, r]));
+  const del = db.prepare("DELETE FROM dock_sheet WHERE dock_id=? AND sheet_id=?");
+  for (const id of existing.keys()) if (!keep.has(id)) del.run(dockId, id);
+  const up = db.prepare(`INSERT INTO dock_sheet(dock_id,sheet_id,name,address,link,model,tag_uid,tag_programmed)
+    VALUES(@dock_id,@sheet_id,@name,@address,@link,@model,@tag_uid,@tag_programmed)
+    ON CONFLICT(dock_id,sheet_id) DO UPDATE SET name=@name,address=@address,link=@link,model=@model,
+      tag_uid=COALESCE(@tag_uid,tag_uid), tag_programmed=CASE WHEN @tag_uid IS NULL THEN tag_programmed ELSE @tag_programmed END`);
+  for (const s of sheets) {
+    const prev = existing.get(s.id);
+    up.run({
+      dock_id: dockId, sheet_id: s.id, name: s.name ?? "", address: s.address ?? "",
+      link: s.link ?? "", model: s.model ?? "{}",
+      tag_uid: s.tag_uid ?? null,
+      tag_programmed: s.tag_programmed ? 1 : (prev?.tag_programmed ?? 0),
+    });
+  }
+};
+/** The one bidirectional field — any device may set it; returns the updated row. */
+export const setDockSheetNfc = (dockId: string, sheetId: string, uid: string | null, programmed: boolean): DockSheetRow | undefined => {
+  db.prepare("UPDATE dock_sheet SET tag_uid=?, tag_programmed=? WHERE dock_id=? AND sheet_id=?")
+    .run(uid, programmed ? 1 : 0, dockId, sheetId);
+  return db.prepare("SELECT * FROM dock_sheet WHERE dock_id=? AND sheet_id=?").get(dockId, sheetId) as DockSheetRow | undefined;
+};
 
 // ── Print2Go: a Dock's jobs print on the phones mirroring it (shared pool) ─────
 /** A Go device pulls jobs from this Dock (or null to stop). */
