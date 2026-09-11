@@ -10,13 +10,27 @@ struct RePaperGoApp: App {
     @StateObject private var cloud = CloudAgent.shared
     @StateObject private var sheets = SheetStore.shared
 
+    private enum Gate: Equatable { case auth, pending, root }
+    private var gate: Gate {
+        if !cloud.claimed { return .auth }
+        if !cloud.approved { return .pending }
+        return .root
+    }
+
     var body: some Scene {
         WindowGroup {
             Group {
-                if !cloud.claimed { AuthView() }             // the app belongs to an account — sign in first
-                else if !cloud.approved { PendingView() }    // a member's device waits for an admin
-                else { RootView() }                          // the printer + Sheets/Settings on the bottom bar
+                switch gate {
+                case .auth: AuthView()                       // the app belongs to an account — sign in first
+                        .transition(.opacity)
+                case .pending: PendingView()                 // a member's device waits for an admin
+                        .transition(.opacity)
+                case .root: RootView()                       // the printer + Sheets/Settings on the bottom bar
+                        .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                }
             }
+            // a gentle cross-fade when the gate changes, so sign-in → main isn't a hard cut
+            .animation(.easeInOut(duration: 0.45), value: gate)
             .environmentObject(cloud)
             .environmentObject(sheets)
             .preferredColorScheme(.dark)

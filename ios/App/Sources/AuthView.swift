@@ -221,7 +221,10 @@ struct AuthView: View {
         do {
             let approved = try await claimSelf()
             Prefs.claimed = true; Prefs.approved = approved
-            cloud.claimed = true; cloud.approved = approved   // the root router takes it from here
+            // set approved FIRST so flipping claimed lands straight on the right screen —
+            // no one-frame flash of the pending screen for an admin going to the main view
+            cloud.approved = approved
+            cloud.claimed = true              // the root router takes it from here (cross-fades)
         } catch {
             note = error.localizedDescription
         }
