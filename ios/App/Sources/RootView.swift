@@ -19,7 +19,15 @@ struct RootView: View {
         }
         .environmentObject(nav)
         .safeAreaInset(edge: .bottom, spacing: 0) { FloatingBar(tab: $nav.tab) }
+        .onReceive(NotificationCenter.default.publisher(for: .openPrinter)) { _ in
+            withAnimation(.easeOut(duration: 0.2)) { nav.tab = .printer }
+        }
     }
+}
+
+extension Notification.Name {
+    /// Posted when the app is opened to show the printer (e.g. from the share extension).
+    static let openPrinter = Notification.Name("openPrinter")
 }
 
 /// A floating rounded pill: a soft carbon capsule with a hairline and a drop shadow that
