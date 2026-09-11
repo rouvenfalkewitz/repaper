@@ -4,7 +4,7 @@
    signed-in user enters their claim code in the console. */
 import type { WebSocket } from "ws";
 import { hashSecret, secretMatches } from "./auth.js";
-import { addEvent, deviceLabel, getDevice, getOrg, openMirrorJobsFor, registerDevice, saveDeviceStatus, saveDiag, setDeviceKind, setTargetVersion, touchDevice, upsertStat } from "./db.js";
+import { addEvent, deviceLabel, getDevice, getOrg, mirrorPhones, openMirrorJobsFor, registerDevice, saveDeviceStatus, saveDiag, setDeviceKind, setTargetVersion, touchDevice, upsertStat } from "./db.js";
 
 const live = new Map<string, WebSocket>(); // device id → open socket
 const alive = new WeakMap<WebSocket, boolean>();
@@ -36,6 +36,12 @@ export const sendToDevice = (id: string, msg: object): boolean => {
 };
 
 export const dropDevice = (id: string) => live.get(id)?.close(4001, "removed");
+
+/** Tell a Dock the current list of phones printing from it (for its settings view). */
+export const notifyDockPeers = (dockId: string) => {
+  const peers = mirrorPhones(dockId).map((p) => ({ name: deviceLabel(p), online: live.has(p.id) }));
+  sendToDevice(dockId, { t: "print2go_peers", peers });
+};
 
 type Hello = { t: "hello"; id: string; secret: string; claim: string; kind: string; name: string; version: string };
 
@@ -92,6 +98,9 @@ export const handleDeviceSocket = (ws: WebSocket, remote: string) => {
       }
       addEvent(deviceId, "online");
       offerUpdate(deviceId);
+      // Print2Go: a Dock gets its current peer list; a phone's Dock learns it came online
+      if (d.kind === "dock" || d.kind === "dock-light") notifyDockPeers(d.id);
+      else if (d.kind === "go" && d.mirror_from) notifyDockPeers(d.mirror_from);
       return;
     }
 
@@ -120,6 +129,8 @@ export const handleDeviceSocket = (ws: WebSocket, remote: string) => {
       live.delete(deviceId);
       touchDevice(deviceId);
       addEvent(deviceId, "offline");
+      const d = getDevice(deviceId);   // a phone going offline updates its Dock's peer list
+      if (d?.kind === "go" && d.mirror_from) notifyDockPeers(d.mirror_from);
     }
   });
   ws.on("error", () => { /* close follows */ });

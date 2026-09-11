@@ -87,21 +87,20 @@ function render(s) {
   let html;
   if (!j) {
     const where = s.light
-      ? (s.mirror ? `it appears on <b>${esc(s.mirror)}</b>.` : `<span style="color:var(--amber)">no mirror chosen yet — pick one in the RePaper Cloud console.</span>`)
-      : `the page shows up here.`;
+      ? (s.peers ? `jobs print on the ${s.peers} connected phone${s.peers === 1 ? "" : "s"}.` : `<span style="color:var(--text-3)">turn on Print2Go on a RePaper Go phone and pick this Dock.</span>`)
+      : `the page shows up here${s.print2go ? `${s.peers ? ` — or on the ${s.peers} connected phone${s.peers === 1 ? "" : "s"}` : ""}.` : "."}`;
     html = `<div class="empty">${ring("led-ready")}
             <div><span class="pill">Ready</span><div class="title">Ready to print</div>
             <div class="meta">Print to <b>${esc(s.printer)}</b> from any device on this network — ${where}</div>
-            <div class="chips"><span>AirPrint</span><span>IPP Everywhere</span><span>Mopria</span>${s.light ? "<span>Cloud mirror</span>" : ""}</div></div></div>`;
+            <div class="chips"><span>AirPrint</span><span>IPP Everywhere</span><span>Mopria</span>${s.print2go ? "<span>Print2Go</span>" : ""}</div></div></div>`;
   } else if (s.light) {
-    // Dock Light: no picker, no tap — the job is on its way (or telling you why not)
-    const err = s.state === "error" && s.error ? `<div class="notice err"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6m0-6 6 6"/></svg><div><b>Not delivered</b><span>${esc(s.error)}</span></div></div>` : "";
-    html = `<div class="hero">${ring(s.state === "error" ? "led-err" : s.state === "printed" ? "led-done" : "led-busy")}<div>
-            <div class="card-head"><span class="pill ${s.state === "error" ? "" : s.state === "printed" ? "done" : "busy"}">${s.state === "printed" ? "Sent" : s.state === "error" ? "Waiting" : "Sending"}</span>
+    // Dock Light: no sheets — the job waits for a phone to grab it from the pool
+    html = `<div class="hero">${ring(s.state === "printed" ? "led-done" : "led-busy")}<div>
+            <div class="card-head"><span class="pill ${s.state === "printed" ? "done" : "busy"}">${s.state === "printed" ? "Printed" : "Waiting for a phone"}</span>
               <form method="post" action="/cancel"><button class="btn outline small" type="submit" name="job" value="${esc(j.id)}">${ICON.trash}Discard</button></form></div>
             <div class="title">${esc(j.name)}</div>
-            <div class="meta">${s.state === "printed" ? esc(s.message) : s.mirror ? `on its way to <b>${esc(s.mirror)}</b>` : ""}</div>
-            <div class="center"><div class="preview">${frame(4, 3, `/preview/${j.id}/${j.next_page || j.pages}`)}</div>${err}</div></div></div>`;
+            <div class="meta">${esc(s.message || "waiting for a phone to print")}</div>
+            <div class="center"><div class="preview">${frame(4, 3, `/preview/${j.id}/${j.next_page || j.pages}`)}</div></div></div></div>`;
   } else if (s.state === "printing") {
     html = `<div class="hero">${ring("led-busy")}<div><span class="pill busy">Printing</span><div class="title">${esc(j.name)}</div>${pages(j)}
             ${stepper(s.phase, s.printing_since, now)}

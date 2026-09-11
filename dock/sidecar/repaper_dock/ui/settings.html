@@ -34,6 +34,8 @@
         </select><div class="hint">A print job waits this long for someone to pick a sheet — then it's quietly discarded.</div></div>
         <label class="tgl"><input type="checkbox" id="cycle" name="sheet_cycle"><span class="knob"></span><span>Cycle through sheets</span></label>
         <div class="hint" style="margin-top:-6px">With several sheets, jobs print on each in turn — no picking. A single sheet always prints directly.</div>
+        <label class="tgl" id="p2gTgl"><input type="checkbox" id="print2go" name="print2go"><span class="knob"></span><span>Print2Go</span></label>
+        <div class="hint" id="p2gHint" style="margin-top:-6px">Let phones print the jobs sent to this Dock. They print on their own sheets — first to grab a job prints it.</div>
         <div class="row end"><button class="btn primary" id="saveBtn" type="submit" disabled>Save</button></div>
       </form>
       <div class="techrow"><div class="tx"><b>Intake</b><span>How pages reach this printer</span></div><span class="techchips"><span class="chip">AirPrint</span><span class="chip">IPP</span></span></div>
@@ -146,23 +148,33 @@ async function load() {
   const opts = [...el("timeout").options].map(o => Number(o.value));
   el("timeout").value = opts.reduce((a, b) => Math.abs(b - s.job_timeout_seconds) < Math.abs(a - s.job_timeout_seconds) ? b : a);
   el("cycle").checked = !!s.sheet_cycle;
+  el("print2go").checked = !!s.print2go || !!s.light;
   el("addr").textContent = s.address; dirty();
   el("sheets").innerHTML = Object.entries(s.sheets).map(([k, v]) => card(k, v)).join("") + `<button class="sheet addcard" type="button" onclick="openAdd()"><span class="plus">${ICON.plus}</span><span>${Object.keys(s.sheets).length ? "Add a sheet" : "Add your first sheet"}</span></button>`;
   const notes = s.notifications || [];
   el("noteSec").hidden = !notes.length;
   el("notes").innerHTML = notes.map(n => `<div class="notice ${n.level === "warn" ? "" : n.level}">${ICON[n.level] || ICON.info}<div><b>${esc(n.title)}</b><span>${esc(n.text)}</span></div></div>`).join("");
   const n = Object.keys(s.sheets).length;
-  if (S.light) {
+  const p2g = s.light || s.print2go, peers = s.peers || [];
+  const peerList = p2g ? `<div class="shead" style="margin-top:14px"><span class="sic"><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/></svg></span><div><b>Print2Go phones</b><span>${peers.length ? `${peers.length} phone${peers.length === 1 ? "" : "s"} print from this Dock` : "phones that print from this Dock"}</span></div></div>
+    <div class="sheets">${peers.length ? peers.map(pp => `<div class="sheet"><div class="sheet-head"><b>${esc(pp.name)}</b><span class="range ${pp.online ? "" : "off"}">${ICON.signal}</span></div><span class="mono">${pp.online ? "online" : "offline"}</span></div>`).join("")
+      : `<div class="sheet"><b>No phones yet</b><span class="mono">On a RePaper Go phone, turn on Print2Go and pick this Dock.</span></div>`}</div>` : "";
+  if (s.light) {
     document.title = "RePaper Dock Light · Settings";
     el("sheetTech").hidden = true;
     const cyc = el("cycle").closest("label"); cyc.hidden = true; if (cyc.nextElementSibling) cyc.nextElementSibling.hidden = true;
-    el("sheetsHead").querySelector("b").textContent = "Mirror";
-    el("sheetSub").textContent = S.mirror ? `Jobs appear on ${S.mirror}` : "A Dock Light prints through another RePaper device";
-    el("sheets").innerHTML = `<div class="card scard"><p class="meta" style="margin:0">${S.mirror
-      ? `Everything printed on this Dock Light appears on <b>${esc(S.mirror)}</b> — whichever sheets that device carries do the printing. Change the mirror on this device's page in the RePaper Cloud console.`
-      : `No mirror chosen yet. Open this device's page in the RePaper Cloud console and pick the RePaper Go device its jobs should appear on.`}</p></div>`;
-  } else
-  el("sheetSub").textContent = n ? `${n} sheet${n === 1 ? "" : "s"} added to this Dock` : "The e-paper displays this Dock prints to";
+    el("p2gTgl").hidden = true; el("p2gHint").hidden = true;   // a Light is always Print2Go
+    el("sheetsHead").querySelector("b").textContent = "Print2Go";
+    el("sheetSub").textContent = "A Dock Light prints through RePaper Go phones";
+    el("sheets").innerHTML = peerList || "";
+  } else {
+    el("sheetSub").textContent = n ? `${n} sheet${n === 1 ? "" : "s"} added to this Dock` : "The e-paper displays this Dock prints to";
+    // a full Dock: show the connected phones under the sheets when Print2Go is on
+    let host = el("p2gPeers");
+    if (!host) { host = document.createElement("section"); host.id = "p2gPeers"; host.className = "sec"; el("sheetTech").after(host); }
+    host.innerHTML = p2g ? peerList : "";
+    host.hidden = !p2g;
+  }
   const nf = { ...s.network }, share = nf["Printer sharing"]; delete nf["Printer sharing"];
   if (share) el("netSub").textContent = share;
   el("net").innerHTML = Object.entries(nf).map(([k, v]) => fact(k, v)).join("");
@@ -326,12 +338,12 @@ function testHotspot() {
 }
 initWifi();
 /* printer form: Save only lights up when something changed */
-function dirty() { const d = el("pname").value.trim() !== S.printer_name || Number(el("timeout").value) !== S.job_timeout_seconds || el("cycle").checked !== !!S.sheet_cycle; const b = el("saveBtn"); if (!b.classList.contains("busy") && !b.classList.contains("ok")) b.disabled = !d; b.dataset.stayDisabled = d ? "0" : "1"; }
+function dirty() { const d = el("pname").value.trim() !== S.printer_name || Number(el("timeout").value) !== S.job_timeout_seconds || el("cycle").checked !== !!S.sheet_cycle || (!S.light && el("print2go").checked !== !!S.print2go); const b = el("saveBtn"); if (!b.classList.contains("busy") && !b.classList.contains("ok")) b.disabled = !d; b.dataset.stayDisabled = d ? "0" : "1"; }
 async function savePrinter(e) {
   e.preventDefault(); const name = el("pname").value.trim(), b = el("saveBtn");
   if (!name || name.length > 63) { shake(el("pname")); toast("Give the printer a name (1–63 characters).", "err"); return false; }
   const renamed = name !== S.printer_name, done = busy(b, "Saving…");
-  try { await api("/api/settings", {printer_name: name, job_timeout_seconds: Number(el("timeout").value), sheet_cycle: el("cycle").checked}); S.printer_name = name; S.job_timeout_seconds = Number(el("timeout").value); S.sheet_cycle = el("cycle").checked; b.dataset.stayDisabled = "1"; done("Saved"); toast(renamed ? "Saved — the new name shows up once the printer restarts." : "Saved."); }
+  try { await api("/api/settings", {printer_name: name, job_timeout_seconds: Number(el("timeout").value), sheet_cycle: el("cycle").checked, print2go: el("print2go").checked}); S.printer_name = name; S.job_timeout_seconds = Number(el("timeout").value); S.sheet_cycle = el("cycle").checked; S.print2go = el("print2go").checked; b.dataset.stayDisabled = "1"; done("Saved"); toast(renamed ? "Saved — the new name shows up once the printer restarts." : "Saved."); }
   catch (x) { done("Not saved", true); toast(x.message, "err"); }
   return false;
 }

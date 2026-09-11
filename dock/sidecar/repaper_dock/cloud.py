@@ -38,13 +38,13 @@ class CloudAgent(threading.Thread):
         self.org: str | None = None
         self._updating = False
         self.updating_version: str | None = None
-        self.mirror: str | None = None      # Dock Light: the device jobs appear on
+        self.peers: list = []               # Print2Go: the phones printing from this Dock
         threading.Thread(target=self._update_check_loop, daemon=True, name="update-check").start()
 
     # ── what Settings shows ───────────────────────────────────────────────────
     def info(self) -> dict:
         return {"url": self.dock.cfg.get("cloud_url", ""), "state": self.state, "detail": self.detail,
-                "claimed": self.claimed, "org": self.org, "mirror": self.mirror,
+                "claimed": self.claimed, "org": self.org, "peers": self.peers,
                 "claim_code": self.identity["claim_code"], "device_id": self.identity["device_id"]}
 
     # ── the status heartbeat: metadata only, never job content ────────────────
@@ -61,6 +61,7 @@ class CloudAgent(threading.Thread):
         except Exception: pass
         return {"t": "status", "printer": s["printer"], "state": s["state"], "version": __version__,
                 "identifier": s["identifier"], "web": s["address"], "lan": lan,
+                "print2go": bool(self.dock.cfg.get("dock_light") or self.dock.cfg.get("print2go")),
                 "jobs_today": sum(1 for j in list_jobs(("done",)) if j.created >= midnight),
                 "sheets": [{"id": k, "name": v["name"], "size": v["size"], "palette": v["palette"],
                             "battery_volts": v.get("battery_volts"), "temperature_c": v.get("temperature_c"),
@@ -142,43 +143,68 @@ class CloudAgent(threading.Thread):
             if self._updating: return None
             self._start_update(version, url, sha)
             return {"t": "updating", "version": version}
-        elif t == "mirror":
-            self.mirror = msg.get("name") or None
-            log.info("cloud: mirror is %s", self.mirror or "not set")
+        elif t == "print2go_peers":
+            self.peers = msg.get("peers") or []
+        elif t == "mirror_taken":
+            jid = (msg.get("job") or {}).get("id")
+            if jid: self.dock._p2g_taken.add(jid)
+        elif t == "mirror_done":
+            j = msg.get("job") or {}
+            if j.get("id"): self.dock._p2g_done[j["id"]] = j.get("on") or "a phone"
         elif t == "error":
             raise RuntimeError(msg.get("error") or "server error")
         return None
 
-    # ── Dock Light: forward a job's pages to the cloud relay ─────────────────
-    def forward_job(self, job) -> tuple[bool, str]:
-        """Uploads every page as PNG; returns (ok, message). Metadata-honesty note:
-        this is THE exception — Dock Light pages do travel through the cloud."""
+    # ── Print2Go: the shared-pool relay (one page = one claimable job) ───────
+    def forward_page(self, job, page_no: int) -> tuple[bool, str | None, str]:
+        """Push one page into the pool; returns (ok, cloud_job_id, msg)."""
         base = self._http_base()
-        if not base: return False, "no cloud configured"
-        if self.claimed is False: return False, "claim this Dock Light in the console first"
+        if not base: return False, None, "no cloud configured"
+        if self.claimed is False: return False, None, "claim this Dock in the console first"
         import base64, io
         from PIL import Image
         try:
-            for n in range(1, job.pages + 1):
-                img = Image.open(job.page_path(n)).convert("RGB")
-                buf = io.BytesIO(); img.save(buf, "PNG")
-                name = job.name if job.pages == 1 else f"{job.name} (page {n} of {job.pages})"
-                body = json.dumps({"id": self.identity["device_id"], "secret": self.identity["secret"],
-                                   "name": name, "type": "png",
-                                   "data": base64.b64encode(buf.getvalue()).decode()}).encode()
-                req = urllib.request.Request(base + "/api/device/forward-job", data=body,
-                                             headers={"Content-Type": "application/json"})
-                with urllib.request.urlopen(req, timeout=30) as r:
-                    resp = json.loads(r.read().decode() or "{}")
-                if not resp.get("ok"): return False, resp.get("error", "the cloud refused the job")
-                to = resp.get("to") or "the mirrored device"
-            return True, f"sent to {to}" + ("" if resp.get("delivered") else " — it prints when that device comes online")
-        except urllib.error.HTTPError as e:
-            try: detail = json.loads(e.read().decode()).get("error", str(e))
-            except Exception: detail = str(e)
-            return False, detail
+            img = Image.open(job.page_path(page_no)).convert("RGB")
+            buf = io.BytesIO(); img.save(buf, "PNG")
+            name = job.name if job.pages == 1 else f"{job.name} (page {page_no} of {job.pages})"
+            resp = self._post("/api/device/forward-job",
+                              {"name": name, "type": "png", "data": base64.b64encode(buf.getvalue()).decode()})
+            if not resp.get("ok"): return False, None, resp.get("error", "the cloud refused the job")
+            return True, resp.get("job_id"), f"{resp.get('phones', 0)} phone(s)"
         except Exception as e:
-            return False, str(e) or type(e).__name__
+            return False, None, self._err(e)
+
+    def take(self, cloud_job_id: str) -> bool:
+        """Claim a job for local printing (first wins). True if this Dock won it."""
+        try:
+            return bool(self._post(f"/api/device/mirror-job/{cloud_job_id}/take").get("ok"))
+        except urllib.error.HTTPError as e:
+            return False   # 409 taken, 404 gone — either way not ours
+        except Exception:
+            return False
+
+    def job_done(self, cloud_job_id: str) -> None:
+        try: self._post(f"/api/device/mirror-job/{cloud_job_id}/done")
+        except Exception: pass
+
+    def job_release(self, cloud_job_id: str) -> None:
+        try: self._post(f"/api/device/mirror-job/{cloud_job_id}/release")
+        except Exception: pass
+
+    def _post(self, path: str, extra: dict | None = None) -> dict:
+        base = self._http_base()
+        body = {"id": self.identity["device_id"], "secret": self.identity["secret"], **(extra or {})}
+        req = urllib.request.Request(base + path, data=json.dumps(body).encode(),
+                                     headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return json.loads(r.read().decode() or "{}")
+
+    @staticmethod
+    def _err(e) -> str:
+        if isinstance(e, urllib.error.HTTPError):
+            try: return json.loads(e.read().decode()).get("error", str(e))
+            except Exception: return str(e)
+        return str(e) or type(e).__name__
 
     def _http_base(self) -> str:
         u = (self.dock.cfg.get("cloud_url") or "").strip()

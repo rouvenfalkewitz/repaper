@@ -32,6 +32,9 @@ class Dock:
         self._announced: set[str] = set()
         self._auto_tried: set[str] = set()   # auto-print: one attempt per job page
         self._cycle_ix = 0                   # round-robin pointer for sheet_cycle
+        self._p2g_pages: dict[str, str] = {} # Print2Go: local page key → cloud job id
+        self._p2g_taken: set[str] = set()    # cloud job ids a phone has claimed
+        self._p2g_done: dict[str, str] = {}  # cloud job id → the phone that printed it
         self.sheet_status: dict[str, dict] = {}         # sheet id → {battery_volts, temperature_c, online, seen, at}
         self._status_lock = threading.Lock()
         for sid in self.registry.ids():                 # last known readings survive a restart; "online" is unknown until the first scan
@@ -88,25 +91,29 @@ class Dock:
             if time.time() - job.created > self.cfg["job_timeout_seconds"]:
                 job.state = "cancelled"; job.error = "nobody held a sheet in time"; job.save()
                 log.info("job %s expired", job.id); continue
-            if self.cfg.get("dock_light"):
-                # Dock Light: no sheets here — the job travels to the cloud and appears
-                # on the mirrored device. Success flashes green; failure stays visible
-                # and retries every few seconds until the console fixes the cause.
-                self.state = "job-waiting"; self.phase = "forwarding"
-                ok, msg = self.cloud.forward_job(job)
-                self.phase = ""
-                if ok:
-                    job.state = "done"; job.save()
-                    self.state = "printed"; self.message = f"{job.name}: {msg}"; self.last_error = ""
-                    log.info("dock light: %s", self.message); time.sleep(3)
-                else:
-                    self.state = "error"; self.message = msg; self.last_error = msg
-                    log.warning("dock light: forward failed: %s", msg); time.sleep(10)
-                continue
+            page_no = job.next_page()
+            key = f"{job.id}:{page_no}"
+            p2g = bool(self.cfg.get("dock_light") or self.cfg.get("print2go"))
+
+            if p2g:
+                # Print2Go: the page joins the shared pool so phones can print it too.
+                cloud_id = self._p2g_ensure(job, page_no, key)
+                if cloud_id and cloud_id in self._p2g_done:
+                    # a phone printed it — record it and move on
+                    who = self._p2g_done.pop(cloud_id)
+                    self._mark_printed_elsewhere(job, page_no, who)
+                    continue
+                if self.cfg.get("dock_light"):
+                    # a Light has no sheets — it only waits for a phone
+                    taken = cloud_id in self._p2g_taken if cloud_id else False
+                    self.state = "job-waiting"; self.phase = ""
+                    self.message = "printing on a phone…" if taken else "waiting for a phone to print"
+                    time.sleep(0.5); continue
+                # a full Dock keeps competing with its own sheets (claim happens in print_page)
+
             if self.state == "error": self.message = getattr(self, "last_error", "")   # keep a failure visible until the next tap
             elif self.state != "job-waiting": self.message = ""                        # a previous success never lingers under a new job
-            self.state = "job-waiting"; page_no = job.next_page(); self.phase = ""
-            key = f"{job.id}:{page_no}"
+            self.state = "job-waiting"; self.phase = ""
             if key not in self._announced:
                 log.info("job %s (%s) page %d/%d waiting — hold a sheet", job.id, job.name, page_no, job.pages); self._announced.add(key)
             # automatic sheet choice: a single sheet decides itself; with sheet_cycle on,
@@ -125,6 +132,21 @@ class Dock:
             if not sheet_id: continue
             self.print_page(job, page_no, sheet_id)
 
+    # ── Print2Go helpers ─────────────────────────────────────────────────────
+    def _p2g_ensure(self, job: Job, page_no: int, key: str) -> str | None:
+        """Forward this page to the shared pool once; return its cloud job id."""
+        cloud_id = self._p2g_pages.get(key)
+        if cloud_id: return cloud_id
+        ok, cloud_id, _ = self.cloud.forward_page(job, page_no)
+        if ok and cloud_id: self._p2g_pages[key] = cloud_id
+        return cloud_id if ok else None
+
+    def _mark_printed_elsewhere(self, job: Job, page_no: int, who: str):
+        job.printed.append({"page": page_no, "sheet": f"(phone) {who}", "at": time.time()})
+        if job.next_page() is None: job.state = "done"
+        job.save(); self.state = "printed"; self.message = f"{job.name}: printed on {who}"
+        log.info("print2go: %s", self.message); time.sleep(3 if job.state == "done" else 1)
+
     def print_page(self, job: Job, page_no: int, sheet_id: str):
         try:
             ref, model = self.registry.get(sheet_id)
@@ -133,6 +155,12 @@ class Dock:
         transport = self.transports.get(ref.transport_id)
         if not transport:
             self.message = f"transport {ref.transport_id} not loaded"; self.state = "error"; return
+        # Print2Go: reserve the job in the shared pool before printing locally, so a phone
+        # and this Dock never both print it. If a phone already grabbed it, step aside.
+        cloud_id = self._p2g_pages.get(f"{job.id}:{page_no}")
+        if cloud_id and not self.cloud.take(cloud_id):
+            self._mark_printed_elsewhere(job, page_no, self._p2g_done.pop(cloud_id, "a phone"))
+            return
         self.state = "printing"; job.state = "printing"; job.save(); self.phase = "rendering"; self.message = ""; self.last_error = ""; self.printing_since = time.time()
         src = Image.open(job.page_path(page_no))
         page = render_for_sheet(src, transport.describe(ref))
@@ -146,11 +174,13 @@ class Dock:
                 page.image.convert("RGB").save(d / "last.png")
                 (d / "last.json").write_text(json.dumps({"job": job.name, "page": page_no, "at": time.time()}))
             except Exception as e: log.debug("last image: %s", e)
+            if cloud_id: self.cloud.job_done(cloud_id)   # tell the pool this page is printed
             job.printed.append({"page": page_no, "sheet": sheet_id, "at": time.time()})
             if job.next_page() is None: job.state = "done"
             job.save(); self.state = "printed"; self.message = f"printed page {page_no} of {job.name} on {ref.name or sheet_id} ({time.time()-t0:.1f}s) {res.message}"
             log.info(self.message); time.sleep(3 if job.state == "done" else 1)
         else:
+            if cloud_id: self.cloud.job_release(cloud_id)   # we claimed but couldn't print — back to the pool
             job.state = "pending"; job.save(); self.state = "error"; self.message = res.message; self.last_error = res.message; log.error("print failed: %s", res.message); time.sleep(2)
 
     # ── settings & sheet management (used by /settings) ──────────────────────
@@ -172,7 +202,8 @@ class Dock:
                       "hw": e.get("keys", {}).get("hw", {})}
                   for k, e in self.registry.all().items()}
         return {"printer_name": self.cfg["printer_name"], "job_timeout_seconds": self.cfg["job_timeout_seconds"],
-                "light": bool(self.cfg.get("dock_light")), "mirror": getattr(self.cloud, "mirror", None),
+                "light": bool(self.cfg.get("dock_light")), "print2go": bool(self.cfg.get("print2go")),
+                "peers": getattr(self.cloud, "peers", []),
                 "sheet_cycle": bool(self.cfg.get("sheet_cycle")), "notifications": self.notifications(self.snapshot()["sheets"]),
                 "wifi_supported": self.wifi.supported,
                 "address": f"http://{socket.gethostname()}:{self.cfg['web_port']}/", "sheets": sheets, "cloud": self.cloud.info(),
@@ -187,10 +218,10 @@ class Dock:
         """Things a person should know about this Dock. Shown in Settings; counted on the gear."""
         out = []
         if self.cfg.get("dock_light"):
-            if not getattr(self.cloud, "mirror", None):
-                out.append({"level": "warn", "title": "No mirror chosen yet", "text": "A Dock Light prints through another RePaper device. Pick one on this device's page in the RePaper Cloud console."})
+            if not getattr(self.cloud, "peers", []):
+                out.append({"level": "info", "title": "No phones connected yet", "text": "A Dock Light prints through RePaper Go phones. On a phone, turn on Print2Go and pick this Dock — it then appears here."})
             return out
-        if self.identifier.id == "manual":
+        if self.identifier.id == "manual" and not self.cfg.get("print2go"):
             out.append({"level": "warn", "title": "No sheet reader on this Dock", "text": "Sheets are chosen on the page and printed with the Print button. With a reader, tapping a sheet does this automatically."})
         for k, v in sheets.items():
             mv = v.get("battery_volts"); lim = v.get("min_battery_mv") or 2700
@@ -202,7 +233,7 @@ class Dock:
 
     def save_settings(self, data: dict) -> None:
         from .config import CONFIG
-        allowed = {"printer_name": str, "job_timeout_seconds": int, "status_refresh_seconds": int, "sheet_cycle": bool}
+        allowed = {"printer_name": str, "job_timeout_seconds": int, "status_refresh_seconds": int, "sheet_cycle": bool, "print2go": bool}
         if "printer_name" in data and not (1 <= len(str(data["printer_name"]).strip()) <= 63): raise ValueError("printer name must be 1–63 characters")
         for k, typ in allowed.items():
             if k in data and data[k] is not None:
@@ -301,7 +332,8 @@ class Dock:
                          "size": f'{m["width"]}×{m["height"]} {m["palette"]}', "hw": e.get("keys", {}).get("hw", {}),
                          "min_battery_mv": caps.get("min_battery_mv"), "last": last, **st.get(k, {})}
         return {"state": self.state, "phase": self.phase, "message": self.message,
-                "light": bool(self.cfg.get("dock_light")), "mirror": getattr(self.cloud, "mirror", None),
+                "light": bool(self.cfg.get("dock_light")), "print2go": bool(self.cfg.get("dock_light") or self.cfg.get("print2go")),
+                "peers": len(getattr(self.cloud, "peers", [])),
                 "updating": getattr(self.cloud, "updating_version", None), "error": (self.message if self.state == "error" else getattr(self, "last_error", "")) or "",
                 "printer": self.cfg["printer_name"], "notifications": self.notifications(sheets),
                 "identifier": self.identifier.id, "version": __version__, "address": f"http://{socket.gethostname()}:{self.cfg['web_port']}/",

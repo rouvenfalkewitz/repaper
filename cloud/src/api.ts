@@ -23,7 +23,7 @@ import {
 } from "./db.js";
 import { COOKIE, endSession, hashPassword, loginAllowed, loginFailed, loginOk, requireUser, secretMatches, startSession, verifyPassword } from "./auth.js";
 import { mailEnabled, sendInviteMail, sendRegisterMail, sendResetMail } from "./mail/index.js";
-import { dropDevice, isOnline, onlineCount, sendToDevice, setUpdateOffer } from "./devices.js";
+import { dropDevice, isOnline, notifyDockPeers, onlineCount, sendToDevice, setUpdateOffer } from "./devices.js";
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -211,7 +211,11 @@ export const registerApi = (app: FastifyInstance) => {
     const d = deviceAuth(req.body);
     if (!d) return reply.code(401).send({ error: "auth" });
     const j = getMirrorJob((req.params as { jid: string }).jid);
-    if (j && j.claimed_by === d.id) { dropMirrorJob(j.id); addEvent(j.dock_id, "print2go_printed", `${j.name} on ${deviceLabel(d)}`); }
+    if (j && j.claimed_by === d.id) {
+      dropMirrorJob(j.id);
+      addEvent(j.dock_id, "print2go_printed", `${j.name} on ${deviceLabel(d)}`);
+      if (j.dock_id !== d.id) sendToDevice(j.dock_id, { t: "mirror_done", job: { id: j.id, on: deviceLabel(d) } });
+    }
     return { ok: true };
   });
 
@@ -237,8 +241,11 @@ export const registerApi = (app: FastifyInstance) => {
         return reply.code(404).send({ error: "unknown Dock" });
       if (!isPrint2Go(dock)) return reply.code(409).send({ error: "that Dock doesn't have Print2Go on" });
     }
+    const prev = d.mirror_from;
     setMirrorFrom(d.id, dockId);
     addEvent(d.id, "print2go_source", dockId ? deviceLabel(getDevice(dockId)!) : "cleared");
+    if (prev && prev !== dockId) notifyDockPeers(prev);   // the old Dock loses this phone
+    if (dockId) notifyDockPeers(dockId);                   // the new Dock gains it
     return { ok: true, from: dockId ? deviceLabel(getDevice(dockId)!) : null };
   });
 
