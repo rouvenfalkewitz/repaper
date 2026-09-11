@@ -21,6 +21,11 @@ services:
       - SMTP_PASS=${SMTP_PASS:-}
       - MAIL_FROM=${MAIL_FROM:-}
       - REGISTER_WHITELIST=${REGISTER_WHITELIST:-}
+      - APNS_KEY_P8=${APNS_KEY_P8:-}
+      - APNS_KEY_ID=${APNS_KEY_ID:-}
+      - APNS_TEAM_ID=${APNS_TEAM_ID:-8DPLCLHB27}
+      - APNS_TOPIC=${APNS_TOPIC:-net.repaper.go.ios}
+      - APNS_HOST=${APNS_HOST:-}
     volumes:
       - cloud-data:/app/data
     labels:

@@ -30,6 +30,19 @@ struct MirrorPending: Identifiable, Equatable {
 
     private var running = false
     private var task: URLSessionWebSocketTask?
+    private var pushToken: String?   // APNs token from the app delegate, sent over the socket
+
+    /// The app delegate hands us the APNs device token; we relay it to the cloud so a
+    /// waiting Print2Go job can wake this phone even when the app is closed.
+    func setPushToken(_ token: String) {
+        pushToken = token
+        Task { await sendPushToken() }
+    }
+
+    private func sendPushToken() async {
+        guard let t = pushToken, state == "online" else { return }
+        try? await send(["t": "push_token", "token": t, "env": PUSH_ENV])
+    }
 
     private init() {}
 
@@ -55,6 +68,7 @@ struct MirrorPending: Identifiable, Equatable {
                 try await send(["t": "hello", "id": Identity.shared.deviceId, "secret": Identity.shared.secret,
                                 "claim": Identity.shared.claimCode, "kind": "go", "platform": "ios", "version": GO_IOS_VERSION])
                 state = "online"; backoff = 2
+                await sendPushToken()   // hand over the APNs token (if we have one) each connect
                 heartbeat = Task { [weak self] in
                     while !Task.isCancelled {
                         await self?.sendStatus()

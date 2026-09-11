@@ -17,10 +17,11 @@ import {
   createRelease, getRelease, latestRelease, listReleases, setTargetVersion,
   setOrgLogo, setUserName, setUserRole, updateCompany, updatePassword, useRecoveryCode, userApiKeys,
   COMPANY_FIELDS, DATA_DIR, type DeviceRow, type UserRow,
-  addMirrorJob, claimMirrorJob, deleteMirrorJob, deviceLabel, findByClaimCode, getMirrorJob,
+  addMirrorJob, claimMirrorJob, clearPushToken, deleteMirrorJob, deviceLabel, findByClaimCode, getMirrorJob,
   isPrint2Go, markDormant, mirrorPhones, print2goDocks, reactivateDevice, releaseMirrorJob,
   setMirrorFrom, staleMirrorJobs,
 } from "./db.js";
+import { apnsConfigured, sendPush } from "./apns.js";
 import { COOKIE, endSession, hashPassword, loginAllowed, loginFailed, loginOk, requireUser, secretMatches, startSession, verifyPassword } from "./auth.js";
 import { mailEnabled, sendInviteMail, sendRegisterMail, sendResetMail } from "./mail/index.js";
 import { dropDevice, isOnline, notifyDockPeers, onlineCount, sendToDevice, setUpdateOffer } from "./devices.js";
@@ -158,7 +159,16 @@ export const registerApi = (app: FastifyInstance) => {
     const from = dock ? deviceLabel(dock) : "a Dock";
     const msg = { t: "mirror_job", job: { id: j.id, name: j.name, from } };
     let phones = 0;
-    for (const p of mirrorPhones(j.dock_id)) if (sendToDevice(p.id, msg)) phones++;
+    for (const p of mirrorPhones(j.dock_id)) {
+      if (sendToDevice(p.id, msg)) phones++;            // online: the app shows the card
+      else if (p.push_token && apnsConfigured()) {      // offline: wake it with a push
+        sendPush(p.push_token, p.push_env,
+          { title: "Ready to print", body: `A page from ${from} is waiting — tap to put it on a sheet.` },
+          { warn: (s: string) => app.log.warn(s) })
+          .then((r) => { if (r.status === 410) clearPushToken(p.id); })   // dead token — forget it
+          .catch(() => {});
+      }
+    }
     sendToDevice(j.dock_id, msg);   // the Dock itself is in the pool (its own sheets)
     return phones;
   };

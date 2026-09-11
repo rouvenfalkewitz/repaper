@@ -4,7 +4,7 @@
    signed-in user enters their claim code in the console. */
 import type { WebSocket } from "ws";
 import { hashSecret, secretMatches } from "./auth.js";
-import { addEvent, deviceLabel, getDevice, getOrg, mirrorPhones, openMirrorJobsFor, registerDevice, saveDeviceStatus, saveDiag, setDeviceKind, setDevicePlatform, setTargetVersion, touchDevice, upsertStat } from "./db.js";
+import { addEvent, deviceLabel, getDevice, getOrg, mirrorPhones, openMirrorJobsFor, registerDevice, saveDeviceStatus, saveDiag, setDeviceKind, setDevicePlatform, setPushToken, setTargetVersion, touchDevice, upsertStat } from "./db.js";
 
 const live = new Map<string, WebSocket>(); // device id → open socket
 const alive = new WeakMap<WebSocket, boolean>();
@@ -116,6 +116,12 @@ export const handleDeviceSocket = (ws: WebSocket, remote: string) => {
         if (status.version === row.target_version) setTargetVersion(deviceId, null);   // converged
         else offerUpdate(deviceId);
       }
+    }
+    if (msg.t === "push_token") {
+      // a Go app hands over its APNs token so the cloud can wake it for a waiting job
+      const token = String(msg.token ?? "").replace(/[^0-9a-fA-F]/g, "").slice(0, 200);
+      const env = msg.env === "production" ? "production" : "sandbox";
+      if (token) setPushToken(deviceId, token, env);
     }
     if (msg.t === "diag") {
       saveDiag(deviceId, String(msg.log ?? "").slice(0, 64 * 1024));

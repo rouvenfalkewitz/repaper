@@ -47,9 +47,24 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
         return true
     }
 
-    /// Ask once — the share extension's notifications only show if this is granted.
+    /// Ask once — the share extension's notifications only show if this is granted, and a
+    /// grant also registers for remote push (so a closed app can be woken for a Dock job).
     static func requestAuthorization() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { granted, _ in
+            guard granted else { return }
+            DispatchQueue.main.async { UIApplication.shared.registerForRemoteNotifications() }
+        }
+    }
+
+    func application(_ application: UIApplication,
+                     didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        let hex = deviceToken.map { String(format: "%02x", $0) }.joined()
+        Task { @MainActor in CloudAgent.shared.setPushToken(hex) }
+    }
+
+    func application(_ application: UIApplication,
+                     didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        DiagLog.log("apns register failed: \(error.localizedDescription)")
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter,

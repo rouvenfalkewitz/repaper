@@ -2,7 +2,11 @@ import Foundation
 import UIKit
 import RePaperKit
 
-let GO_IOS_VERSION = "0.1.27"
+let GO_IOS_VERSION = "0.1.28"
+
+/// Which APNs environment this build's push tokens belong to. Development/Xcode
+/// builds get sandbox tokens; flip to "production" for TestFlight/App Store.
+let PUSH_ENV = "sandbox"
 
 /// App-level preferences — the Android app's Prefs, UserDefaults edition.
 enum Prefs {

@@ -132,6 +132,8 @@ if (!dcols.includes("claimed_by")) db.exec("ALTER TABLE device ADD COLUMN claime
   if (!dcols.includes("diag_at")) db.exec("ALTER TABLE device ADD COLUMN diag_at REAL");
   if (!dcols.includes("dormant")) db.exec("ALTER TABLE device ADD COLUMN dormant INTEGER NOT NULL DEFAULT 0"); // signed out but still a seat
   if (!dcols.includes("platform")) db.exec("ALTER TABLE device ADD COLUMN platform TEXT"); // ios | android for Go apps
+  if (!dcols.includes("push_token")) db.exec("ALTER TABLE device ADD COLUMN push_token TEXT"); // APNs device token
+  if (!dcols.includes("push_env")) db.exec("ALTER TABLE device ADD COLUMN push_env TEXT");     // sandbox | production
 }
 db.exec(`
 CREATE TABLE IF NOT EXISTS device_stat (
@@ -208,7 +210,7 @@ export type DeviceRow = {
   claim_code: string; version: string; status: string; created: number; claimed_at: number | null; last_seen: number | null;
   site: string | null; diag: string | null; diag_at: number | null; target_version: string | null;
   approved: number; claimed_by: number | null; mirror_to: string | null; mirror_from: string | null; dormant: number;
-  platform: string | null;
+  platform: string | null; push_token: string | null; push_env: string | null;
 };
 export type MirrorJobRow = { id: string; dock_id: string; name: string; type: string; path: string; created: number; claimed_by: string | null; claimed_at: number | null };
 
@@ -318,6 +320,11 @@ export const saveDeviceStatus = (id: string, status: string) =>
 /** Which mobile platform a Go app runs on (ios | android) — for the Updates page tabs. */
 export const setDevicePlatform = (id: string, platform: string) =>
   db.prepare("UPDATE device SET platform=? WHERE id=? AND (platform IS NULL OR platform!=?)").run(platform, id, platform);
+/** The APNs token a Go app reports, so the cloud can wake it for a waiting job. */
+export const setPushToken = (id: string, token: string, env: string) =>
+  db.prepare("UPDATE device SET push_token=?, push_env=? WHERE id=?").run(token, env, id);
+export const clearPushToken = (id: string) =>
+  db.prepare("UPDATE device SET push_token=NULL WHERE id=?").run(id);
 
 // ── Print2Go: a Dock's jobs print on the phones mirroring it (shared pool) ─────
 /** A Go device pulls jobs from this Dock (or null to stop). */
