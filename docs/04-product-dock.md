@@ -124,3 +124,15 @@ with — no race, no claiming protocol, trivially predictable for the user.
   race only matters once multiple mirrors exist.
 - The mirror concept wants a home in the fleet console UI (device page of the
   Dock Light: "Mirrors to: …").
+
+### Refinement to sit on (noted 11 Sep 2026)
+
+Rouven's instinct: Dock and Dock Light are ONE software; the Light is simply
+always in mirroring mode, and a regular Dock can be "downgraded" into that mode
+by a setting. This is already architecturally true — a Dock Light is `dockd` with
+`dock_light: true` (that's how the pilot Pi was switched). The only missing piece
+is UX: expose the flag as a Dock setting ("run as a mirror — don't use my own
+sheets, send jobs to another device"), so any Dock can act as a Light without a
+reflash. Ties into the broader "mirroring mode" UX still to be defined (where it's
+controlled, what the mirrored device shows, one-to-one vs one-to-many). Not
+building yet — parked for a later refinement pass.
