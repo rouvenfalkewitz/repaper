@@ -203,17 +203,26 @@ final class ShareViewController: UIViewController {
     }
 
     /// Open the containing app via a custom URL scheme by walking the responder chain to
-    /// a UIApplication (a share extension can't call UIApplication.shared directly).
-    private func openContainerApp() {
-        guard let url = URL(string: "repaper-go://print") else { return }
-        let selector = sel_registerName("openURL:")
+    /// the UIApplication instance (a share extension can't call UIApplication.shared
+    /// directly). We look for an actual UIApplication and ask it to open the URL.
+    @objc @discardableResult
+    private func openURL(_ url: URL) -> Bool {
         var responder: UIResponder? = self
         while let r = responder {
-            if r.responds(to: selector), r !== self {
-                r.perform(selector, with: url)
-                return
+            if let application = r as? UIApplication {
+                return application.perform(#selector(openURL(_:)), with: url) != nil
             }
             responder = r.next
         }
+        return false
+    }
+
+    private func openContainerApp() {
+        guard let url = URL(string: "repaper-go://print") else { return }
+        // documented path first (some hosts honour it), then the responder-chain fallback
+        extensionContext?.open(url) { [weak self] ok in
+            if !ok { _ = self?.openURL(url) }
+        }
+        openURL(url)
     }
 }

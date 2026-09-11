@@ -32,7 +32,7 @@ targets:
       path: Sources/Info.plist
       properties:
         CFBundleDisplayName: RePaper Go
-        CFBundleShortVersionString: "0.1.18"
+        CFBundleShortVersionString: "0.1.19"
         # the share extension opens the app here after spooling a page
         CFBundleURLTypes:
           - CFBundleURLName: net.repaper.go.ios
