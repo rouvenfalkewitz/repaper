@@ -24,6 +24,7 @@ go/local.properties
 ios/App/RePaperGo.xcodeproj/
 ios/RePaperKit/.build/
 ios/App/build/
+ios/App/build-device/
 ios/App/Sources/Info.plist
 ios/App/RePaperGo.entitlements
 ios/App/RePaperGoShare.entitlements

@@ -2,13 +2,13 @@ import SwiftUI
 import RePaperKit
 
 /// The main screen is the printer, like the Dock's page: the light ring front and centre,
-/// speaking the LED language, with the job that's waiting below. Sheets live in Settings;
+/// speaking the LED language, with the job that's waiting below. Sheets and settings
 /// content arrives via the share sheet ("share to print").
 struct MainView: View {
     @EnvironmentObject var cloud: CloudAgent
     @EnvironmentObject var sheets: SheetStore
+    @EnvironmentObject var nav: Nav
     @Environment(\.scenePhase) private var scenePhase
-    @State private var showSettings = false
     @State private var jobs: [URL] = []
     @State private var busy = false
     @State private var flash: RingView.Led?   // DONE/ERR held briefly, then back to the state machine
@@ -30,11 +30,6 @@ struct MainView: View {
                 HStack {
                     BrandLockup(height: 26)
                     Spacer()
-                    Button { showSettings = true } label: {
-                        Image(systemName: "gearshape.fill")
-                            .font(.system(size: 18)).foregroundColor(Ui.text2)
-                            .padding(8)
-                    }
                 }
 
                 // the hero sits at a FIXED offset (per device, never per state): every
@@ -106,7 +101,6 @@ struct MainView: View {
         }
         }
         .background(Ui.bg.ignoresSafeArea())
-        .fullScreenCover(isPresented: $showSettings, onDismiss: { refresh() }) { SettingsView() }
         .confirmationDialog("Print on which sheet?", isPresented: .init(
             get: { pickFor != nil }, set: { if !$0 { pickFor = nil } }), titleVisibility: .visible) {
             ForEach(sheets.sheets) { s in
@@ -126,7 +120,7 @@ struct MainView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .mirrorJobArrived)) { _ in refresh() }
         .alert("Print jobs from a Dock?", isPresented: $offerP2G) {
-            Button("Set up") { Prefs.print2goOffered = true; showSettings = true }
+            Button("Set up") { Prefs.print2goOffered = true; nav.tab = .settings }
             Button("Not now", role: .cancel) { Prefs.print2goOffered = true }
         } message: {
             Text("This iPhone can also print the jobs people send to one of your RePaper Docks — on its own sheets. You can set it up in Settings any time.")
@@ -134,8 +128,9 @@ struct MainView: View {
         .onAppear {
             cloud.start(); refresh()
             maybeOfferPrint2Go()
-            // visual-test hook: `simctl launch … --open-settings` jumps straight there
-            if ProcessInfo.processInfo.arguments.contains("--open-settings") { showSettings = true }
+            // visual-test hooks: `simctl launch … --open-settings`/`--open-sheets` jump straight there
+            if ProcessInfo.processInfo.arguments.contains("--open-settings") { nav.tab = .settings }
+            if ProcessInfo.processInfo.arguments.contains("--open-sheets") { nav.tab = .sheets }
         }
         .onChange(of: scenePhase) { p in if p == .active { refresh() } }   // a share may have spooled a job
     }
@@ -188,7 +183,7 @@ struct MainView: View {
             ?? sheets.findByUid(read.uid)
         DiagLog.log("nfc tap: uid \(read.uid) → \(known?.name ?? "unknown")")
         guard let known else {
-            info = "This sheet isn't set up for tapping on this iPhone yet — add it in Settings, or hold it there to set up tapping."
+            info = "This sheet isn't set up for tapping on this iPhone yet — add it in the Sheets tab, or hold it there to set up tapping."
             return
         }
         guard let job = jobs.first else {
@@ -237,8 +232,8 @@ struct MainView: View {
                 .font(Ui.display(11, weight: 700, width: 112)).kerning(1.6)
                 .foregroundColor(Ui.text3)
             HStack(spacing: 0) {
-                howTile(step: 1, caption: "Settings", accent: Ui.blue, tint: Ui.blueTint) {
-                    Image(systemName: "gearshape.fill")
+                howTile(step: 1, caption: "Sheets tab", accent: Ui.blue, tint: Ui.blueTint) {
+                    Image(systemName: "square.stack")
                         .font(.system(size: 22)).foregroundColor(Ui.text)
                 }
                 howArrow
@@ -349,7 +344,7 @@ struct MainView: View {
         case .busy: return phase.isEmpty ? "Keep the sheet nearby." : phase
         case .done: return "Take a look at the sheet."
         case .err: return errorNote.isEmpty ? "Hold on — then just try again." : errorNote
-        case .wait: return sheets.sheets.isEmpty ? "Add a sheet in Settings first."
+        case .wait: return sheets.sheets.isEmpty ? "Add a sheet in the Sheets tab first."
                                                  : "Tap a job below and choose the sheet."
         case .setup: return ""   // the setup steps card below carries the message
         case .ready: return ""   // the how-to card below carries the message

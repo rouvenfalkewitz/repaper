@@ -13,7 +13,7 @@ struct RePaperGoApp: App {
             Group {
                 if !cloud.claimed { AuthView() }             // the app belongs to an account — sign in first
                 else if !cloud.approved { PendingView() }    // a member's device waits for an admin
-                else { MainView() }
+                else { RootView() }                          // the printer + Sheets/Settings on the bottom bar
             }
             .environmentObject(cloud)
             .environmentObject(sheets)

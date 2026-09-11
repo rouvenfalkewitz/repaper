@@ -32,7 +32,7 @@ targets:
       path: Sources/Info.plist
       properties:
         CFBundleDisplayName: RePaper Go
-        CFBundleShortVersionString: "0.1.5"
+        CFBundleShortVersionString: "0.1.6"
         UILaunchScreen: {}
         UIAppFonts: [Archivo.ttf, Figtree.ttf]
         NSBluetoothAlwaysUsageDescription: RePaper Go talks to your e-paper sheets over Bluetooth to print on them.
