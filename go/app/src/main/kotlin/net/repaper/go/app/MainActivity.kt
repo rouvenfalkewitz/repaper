@@ -34,7 +34,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var jobList: LinearLayout
     private lateinit var pillHolder: LinearLayout
     private lateinit var nfcHint: LinearLayout
-    private val printFlow by lazy { PrintFlow(this, registry) }
+    private lateinit var printFlow: PrintFlow   // rebuilt with registry so inherited sheets print
     private var busy = false                   // a BLE print is running
     private var flash: RingView.Led? = null    // DONE/ERR held briefly, then back to the state machine
     private val autoTried = HashSet<String>()  // one-sheet auto-print: one attempt per job
@@ -48,6 +48,7 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, PendingActivity::class.java)); finish(); return
         }
         registry = Registry(this)
+        printFlow = PrintFlow(this, registry)
         jobs = JobStore(this)
 
         val root = LinearLayout(this).apply {
@@ -134,8 +135,10 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, AuthActivity::class.java)); finish(); return
         }
         registry = Registry(this)          // Settings may have added/removed sheets meanwhile
+        printFlow = PrintFlow(this, registry)
         refresh()
-        CloudAgent.get(this).onJobArrived = { runOnUiThread { refresh() } }   // Dock Light jobs land live
+        // Dock Light jobs and inherited Dock-Labels both land live → rebuild + refresh
+        CloudAgent.get(this).onJobArrived = { runOnUiThread { registry = Registry(this); printFlow = PrintFlow(this, registry); refresh() } }
         // tap-to-print: the labels' built-in NFC tag carries the same landing link as the QR
         android.nfc.NfcAdapter.getDefaultAdapter(this)?.enableReaderMode(this, { tag ->
             val ndef = android.nfc.tech.Ndef.get(tag) ?: return@enableReaderMode

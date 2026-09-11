@@ -24,11 +24,12 @@ import org.json.JSONObject
 class SettingsActivity : AppCompatActivity() {
     private lateinit var registry: Registry
     private lateinit var listView: LinearLayout
-    private val printFlow by lazy { PrintFlow(this, registry) }
+    private lateinit var printFlow: PrintFlow   // rebuilt with registry so inherited sheets print
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         registry = Registry(this)
+        printFlow = PrintFlow(this, registry)
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL; setBackgroundColor(Ui.BG)
@@ -55,7 +56,12 @@ class SettingsActivity : AppCompatActivity() {
         setContentView(ScrollView(this).apply { setBackgroundColor(Ui.BG); addView(root) })
     }
 
-    override fun onResume() { super.onResume(); refresh() }
+    override fun onResume() {
+        super.onResume(); refresh()
+        // inherited Dock-Labels arriving over the socket refresh the list live
+        InheritedSheets.onChange = { runOnUiThread { registry = Registry(this); printFlow = PrintFlow(this, registry); refresh() } }
+    }
+    override fun onPause() { InheritedSheets.onChange = null; super.onPause() }
 
     private fun refresh() {
         listView.removeAllViews()
@@ -356,8 +362,18 @@ class SettingsActivity : AppCompatActivity() {
                     .apply { topMargin = dp(10); bottomMargin = dp(8) }
                 addView(Ui.frame(this@SettingsActivity, panel))
             })
-            addView(Ui.displayText(this@SettingsActivity, registry.name(id), 16f, Ui.TEXT, weight = 600))
-            addView(Ui.monoText(this@SettingsActivity, "tap for a test page · hold for options", 11f).apply {
+            addView(LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+                addView(Ui.displayText(this@SettingsActivity, registry.name(id), 16f, Ui.TEXT, weight = 600))
+                registry.dockName(id)?.let {
+                    addView(dockChip(), LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { leftMargin = dp(8) })
+                }
+                if (registry.tagUid(id) != null) addView(nfcChip(), LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { leftMargin = dp(6) })
+            })
+            addView(Ui.monoText(this@SettingsActivity,
+                registry.dockName(id)?.let { "lives on $it · tap for a test page" } ?: "tap for a test page · hold for options", 11f).apply {
                 setPadding(0, dp(3), 0, 0)
             })
             setOnClickListener { testPrint(id) }
@@ -376,12 +392,26 @@ class SettingsActivity : AppCompatActivity() {
             }.setNegativeButton("Cancel", null).show()
     }
 
-    private fun sheetActions(id: String) {
-        val items = buildList {
-            add("Rename")
-            if (registry.landing(id) != null) add("Re-program the NFC tag")
-            add("Remove")
+    /** A compact badge: a Dock-Label marker (neutral) or the NFC-ready chip (accent). */
+    private fun badge(text: String, fg: Int, bg: Int, border: Int?): android.widget.TextView =
+        Ui.displayText(this, text, 9f, fg, weight = 700, width = 112).apply {
+            letterSpacing = 0.08f
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(bg); cornerRadius = 999f; if (border != null) setStroke(dp(1), border)
+            }
+            setPadding(dp(7), dp(3), dp(7), dp(3))
         }
+    private fun dockChip() = badge("DOCK", Ui.TEXT_2, Ui.SURFACE_2, Ui.BORDER)
+    private fun nfcChip() = badge("NFC", Ui.ACCENT, Ui.ACCENT_TINT, null)
+
+    private fun sheetActions(id: String) {
+        val dockLabel = registry.isDockLabel(id)
+        val items = buildList {
+            if (!dockLabel) add("Rename")                       // a Dock-Label is read-only
+            if (registry.landing(id) != null) add("Re-program the NFC tag")
+            if (!dockLabel) add("Remove")
+        }
+        if (items.isEmpty()) { toast("This label lives on ${registry.dockName(id)} — manage it on the Dock."); return }
         AlertDialog.Builder(this).setTitle(registry.name(id))
             .setItems(items.toTypedArray()) { _, which ->
                 when (items[which]) {

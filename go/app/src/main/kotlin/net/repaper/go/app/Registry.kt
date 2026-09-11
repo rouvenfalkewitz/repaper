@@ -1,39 +1,91 @@
 package net.repaper.go.app
 
 import android.content.Context
+import net.repaper.go.core.LandingUrl
 import net.repaper.go.core.SheetModel
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.security.SecureRandom
 
-const val GO_VERSION = "0.2.12"
+const val GO_VERSION = "0.2.13"
+
+/** Sheets inherited from the paired Dock (Print2Go) — a live, in-memory mirror the cloud
+ *  keeps current via {t:dock_sheets}. Overlaid onto the phone's own sheets by Registry, so
+ *  a Dock-Label prints and taps exactly like a scanned one. The one bidirectional field is
+ *  the NFC tag: learning it on the phone updates here optimistically and syncs up. */
+object InheritedSheets {
+    @Volatile var entries: List<JSONObject> = emptyList()
+    @Volatile var dockName: String? = null
+    /** Whoever shows sheets sets this to be nudged when the inherited set changes. */
+    @Volatile var onChange: (() -> Unit)? = null
+
+    fun set(sheets: JSONArray, dock: String?) {
+        entries = (0 until sheets.length()).map { sheets.getJSONObject(it) }
+        dockName = dock?.ifEmpty { null }
+        onChange?.invoke()
+    }
+    fun setTag(sheetId: String, uid: String) {
+        entries.firstOrNull { it.optString("id") == sheetId }?.put("tag_uid", uid)
+        onChange?.invoke()
+    }
+}
 
 /** Same shape as the Dock's ~/.repaper/sheets.json: id → {name, transport, address, keys, model}.
- *  The AES key from the QR link lives only here. */
+ *  The AES key from the QR link lives only here. `data` is the merged view (the phone's own
+ *  sheets overlaid with inherited Dock-Labels); `local` is what gets persisted. */
 class Registry(context: Context) {
     private val file = File(context.filesDir, "sheets.json")
+    private var local = JSONObject()
     private var data = JSONObject()
 
-    init { if (file.exists()) runCatching { data = JSONObject(file.readText()) } }
+    init {
+        if (file.exists()) runCatching { local = JSONObject(file.readText()) }
+        rebuild()
+    }
 
-    private fun save() = file.writeText(data.toString(2))
+    /** Merge: start from the phone's own sheets, then overlay each inherited sheet (a Dock
+     *  present sheet wins by landing name; a locally-learned tag survives if the Dock has none). */
+    private fun rebuild() {
+        data = JSONObject(local.toString())
+        for (e in InheritedSheets.entries) {
+            val id = e.optString("id"); if (id.isEmpty()) continue
+            val link = e.optString("link").ifEmpty { null }
+            val keyHex = link?.let { runCatching { LandingUrl.parse(it).keyHex }.getOrNull() }
+            val tag = e.optString("tag_uid").ifEmpty {
+                local.optJSONObject(id)?.optJSONObject("keys")?.optString("tag_uid")?.ifEmpty { null }
+            }
+            val keys = JSONObject()
+            if (keyHex != null) keys.put("key", keyHex)
+            if (link != null) keys.put("landing", link)
+            if (tag != null) keys.put("tag_uid", tag)
+            val model = runCatching { JSONObject(e.optString("model", "{}")) }.getOrElse { JSONObject() }
+            data.put(id, JSONObject()
+                .put("name", e.optString("name").ifEmpty { id })
+                .put("transport", "opendisplay-ble")
+                .put("address", e.optString("address").ifEmpty { id })
+                .put("keys", keys)
+                .put("model", model)
+                .put("_dock", InheritedSheets.dockName ?: ""))
+        }
+    }
+
+    private fun save() = file.writeText(local.toString(2))
 
     fun ids(): List<String> = data.keys().asSequence().toList()
-
     fun entry(id: String): JSONObject = data.getJSONObject(id)
 
     fun model(id: String): SheetModel {
         val m = entry(id).getJSONObject("model")
         val inset = m.optJSONArray("inset") ?: JSONArray(listOf(0, 0, 0, 0))
         return SheetModel(m.getInt("width"), m.getInt("height"), m.optString("palette", "BW"),
-            IntArray(4) { inset.getInt(it) })
+            IntArray(4) { inset.optInt(it, 0) })
     }
 
     fun add(id: String, name: String, address: String, keyHex: String?, model: SheetModel) {
         val keys = JSONObject()
         if (keyHex != null) keys.put("key", keyHex)
-        data.put(id, JSONObject()
+        local.put(id, JSONObject()
             .put("name", name)
             .put("transport", "opendisplay-ble")
             .put("address", address)
@@ -41,15 +93,23 @@ class Registry(context: Context) {
             .put("model", JSONObject()
                 .put("width", model.width).put("height", model.height)
                 .put("palette", model.palette).put("inset", JSONArray(model.inset.toList()))))
-        save()
+        save(); rebuild()
     }
 
+    /** Update a key in the merged view; persists only when it's the phone's own sheet. */
     fun updateKey(id: String, key: String, value: String) {
-        entry(id).getJSONObject("keys").put(key, value); save()
+        data.optJSONObject(id)?.getJSONObject("keys")?.put(key, value)
+        local.optJSONObject(id)?.getJSONObject("keys")?.put(key, value)?.also { save() }
     }
 
-    fun rename(id: String, name: String) { entry(id).put("name", name); save() }
-    fun remove(id: String) { data.remove(id); save() }
+    fun rename(id: String, name: String) {
+        if (isDockLabel(id)) return                    // a Dock-Label is read-only (lives on the Dock)
+        local.optJSONObject(id)?.put("name", name); save(); rebuild()
+    }
+    fun remove(id: String) {
+        if (isDockLabel(id)) return                    // can't remove an inherited sheet from here
+        local.remove(id); save(); rebuild()
+    }
 
     fun keyHex(id: String): String? = entry(id).getJSONObject("keys").optString("key").ifEmpty { null }
     fun bleAddress(id: String): String? = entry(id).getJSONObject("keys").optString("ble_address").ifEmpty { null }
@@ -57,6 +117,10 @@ class Registry(context: Context) {
     fun landing(id: String): String? = entry(id).getJSONObject("keys").optString("landing").ifEmpty { null }
     fun name(id: String): String = entry(id).optString("name").ifEmpty { id }
     fun address(id: String): String = entry(id).getString("address")
+    fun tagUid(id: String): String? = entry(id).getJSONObject("keys").optString("tag_uid").ifEmpty { null }
+    /** Non-null ⇒ inherited from that Dock (a Dock-Label). */
+    fun dockName(id: String): String? = data.optJSONObject(id)?.optString("_dock")?.ifEmpty { null }
+    fun isDockLabel(id: String): Boolean = dockName(id) != null
 }
 
 /** App-level preferences: the printer name people see in print dialogs.

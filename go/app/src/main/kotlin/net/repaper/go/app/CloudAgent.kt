@@ -119,6 +119,17 @@ class CloudAgent(private val context: Context) {
                 pending = pending.filterNot { it.id == id }
                 onJobArrived?.invoke()
             }
+            "dock_sheets" -> {
+                // the paired Dock's sheets — inherited as Dock-Labels (replaced wholesale)
+                InheritedSheets.set(msg.optJSONArray("sheets") ?: org.json.JSONArray(),
+                                    msg.optString("dock_name").ifEmpty { null })
+                onJobArrived?.invoke()
+            }
+            "sheet_nfc" -> {
+                // a tag learned elsewhere (Dock or another phone) — adopt it on the matching sheet
+                val id = msg.optString("sheet_id"); val uid = msg.optString("uid")
+                if (id.isNotEmpty() && uid.isNotEmpty()) InheritedSheets.setTag(id, uid)
+            }
             "diag" -> socket.send(JSONObject().put("t", "diag").put("log", DiagLog.dump()).toString())
         }
     }
@@ -137,6 +148,14 @@ class CloudAgent(private val context: Context) {
     }
     fun jobDone(id: String) { post("mirror-job/$id/done") }
     fun jobReleased(id: String) { post("mirror-job/$id/release") }
+
+    /** Relay a learned NFC tag up so the paired Dock and other phones converge (the one
+     *  field that syncs back). Optimistically reflected locally too. */
+    fun sendSheetNfc(sheetId: String, uid: String, programmed: Boolean = false) {
+        InheritedSheets.setTag(sheetId, uid)
+        ws?.send(JSONObject().put("t", "sheet_nfc").put("sheet_id", sheetId)
+            .put("uid", uid).put("programmed", programmed).toString())
+    }
 
     /** The org's Print2Go Docks this phone can print from. */
     fun print2goDocks(): List<JSONObject> {
