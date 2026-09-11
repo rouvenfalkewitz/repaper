@@ -18,18 +18,20 @@ struct AuthView: View {
     @State private var cloudUrl = ""
 
     var body: some View {
+        GeometryReader { geo in
         ScrollView {
             VStack(spacing: 0) {
                 BrandLockup(height: 40)
-                    .padding(.top, 48)
 
                 switch stage {
                 case .credentials: credentials.transition(.opacity)
                 case .twoFactor: twoFactor.transition(.asymmetric(insertion: .move(edge: .trailing), removal: .opacity))
                 }
             }
-            .padding(.horizontal, 24).padding(.bottom, 28)
+            .padding(.horizontal, 24).padding(.vertical, 28)
+            .frame(minHeight: geo.size.height - 40, alignment: .center)
             .animation(.easeInOut(duration: 0.28), value: stage)
+        }
         }
         .background(Ui.bg.ignoresSafeArea())
         .onAppear {
@@ -45,7 +47,7 @@ struct AuthView: View {
 
     private var credentials: some View {
         VStack(spacing: 0) {
-            Text("Sign in with your RePaper account — this \(deviceWord) joins your fleet automatically.")
+            Text("Sign in to your RePaper account to print from this \(deviceWord).")
                 .font(Ui.body(14)).foregroundColor(Ui.text2)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 8).padding(.top, 12).padding(.bottom, 20)
