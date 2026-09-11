@@ -131,7 +131,7 @@ class CloudAgent(private val context: Context) {
             }
             "dock_sheets" -> {
                 // the paired Dock's sheets — inherited as Dock-Labels (replaced wholesale)
-                InheritedSheets.set(msg.optJSONArray("sheets") ?: org.json.JSONArray(),
+                InheritedSheets.set(msg.optJSONArray("sheets") ?: JSONArray(),
                                     msg.optString("dock_name").ifEmpty { null })
                 onJobArrived?.invoke()
             }

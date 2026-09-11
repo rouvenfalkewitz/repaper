@@ -29,3 +29,4 @@ ios/App/Sources/Info.plist
 ios/App/RePaperGo.entitlements
 ios/App/RePaperGoShare.entitlements
 ios/App/ShareExt/Info.plist
+go/local.properties
