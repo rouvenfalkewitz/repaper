@@ -20,6 +20,7 @@ struct SettingsView: View {
                 TabHeader(title: "Settings")
 
                 identityCard
+                    .padding(.top, 14)   // match the breathing room the Sheets header gets from its "+" button
 
                 SectionHeader(text: "Printer")
                 printerCard
