@@ -4,7 +4,7 @@
    signed-in user enters their claim code in the console. */
 import type { WebSocket } from "ws";
 import { hashSecret, secretMatches } from "./auth.js";
-import { addEvent, deviceLabel, getDevice, getOrg, pendingMirrorJobs, registerDevice, saveDeviceStatus, saveDiag, setDeviceKind, setMirror, setTargetVersion, touchDevice, upsertStat } from "./db.js";
+import { addEvent, deviceLabel, getDevice, getOrg, openMirrorJobsFor, registerDevice, saveDeviceStatus, saveDiag, setDeviceKind, setTargetVersion, touchDevice, upsertStat } from "./db.js";
 
 const live = new Map<string, WebSocket>(); // device id → open socket
 const alive = new WeakMap<WebSocket, boolean>();
@@ -67,7 +67,6 @@ export const handleDeviceSocket = (ws: WebSocket, remote: string) => {
           addEvent(h.id, "updated", `${known.version} → ${h.version}`);
         if (known.kind !== h.kind) {
           setDeviceKind(h.id, h.kind);
-          if (h.kind !== "dock-light" && known.mirror_to) setMirror(h.id, null);   // no longer a Light: drop the mirror
           addEvent(h.id, "kind_changed", `${known.kind} → ${h.kind}`);
         }
         touchDevice(h.id, String(h.version ?? ""));
@@ -83,15 +82,13 @@ export const handleDeviceSocket = (ws: WebSocket, remote: string) => {
       alive.set(ws, true);
       const d = getDevice(deviceId)!;
       const org = d.org_id ? getOrg(d.org_id) : undefined;
-      ws.send(JSON.stringify({ t: "hello_ok", claimed: !!d.org_id, org: org?.name ?? null, approved: !!d.approved }));
-      if (d.kind === "dock-light") {
-        const target = d.mirror_to ? getDevice(d.mirror_to) : undefined;
-        ws.send(JSON.stringify({ t: "mirror", name: target ? deviceLabel(target) : null }));
-      }
-      // jobs that arrived while this device was away are delivered now
-      for (const j of pendingMirrorJobs(deviceId)) {
-        const from = getDevice(j.from_id);
-        ws.send(JSON.stringify({ t: "mirror_job", job: { id: j.id, name: j.name, from: from ? deviceLabel(from) : "a Dock Light" } }));
+      // a dormant (signed-out) device keeps its seat but the app returns to its gate
+      const claimed = !!d.org_id && !d.dormant;
+      ws.send(JSON.stringify({ t: "hello_ok", claimed, org: claimed ? org?.name ?? null : null, approved: !!d.approved }));
+      // Print2Go: unclaimed jobs waiting for this device (a phone's source Dock, or a Dock itself)
+      if (claimed) for (const j of openMirrorJobsFor(deviceId)) {
+        const dock = getDevice(j.dock_id);
+        ws.send(JSON.stringify({ t: "mirror_job", job: { id: j.id, name: j.name, from: dock ? deviceLabel(dock) : "a Dock" } }));
       }
       addEvent(deviceId, "online");
       offerUpdate(deviceId);

@@ -114,17 +114,23 @@ if (!(db.prepare("PRAGMA table_info(invite)").all() as { name: string }[]).some(
 if (!dcols.includes("approved")) db.exec("ALTER TABLE device ADD COLUMN approved INTEGER NOT NULL DEFAULT 1");
 if (!dcols.includes("claimed_by")) db.exec("ALTER TABLE device ADD COLUMN claimed_by INTEGER");
   if (!dcols.includes("diag")) db.exec("ALTER TABLE device ADD COLUMN diag TEXT");
-  if (!dcols.includes("mirror_to")) db.exec("ALTER TABLE device ADD COLUMN mirror_to TEXT");
+  if (!dcols.includes("mirror_to")) db.exec("ALTER TABLE device ADD COLUMN mirror_to TEXT");   // v1, unused now
+  if (!dcols.includes("mirror_from")) db.exec("ALTER TABLE device ADD COLUMN mirror_from TEXT"); // Print2Go: the Dock a Go device pulls from
+  // Print2Go shared-pool job: claimable by the source Dock + every phone mirroring it
+  const mjCols = (db.prepare("PRAGMA table_info(mirror_job)").all() as { name: string }[]).map((c) => c.name);
+  if (mjCols.length && !mjCols.includes("dock_id")) db.exec("DROP TABLE mirror_job");   // v1 schema → rebuild (jobs are ephemeral)
   db.exec(`CREATE TABLE IF NOT EXISTS mirror_job(
     id TEXT PRIMARY KEY,
-    from_id TEXT NOT NULL,
-    to_id TEXT NOT NULL,
+    dock_id TEXT NOT NULL,
     name TEXT NOT NULL,
     type TEXT NOT NULL,
     path TEXT NOT NULL,
-    created INTEGER NOT NULL
+    created INTEGER NOT NULL,
+    claimed_by TEXT,
+    claimed_at INTEGER
   )`);
   if (!dcols.includes("diag_at")) db.exec("ALTER TABLE device ADD COLUMN diag_at REAL");
+  if (!dcols.includes("dormant")) db.exec("ALTER TABLE device ADD COLUMN dormant INTEGER NOT NULL DEFAULT 0"); // signed out but still a seat
 }
 db.exec(`
 CREATE TABLE IF NOT EXISTS device_stat (
@@ -200,9 +206,9 @@ export type DeviceRow = {
   id: string; org_id: number | null; kind: string; name: string; secret_hash: string;
   claim_code: string; version: string; status: string; created: number; claimed_at: number | null; last_seen: number | null;
   site: string | null; diag: string | null; diag_at: number | null; target_version: string | null;
-  approved: number; claimed_by: number | null; mirror_to: string | null;
+  approved: number; claimed_by: number | null; mirror_to: string | null; mirror_from: string | null; dormant: number;
 };
-export type MirrorJobRow = { id: string; from_id: string; to_id: string; name: string; type: string; path: string; created: number };
+export type MirrorJobRow = { id: string; dock_id: string; name: string; type: string; path: string; created: number; claimed_by: string | null; claimed_at: number | null };
 
 // ── orgs & users ────────────────────────────────────────────────────────────
 export const getOrg = (id: number) => db.prepare("SELECT * FROM org WHERE id=?").get(id) as OrgRow | undefined;
@@ -308,16 +314,42 @@ export const touchDevice = (id: string, version?: string) =>
 export const saveDeviceStatus = (id: string, status: string) =>
   db.prepare("UPDATE device SET status=?, last_seen=? WHERE id=?").run(status, now(), id);
 
-// ── Dock Light mirroring: jobs travel through the cloud to the mirrored device ─
-export const setMirror = (id: string, to: string | null) =>
-  db.prepare("UPDATE device SET mirror_to=? WHERE id=?").run(to, id);
+// ── Print2Go: a Dock's jobs print on the phones mirroring it (shared pool) ─────
+/** A Go device pulls jobs from this Dock (or null to stop). */
+export const setMirrorFrom = (id: string, dockId: string | null) =>
+  db.prepare("UPDATE device SET mirror_from=? WHERE id=?").run(dockId, id);
+/** Every phone currently mirroring a given Dock. */
+export const mirrorPhones = (dockId: string) =>
+  db.prepare("SELECT * FROM device WHERE mirror_from=?").all(dockId) as DeviceRow[];
+/** Does a device offer Print2Go? A Dock Light always does; a full Dock via its status flag. */
+export const isPrint2Go = (d: DeviceRow): boolean => {
+  if (d.kind === "dock-light") return true;
+  try { return JSON.parse(d.status).print2go === true; } catch { return false; }
+};
+/** The org's Docks that offer Print2Go — what a phone can choose to mirror. */
+export const print2goDocks = (orgId: number) =>
+  (db.prepare("SELECT * FROM device WHERE org_id=? AND kind IN ('dock','dock-light')").all(orgId) as DeviceRow[])
+    .filter(isPrint2Go);
+
 export const addMirrorJob = (j: MirrorJobRow) =>
-  db.prepare("INSERT INTO mirror_job(id, from_id, to_id, name, type, path, created) VALUES(?,?,?,?,?,?,?)")
-    .run(j.id, j.from_id, j.to_id, j.name, j.type, j.path, j.created);
+  db.prepare("INSERT INTO mirror_job(id, dock_id, name, type, path, created, claimed_by, claimed_at) VALUES(?,?,?,?,?,?,?,?)")
+    .run(j.id, j.dock_id, j.name, j.type, j.path, j.created, j.claimed_by, j.claimed_at);
 export const getMirrorJob = (id: string) => db.prepare("SELECT * FROM mirror_job WHERE id=?").get(id) as MirrorJobRow | undefined;
 export const deleteMirrorJob = (id: string) => db.prepare("DELETE FROM mirror_job WHERE id=?").run(id);
-export const pendingMirrorJobs = (toId: string) =>
-  db.prepare("SELECT * FROM mirror_job WHERE to_id=? ORDER BY created").all(toId) as MirrorJobRow[];
+/** Atomic claim: only the first caller wins (returns true). */
+export const claimMirrorJob = (id: string, by: string): boolean =>
+  db.prepare("UPDATE mirror_job SET claimed_by=?, claimed_at=? WHERE id=? AND claimed_by IS NULL").run(by, now(), id).changes > 0;
+/** Re-open a job the claimer couldn't finish. */
+export const releaseMirrorJob = (id: string) =>
+  db.prepare("UPDATE mirror_job SET claimed_by=NULL, claimed_at=NULL WHERE id=?").run(id);
+/** Unclaimed jobs waiting for a given recipient (the source Dock, or a phone mirroring it). */
+export const openMirrorJobsFor = (deviceId: string): MirrorJobRow[] => {
+  const d = getDevice(deviceId);
+  if (!d) return [];
+  const dockId = d.kind === "go" ? d.mirror_from : d.id;   // a phone waits on its source Dock; a Dock on itself
+  if (!dockId) return [];
+  return db.prepare("SELECT * FROM mirror_job WHERE dock_id=? AND claimed_by IS NULL ORDER BY created").all(dockId) as MirrorJobRow[];
+};
 export const staleMirrorJobs = (olderThan: number) =>
   db.prepare("SELECT * FROM mirror_job WHERE created < ?").all(olderThan) as MirrorJobRow[];
 /** The name a device goes by: its status payload's printer name, else the hello name, else the id. */
@@ -378,8 +410,15 @@ export const publicCounts = () =>
 export const orgDevices = (orgId: number) => db.prepare("SELECT * FROM device WHERE org_id=? ORDER BY created").all(orgId) as DeviceRow[];
 export const findClaimable = (code: string) =>
   db.prepare("SELECT * FROM device WHERE org_id IS NULL AND claim_code=? ORDER BY last_seen DESC").get(code) as DeviceRow | undefined;
+/** Any device with this claim code — including an already-claimed or dormant one (for re-sign-in). */
+export const findByClaimCode = (code: string) =>
+  db.prepare("SELECT * FROM device WHERE claim_code=? ORDER BY last_seen DESC").get(code) as DeviceRow | undefined;
 export const claimDevice = (id: string, orgId: number, approved = 1, byUser: number | null = null) =>
-  db.prepare("UPDATE device SET org_id=?, claimed_at=?, approved=?, claimed_by=? WHERE id=?").run(orgId, now(), approved, byUser, id);
+  db.prepare("UPDATE device SET org_id=?, claimed_at=?, approved=?, claimed_by=?, dormant=0 WHERE id=?").run(orgId, now(), approved, byUser, id);
+/** Sign-out: keep the row (and the seat), just mark it dormant so the app's gate returns. */
+export const markDormant = (id: string) => db.prepare("UPDATE device SET dormant=1 WHERE id=?").run(id);
+/** Re-sign-in on a dormant device the org already owns — wake it, no new seat. */
+export const reactivateDevice = (id: string) => db.prepare("UPDATE device SET dormant=0 WHERE id=?").run(id);
 export const approveDevice = (id: string) => db.prepare("UPDATE device SET approved=1 WHERE id=?").run(id);
 export const deleteDevice = (id: string) => db.prepare("DELETE FROM device WHERE id=?").run(id);
 

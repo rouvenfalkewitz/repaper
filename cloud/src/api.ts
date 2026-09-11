@@ -10,14 +10,16 @@ import {
   addEvent, addOrgEvent, addRecoveryCodes, anyOrgAdmin, bumpLoginPending, claimDevice, createApiKey,
   approveDevice, createInvite, orgPagesTotal, createLoginPending, createOrg, createReset, createUser, deleteDevice, deleteLoginPending,
   deleteOtherSessions, deleteSessionsFor, deleteUser, deviceEvents, deviceStats, disableTotp,
-  enableTotp, findClaimable, firstAdmin, getDevice, getOrg, getOrgByName, getUser, getUserByEmail,
+  enableTotp, firstAdmin, getDevice, getOrg, getOrgByName, getUser, getUserByEmail,
   inviteByTokenHash, loginPendingByToken, markInviteUsed, markResetUsed, orgActivity, orgEvents, touchDevice,
   orgDevices, orgInvites, orgUsers, pendingInviteFor, publicCounts, recentResetFor, renameDevice, renameOrg,
   resetByTokenHash, revokeApiKey, revokeInvite, setDeviceSite, setTotpPending, setUserAvatar,
   createRelease, getRelease, latestRelease, listReleases, setTargetVersion,
   setOrgLogo, setUserName, setUserRole, updateCompany, updatePassword, useRecoveryCode, userApiKeys,
   COMPANY_FIELDS, DATA_DIR, type DeviceRow, type UserRow,
-  addMirrorJob, deleteMirrorJob, deviceLabel, getMirrorJob, setMirror, staleMirrorJobs,
+  addMirrorJob, claimMirrorJob, deleteMirrorJob, deviceLabel, findByClaimCode, getMirrorJob,
+  isPrint2Go, markDormant, mirrorPhones, print2goDocks, reactivateDevice, releaseMirrorJob,
+  setMirrorFrom, staleMirrorJobs,
 } from "./db.js";
 import { COOKIE, endSession, hashPassword, loginAllowed, loginFailed, loginOk, requireUser, secretMatches, startSession, verifyPassword } from "./auth.js";
 import { mailEnabled, sendInviteMail, sendRegisterMail, sendResetMail } from "./mail/index.js";
@@ -30,13 +32,16 @@ type Authed = FastifyRequest & { user: UserRow };
 
 const publicDevice = (d: DeviceRow) => ({
   id: d.id, kind: d.kind, name: d.name, version: d.version, site: d.site, target_version: d.target_version,
-  approved: !!d.approved,
+  approved: !!d.approved, dormant: !!d.dormant,
   online: isOnline(d.id), last_seen: d.last_seen, claimed_at: d.claimed_at,
   status: JSON.parse(d.status || "{}"),
   stats: deviceStats(d.id).reverse(),
-  ...(d.kind === "dock-light" ? {
-    mirror_to: d.mirror_to,
-    mirror: d.mirror_to ? deviceLabel(getDevice(d.mirror_to) ?? ({ status: "{}", name: "", id: d.mirror_to } as DeviceRow)) : null,
+  // Print2Go relationships (read-only in the console — the phone drives them)
+  print2go: isPrint2Go(d),
+  ...(isPrint2Go(d) ? { mirror_phones: mirrorPhones(d.id).map((p) => ({ id: p.id, name: deviceLabel(p), online: isOnline(p.id) })) } : {}),
+  ...(d.kind === "go" && d.mirror_from ? {
+    mirror_from: d.mirror_from,
+    mirror_from_name: deviceLabel(getDevice(d.mirror_from) ?? ({ status: "{}", name: "", id: d.mirror_from } as DeviceRow)),
   } : {}),
 });
 
@@ -128,10 +133,10 @@ export const registerApi = (app: FastifyInstance) => {
       .send(createReadStream(apk));
   });
 
-  /* ── Dock Light mirroring ─────────────────────────────────────────────────
-     A Dock Light knows no sheets: every job it accepts is forwarded here and
-     delivered to the device it mirrors to. Jobs are deleted on delivery and
-     expire after an hour — the cloud is a relay, not an archive. */
+  /* ── Print2Go ─────────────────────────────────────────────────────────────
+     A Dock's jobs print on the phones mirroring it, or on the Dock's own sheets:
+     one shared pool, first to claim wins. The cloud relays the page and forgets
+     it on delivery; jobs expire after an hour. */
   const MIRROR_DIR = join(DATA_DIR, "mirror-jobs");
   mkdirSync(MIRROR_DIR, { recursive: true });
   const dropMirrorJob = (id: string) => {
@@ -141,56 +146,126 @@ export const registerApi = (app: FastifyInstance) => {
     deleteMirrorJob(id);
   };
   const purgeStaleMirrorJobs = () => { for (const j of staleMirrorJobs(Date.now() - 3_600_000)) dropMirrorJob(j.id); };
+  const deviceAuth = (body: unknown): DeviceRow | null => {
+    const { id, secret } = (body ?? {}) as { id?: string; secret?: string };
+    if (typeof id !== "string" || typeof secret !== "string") return null;
+    const d = getDevice(id);
+    return d && secretMatches(secret, d.secret_hash) ? d : null;
+  };
+  /* push a waiting job to everyone who could print it (the source Dock + its phones) */
+  const offerJob = (j: { id: string; dock_id: string; name: string }) => {
+    const dock = getDevice(j.dock_id);
+    const from = dock ? deviceLabel(dock) : "a Dock";
+    const msg = { t: "mirror_job", job: { id: j.id, name: j.name, from } };
+    let phones = 0;
+    for (const p of mirrorPhones(j.dock_id)) if (sendToDevice(p.id, msg)) phones++;
+    sendToDevice(j.dock_id, msg);   // the Dock itself is in the pool (its own sheets)
+    return phones;
+  };
 
+  /* the Dock forwards an incoming job into the shared pool */
   app.post("/api/device/forward-job", { bodyLimit: 24 * 1024 * 1024 }, async (req, reply) => {
     purgeStaleMirrorJobs();
-    const { id, secret, name, type, data } = (req.body ?? {}) as
-      { id?: string; secret?: string; name?: string; type?: string; data?: string };
-    if (typeof id !== "string" || typeof secret !== "string" || !data) return reply.code(400).send({ error: "bad request" });
-    const d = getDevice(id);
-    if (!d || !secretMatches(secret, d.secret_hash)) return reply.code(401).send({ error: "auth" });
-    if (!d.org_id) return reply.code(409).send({ error: "claim this Dock Light in the console first" });
-    if (!d.mirror_to) return reply.code(409).send({ error: "no mirror set — choose a device in the console" });
-    const target = getDevice(d.mirror_to);
-    if (!target || target.org_id !== d.org_id) return reply.code(409).send({ error: "the mirrored device is gone — choose a new one in the console" });
+    const d = deviceAuth(req.body);
+    if (!d) return reply.code(401).send({ error: "auth" });
+    if (!d.org_id) return reply.code(409).send({ error: "claim this device in the console first" });
+    const { name, type, data } = (req.body ?? {}) as { name?: string; type?: string; data?: string };
+    if (!data) return reply.code(400).send({ error: "no job" });
     const buf = Buffer.from(data, "base64");
     if (buf.length < 16) return reply.code(400).send({ error: "empty job" });
     const jobId = randomUUID();
     const path = join(MIRROR_DIR, jobId);
     writeFileSync(path, buf);
-    addMirrorJob({ id: jobId, from_id: d.id, to_id: target.id, name: String(name ?? "job").slice(0, 80),
-                   type: type === "pdf" ? "pdf" : "png", path, created: Date.now() });
-    const delivered = sendToDevice(target.id, { t: "mirror_job", job: { id: jobId, name: String(name ?? "job").slice(0, 80), from: deviceLabel(d) } });
-    addEvent(d.id, "mirror_forwarded", `${String(name ?? "job").slice(0, 60)} → ${deviceLabel(target)}`);
-    return { ok: true, delivered, to: deviceLabel(target) };
+    const jobName = String(name ?? "job").slice(0, 80);
+    addMirrorJob({ id: jobId, dock_id: d.id, name: jobName, type: type === "pdf" ? "pdf" : "png",
+                   path, created: Date.now(), claimed_by: null, claimed_at: null });
+    const phones = offerJob({ id: jobId, dock_id: d.id, name: jobName });
+    addEvent(d.id, "print2go_forwarded", `${jobName} → ${phones} device${phones === 1 ? "" : "s"}`);
+    return { ok: true, job_id: jobId, phones };
   });
 
-  /* the mirrored device fetches the page and the relay forgets it */
-  app.post("/api/device/mirror-job/:jid", async (req, reply) => {
-    const { id, secret } = (req.body ?? {}) as { id?: string; secret?: string };
-    if (typeof id !== "string" || typeof secret !== "string") return reply.code(400).send({ error: "bad request" });
-    const d = getDevice(id);
-    if (!d || !secretMatches(secret, d.secret_hash)) return reply.code(401).send({ error: "auth" });
+  /* claim a job (first wins) and, for phones, hand over the page. The source Dock
+     already has the bytes — it claims to reserve the job, printing locally. */
+  app.post("/api/device/mirror-job/:jid/take", async (req, reply) => {
+    const d = deviceAuth(req.body);
+    if (!d) return reply.code(401).send({ error: "auth" });
     const j = getMirrorJob((req.params as { jid: string }).jid);
-    if (!j || j.to_id !== d.id) return reply.code(404).send({ error: "no such job" });
-    let payload: string;
-    try { payload = readFileSync(j.path).toString("base64"); } catch { dropMirrorJob(j.id); return reply.code(404).send({ error: "job expired" }); }
-    dropMirrorJob(j.id);
-    addEvent(j.from_id, "mirror_delivered", `${j.name} → ${deviceLabel(d)}`);
+    if (!j) return reply.code(404).send({ error: "no such job" });
+    const eligible = j.dock_id === d.id || (d.kind === "go" && d.mirror_from === j.dock_id);
+    if (!eligible) return reply.code(403).send({ error: "not your job" });
+    if (!claimMirrorJob(j.id, d.id)) return reply.code(409).send({ error: "taken" });
+    // tell the rest of the pool it's gone
+    const taken = { t: "mirror_taken", job: { id: j.id } };
+    for (const p of mirrorPhones(j.dock_id)) if (p.id !== d.id) sendToDevice(p.id, taken);
+    if (j.dock_id !== d.id) sendToDevice(j.dock_id, taken);
+    let payload: string | undefined;
+    if (d.kind === "go") {
+      try { payload = readFileSync(j.path).toString("base64"); }
+      catch { dropMirrorJob(j.id); return reply.code(404).send({ error: "job expired" }); }
+    }
     return { ok: true, name: j.name, type: j.type, data: payload };
   });
 
-  /* sign-out on the Go apps: the device removes itself from the fleet. Same
-     effect as the console's remove — the row vanishes, the next hello
-     re-registers it unclaimed, and the app's sign-in gate returns. */
+  /* the claimer finished — forget the job */
+  app.post("/api/device/mirror-job/:jid/done", async (req, reply) => {
+    const d = deviceAuth(req.body);
+    if (!d) return reply.code(401).send({ error: "auth" });
+    const j = getMirrorJob((req.params as { jid: string }).jid);
+    if (j && j.claimed_by === d.id) { dropMirrorJob(j.id); addEvent(j.dock_id, "print2go_printed", `${j.name} on ${deviceLabel(d)}`); }
+    return { ok: true };
+  });
+
+  /* the claimer couldn't finish — put it back in the pool */
+  app.post("/api/device/mirror-job/:jid/release", async (req, reply) => {
+    const d = deviceAuth(req.body);
+    if (!d) return reply.code(401).send({ error: "auth" });
+    const j = getMirrorJob((req.params as { jid: string }).jid);
+    if (j && j.claimed_by === d.id) { releaseMirrorJob(j.id); offerJob(j); }
+    return { ok: true };
+  });
+
+  /* the phone chooses which Dock to print from (Print2Go), or clears it */
+  app.post("/api/device/mirror-from", async (req, reply) => {
+    const d = deviceAuth(req.body);
+    if (!d) return reply.code(401).send({ error: "auth" });
+    if (d.kind !== "go") return reply.code(400).send({ error: "only a RePaper Go device mirrors a Dock" });
+    if (!d.org_id) return reply.code(409).send({ error: "sign in first" });
+    const dockId = ((req.body ?? {}) as { dock_id?: string | null }).dock_id ?? null;
+    if (dockId !== null) {
+      const dock = getDevice(dockId);
+      if (!dock || dock.org_id !== d.org_id || !["dock", "dock-light"].includes(dock.kind))
+        return reply.code(404).send({ error: "unknown Dock" });
+      if (!isPrint2Go(dock)) return reply.code(409).send({ error: "that Dock doesn't have Print2Go on" });
+    }
+    setMirrorFrom(d.id, dockId);
+    addEvent(d.id, "print2go_source", dockId ? deviceLabel(getDevice(dockId)!) : "cleared");
+    return { ok: true, from: dockId ? deviceLabel(getDevice(dockId)!) : null };
+  });
+
+  /* the phone lists the org's Print2Go Docks to choose from */
+  app.post("/api/device/print2go-docks", async (req, reply) => {
+    const d = deviceAuth(req.body);
+    if (!d) return reply.code(401).send({ error: "auth" });
+    if (!d.org_id) return reply.code(409).send({ error: "sign in first" });
+    const docks = print2goDocks(d.org_id).map((dock) => ({
+      id: dock.id, name: deviceLabel(dock), online: isOnline(dock.id), current: dock.id === d.mirror_from,
+    }));
+    return { ok: true, docks };
+  });
+
+  /* sign-out on the Go apps: the device stays a claimed seat, just goes dormant —
+     it keeps its place in the fleet (and on the books) and the app's gate returns.
+     A signed-out device drops any Print2Go source. */
   app.post("/api/device/unclaim", async (req, reply) => {
     const { id, secret } = (req.body ?? {}) as { id?: string; secret?: string };
     if (typeof id !== "string" || typeof secret !== "string") return reply.code(400).send({ error: "bad request" });
     const d = getDevice(id);
-    if (!d) return { ok: true };   // already gone — that IS signed out
+    if (!d) return { ok: true };   // never registered — nothing to do
     if (!secretMatches(secret, d.secret_hash)) return reply.code(401).send({ error: "auth" });
-    deleteDevice(d.id);
-    dropDevice(d.id);
+    setMirrorFrom(d.id, null);
+    markDormant(d.id);
+    addEvent(d.id, "signed_out");
+    sendToDevice(d.id, { t: "signed_out" });   // the app returns to its sign-in gate
     return { ok: true };
   });
 
@@ -715,25 +790,6 @@ export const registerApi = (app: FastifyInstance) => {
       return { ok: true };
     });
 
-    /* Dock Light: choose the device its jobs appear on (one target for now) */
-    f.post("/api/devices/:id/mirror", async (req, reply) => {
-      const d = ownDevice(req as Authed);
-      if (!d) return reply.code(404).send({ error: "unknown device" });
-      if (d.kind !== "dock-light") return reply.code(400).send({ error: "only a Dock Light mirrors" });
-      const to = ((req.body ?? {}) as { to?: string | null }).to ?? null;
-      if (to !== null) {
-        const target = getDevice(to);
-        if (!target || target.org_id !== d.org_id) return reply.code(404).send({ error: "unknown target device" });
-        if (target.kind !== "go") return reply.code(400).send({ error: "mirror to a RePaper Go device" });
-        if (!target.approved) return reply.code(400).send({ error: "that device is not approved yet" });
-      }
-      setMirror(d.id, to);
-      const target = to ? getDevice(to) : undefined;
-      addEvent(d.id, "mirror_set", target ? deviceLabel(target) : "cleared");
-      sendToDevice(d.id, { t: "mirror", name: target ? deviceLabel(target) : null });
-      return { ok: true, to: target ? deviceLabel(target) : null };
-    });
-
     f.post("/api/devices/:id/remove", async (req, reply) => {
       const d = ownDevice(req as Authed);
       if (!d) return reply.code(404).send({ error: "unknown device" });
@@ -747,8 +803,18 @@ export const registerApi = (app: FastifyInstance) => {
       const code = String(((req.body ?? {}) as { code?: string }).code ?? "").trim().toUpperCase().replace(/\s+/g, "");
       if (!/^[A-Z0-9]{4}-?[A-Z0-9]{4}$/.test(code)) return reply.code(400).send({ error: "a claim code looks like 3F9A-B2C1" });
       const normalized = code.includes("-") ? code : `${code.slice(0, 4)}-${code.slice(4)}`;
-      const d = findClaimable(normalized);
+      const d = findByClaimCode(normalized);
       if (!d) return reply.code(404).send({ error: "no device with this code is waiting — is it connected to the cloud?" });
+      // a device the same org already owns (dormant after sign-out, or still active):
+      // wake it, no new seat, keep its approval
+      if (d.org_id && d.org_id === u.org_id) {
+        reactivateDevice(d.id);
+        const org = getOrg(u.org_id)!;
+        addEvent(d.id, "signed_in");
+        sendToDevice(d.id, { t: "claimed", org: org.name, approved: !!d.approved });
+        return { ok: true, approved: !!d.approved, org: org.name, device: publicDevice(getDevice(d.id)!) };
+      }
+      if (d.org_id && d.org_id !== u.org_id) return reply.code(409).send({ error: "this device belongs to another workspace" });
       // members' devices wait for an admin; admins and personal workspaces activate immediately
       const approved = u.role === "admin" || isPersonal(u.org_id) ? 1 : 0;
       claimDevice(d.id, u.org_id, approved, u.id);
