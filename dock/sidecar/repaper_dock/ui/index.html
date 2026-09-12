@@ -91,9 +91,9 @@ function render(s) {
     const inc = s.incoming, t = Math.max(0, Math.round((now || Date.now()/1000) - inc.since));
     const mb = inc.bytes ? ` · ${(inc.bytes/1048576).toFixed(1)} MB` : "";
     html = `<div class="hero">${ring("led-busy")}<div>
-      <span class="pill busy">Receiving</span>
+      <span class="pill busy">Preparing</span>
       <div class="title">${esc(inc.name || "Preparing the page")}</div>
-      <div class="meta">${inc.user ? "from " + esc(inc.user) + " · " : ""}just arrived${mb}</div>
+      <div class="meta">${inc.user ? "from " + esc(inc.user) + " · " : ""}received${mb} — getting it ready</div>
       <div class="prep"><div class="bar"><span></span></div>
         <div class="live"><span class="dot"></span><div><b>Preparing the page…</b><span>decoding and rendering it for the sheet — this can take a moment</span></div><span class="mono time">${t} s</span></div>
       </div></div></div>`;

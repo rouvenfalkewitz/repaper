@@ -1,3 +1,4 @@
+0.0.30 — Says "Preparing" (not "Receiving") once a page has arrived, since by then it's fully received and the Dock is rendering it.
 0.0.29 — Fits the Dock/Dock Light name to the logo, and the receiving progress bar no longer restarts each second.
 0.0.28 — Shows its model (Dock or Dock Light) on the logo, and a progress state while it prepares an arriving page instead of jumping from Ready to Printed. Its sheets appear on paired RePaper Go phones as Dock-Labels.
 0.0.27 — Print2Go: a Dock can let phones print the jobs sent to it (shared pool, first to grab wins). Dock Light is Print2Go always-on. Settings shows the connected phones.
