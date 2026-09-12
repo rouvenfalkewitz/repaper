@@ -131,9 +131,15 @@ export const handleDeviceSocket = (ws: WebSocket, remote: string) => {
       }
     }
     if (msg.t === "push_token") {
-      // a Go app hands over its APNs token so the cloud can wake it for a waiting job
-      const token = String(msg.token ?? "").replace(/[^0-9a-fA-F]/g, "").slice(0, 200);
-      const env = msg.env === "production" ? "production" : "sandbox";
+      // a Go app hands over its push token so the cloud can wake it for a waiting job
+      const raw = String(msg.token ?? "");
+      const env = msg.env === "fcm" ? "fcm" : msg.env === "production" ? "production" : "sandbox";
+      // APNs device tokens are hex; FCM registration tokens are far longer and use a wider
+      // alphabet (letters, digits, ':', '-', '_', '.') — only hex-sanitise the APNs case,
+      // or the FCM token gets shredded and Android push silently never arrives.
+      const token = env === "fcm"
+        ? raw.replace(/[^A-Za-z0-9:_.-]/g, "").slice(0, 4096)
+        : raw.replace(/[^0-9a-fA-F]/g, "").slice(0, 200);
       if (token) setPushToken(deviceId, token, env);
     }
     if (msg.t === "sheets") {
