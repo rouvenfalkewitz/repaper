@@ -207,24 +207,31 @@ class PrinterScreen(private val act: AppCompatActivity) : Screen {
         layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER)
     }
 
-    private fun mirrorCard(p: CloudAgent.Pending): View = Ui.card(c, ripple = true).apply {
+    // while a print is running the queue is not actionable — dimmed and unclickable
+    private fun mirrorCard(p: CloudAgent.Pending): View = Ui.card(c, ripple = !busy).apply {
         orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+        alpha = if (busy) 0.5f else 1f
         addView(LinearLayout(c).apply {
             orientation = LinearLayout.VERTICAL
             addView(Ui.displayText(c, p.name, 16f, Ui.TEXT, weight = 600))
-            addView(Ui.monoText(c, "from ${p.from} · tap to choose a sheet", 11f).apply { setPadding(0, dp(3), 0, 0) })
+            addView(Ui.monoText(c, if (busy) "from ${p.from}" else "from ${p.from} · tap to choose a sheet", 11f).apply { setPadding(0, dp(3), 0, 0) })
         }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        setOnClickListener { pickSheetForMirror(p) }
+        isClickable = !busy
+        if (!busy) setOnClickListener { pickSheetForMirror(p) }
     }
-    private fun jobCard(job: File): View = Ui.card(c, ripple = true).apply {
+    private fun jobCard(job: File): View = Ui.card(c, ripple = !busy).apply {
         orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+        alpha = if (busy) 0.5f else 1f
         addView(LinearLayout(c).apply {
             orientation = LinearLayout.VERTICAL
             addView(Ui.displayText(c, job.name.substringAfter('-').removeSuffix(".pdf"), 16f, Ui.TEXT, weight = 600))
-            addView(Ui.monoText(c, "tap to choose a sheet · hold to discard", 11f).apply { setPadding(0, dp(3), 0, 0) })
+            addView(Ui.monoText(c, if (busy) "in the queue" else "tap to choose a sheet · hold to discard", 11f).apply { setPadding(0, dp(3), 0, 0) })
         }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        setOnClickListener { pickSheetFor(job) }
-        setOnLongClickListener { job.delete(); refresh(); true }
+        isClickable = !busy
+        if (!busy) {
+            setOnClickListener { pickSheetFor(job) }
+            setOnLongClickListener { job.delete(); refresh(); true }
+        }
     }
 
     private fun setState(led: RingView.Led, t: String, s: String) {
@@ -256,8 +263,9 @@ class PrinterScreen(private val act: AppCompatActivity) : Screen {
             .setNegativeButton("Cancel", null).show()
     }
     private fun printJob(job: File, sheetId: String, advanceCycle: Boolean = false) {
+        if (busy) return               // one print at a time — set busy synchronously to beat a double-tap
+        busy = true; refresh()
         act.lifecycleScope.launch {
-            busy = true; refresh()
             try {
                 withContext(Dispatchers.IO) { printFlow.printPdf(job, sheetId) { p -> c.runOnUiThread { sub.text = p } } }
                 job.delete(); if (advanceCycle) Prefs.bumpCycleIx(c); busy = false; flashState(RingView.Led.DONE, 3000)
@@ -265,8 +273,9 @@ class PrinterScreen(private val act: AppCompatActivity) : Screen {
         }
     }
     private fun printMirror(p: CloudAgent.Pending, sheetId: String, advanceCycle: Boolean = false) {
+        if (busy) return
+        busy = true; refresh()
         act.lifecycleScope.launch {
-            busy = true; refresh()
             val cloud = CloudAgent.get(c)
             val file = withContext(Dispatchers.IO) { cloud.takeJob(p.id) } ?: run { busy = false; refresh(); return@launch }
             try {

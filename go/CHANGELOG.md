@@ -1,3 +1,4 @@
+0.2.18 (12 Sep 2026) — Fix: the waiting jobs can't be tapped or re-routed while a print is already running.
 0.2.17 (12 Sep 2026) — Pick which Dock to print from right in Settings, with live online dots — no pop-up.
 0.2.16 (12 Sep 2026) — Settings now matches the iPhone: an icon on every row and the right typography, and the how-to shows the real app mark.
 0.2.15 (12 Sep 2026) — A closer match to the iPhone app: a two-step sign-in, a glowing GO ring, drawers you can swipe down to close, and the how-to told in pictures.

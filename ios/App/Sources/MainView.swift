@@ -79,19 +79,25 @@ struct MainView: View {
 
                         if !jobs.isEmpty || !cloud.pending.isEmpty {
                             SectionHeader(text: "Waiting to print")
-                            ForEach(cloud.pending) { p in
-                                MirrorCard(pending: p)
-                                    .onTapGesture { pickMirrorFor = p }
+                            // while a print is running, the queue below is not actionable —
+                            // no picking another sheet or discarding mid-print
+                            Group {
+                                ForEach(cloud.pending) { p in
+                                    MirrorCard(pending: p)
+                                        .onTapGesture { if !busy { pickMirrorFor = p } }
+                                }
+                                ForEach(jobs, id: \.self) { job in
+                                    JobCard(job: job)
+                                        .onTapGesture { if !busy { pickFor = job } }
+                                        .contextMenu {
+                                            Button(role: .destructive) {
+                                                try? FileManager.default.removeItem(at: job); refresh()
+                                            } label: { Label("Discard", systemImage: "trash") }
+                                        }
+                                }
                             }
-                            ForEach(jobs, id: \.self) { job in
-                                JobCard(job: job)
-                                    .onTapGesture { pickFor = job }
-                                    .contextMenu {
-                                        Button(role: .destructive) {
-                                            try? FileManager.default.removeItem(at: job); refresh()
-                                        } label: { Label("Discard", systemImage: "trash") }
-                                    }
-                            }
+                            .disabled(busy)
+                            .opacity(busy ? 0.5 : 1)
                         }
                         Spacer(minLength: 20)
                     }
@@ -414,6 +420,7 @@ struct MainView: View {
     }
 
     private func print(job: URL, on sheet: Sheet, advanceCycle: Bool = false) {
+        guard !busy else { return }   // one print at a time — ignore taps while already printing
         busy = true; phase = ""
         Task {
             do {
@@ -433,6 +440,7 @@ struct MainView: View {
     /// Print a Print2Go job: claim it first (first-to-print wins), then print like any
     /// page; tell the pool done/release afterwards.
     private func printMirror(_ p: MirrorPending, on sheet: Sheet, advanceCycle: Bool = false) {
+        guard !busy else { return }   // one print at a time
         busy = true; phase = "claiming the job…"
         Task {
             guard let (name, ext, bytes) = await cloud.takeJob(p.id) else {
