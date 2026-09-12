@@ -7,7 +7,7 @@
   .logo { display: block; height: 28px; width: auto } .logo .ring { fill: var(--accent) } .logo .letters { fill: var(--text) }
   /* the model name set beside the wordmark, in the logo's own display face — like GO on the app */
   .brand { display: flex; align-items: center; gap: 9px }
-  .variant { font-family: var(--font-display); font-stretch: 125%; font-weight: 800; font-size: 15px; line-height: 1; letter-spacing: .02em; text-transform: uppercase; color: var(--text); white-space: nowrap; position: relative; top: 1px }
+  .variant { font-family: var(--font-display); font-stretch: 112%; font-weight: 800; font-size: 12.5px; line-height: 1; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); white-space: nowrap; position: relative; top: 1px }
   .brand { min-width: 0 } .brand .logo { flex: none }
   .printer { text-align: right } .printer b { display: block; font-family: var(--font-display); font-weight: 600; font-size: 1rem; letter-spacing: -.01em } .printer span { font-family: var(--font-mono); font-size: .75rem; color: var(--text-3) }
   h2 { font-family: var(--font-display); font-stretch: 112%; font-weight: 700; font-size: .75rem; text-transform: uppercase; letter-spacing: .12em; color: var(--text-3); margin: var(--s-6) 0 var(--s-3) }

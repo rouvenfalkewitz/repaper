@@ -196,9 +196,10 @@ async function tick() {
     else if (s.version !== bootVersion) { location.reload(); return; }   // updated Dock → fresh page
     if (s.updating) sysbanner(`<div class="notice info">${SPINSVG}<div><b>Updating to ${esc(s.updating)}</b><span>The Dock downloads, installs and restarts on its own — this page reconnects by itself. Printing resumes right after.</span></div></div>`);
     else sysbanner("");
-    const sig = JSON.stringify([s.state, s.job && s.job.id, s.job && s.job.next_page, s.message, Object.keys(s.sheets).length, s.recent && s.recent.length, s.incoming ? Math.floor(s.now) : 0, Object.values(s.sheets).map(v => [v.battery_volts, v.online, v.last && v.last.at, v.hw && v.hw.firmware])]);
+    const sig = JSON.stringify([s.state, s.job && s.job.id, s.job && s.job.next_page, s.message, Object.keys(s.sheets).length, s.recent && s.recent.length, s.incoming ? s.incoming.since : 0, Object.values(s.sheets).map(v => [v.battery_volts, v.online, v.last && v.last.at, v.hw && v.hw.firmware])]);
     if (sig !== last) { render(s); last = sig; }
     else if (s.state === "printing") { const st = el("job").querySelector(".stepper"); if (st) { const wrap = document.createElement("div"); wrap.innerHTML = stepper(s.phase, s.printing_since, s.now); st.replaceWith(wrap.firstChild); el("job").querySelector(".phase-line").replaceWith(wrap.lastChild); } }
+    else if (s.incoming) { const t = el("job").querySelector(".prep .time"); if (t) t.textContent = Math.max(0, Math.round(s.now - s.incoming.since)) + " s"; }   // just tick the clock; leave the bar animating
   } catch (e) {
     if (++tickFails > 3) sysbanner(`<div class="notice info">${SPINSVG}<div><b>Reconnecting…</b><span>The Dock is restarting or briefly away. This page comes back on its own.</span></div></div>`);
   }
