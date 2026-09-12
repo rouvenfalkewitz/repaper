@@ -78,7 +78,7 @@ function dots(palette) { const c = {BW: ["#FFFFFF", "#000000"], BWR: ["#FFFFFF",
   BWGBRY: ["#FFFFFF", "#000000", "#C8102E", "#F2C400", "#2255DD", "#1FA84D"], "7COLOR": ["#FFFFFF", "#000000", "#C8102E", "#F2C400", "#2255DD", "#1FA84D", "#EE7712"],
   GRAY4: ["#FFFFFF", "#AAAAAA", "#555555", "#000000"]}[palette] || ["#FFFFFF", "#000000"]; return `<span class="dots" title="${palette}">${c.map(x => `<i style="background:${x}"></i>`).join("")}</span>`; }
 function render(s) {
-  el("printer").textContent = s.printer; el("addr").textContent = s.address || "";
+  el("printer").textContent = s.printer; el("addr").textContent = (s.address || "").replace(/^https?:\/\//, "").replace(/\/$/, "");
   document.title = s.light ? "RePaper Dock Light" : "RePaper Dock";
   el("variant").textContent = s.light ? "Dock Light" : "Dock";
   el("sheetsHead").hidden = !!s.light; el("sheets").hidden = !!s.light;

@@ -9,8 +9,9 @@
   .brand { display: flex; align-items: center; gap: 9px }
   .variant { font-family: var(--font-display); font-stretch: 112%; font-weight: 800; font-size: 12.5px; line-height: 1; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); white-space: nowrap; position: relative; top: 1px }
   .brand { min-width: 0 } .brand .logo { flex: none }
-  .printer { text-align: right } .printer b { display: block; font-family: var(--font-display); font-weight: 600; font-size: 1rem; letter-spacing: -.01em } .printer span { font-family: var(--font-mono); font-size: .75rem; color: var(--text-3) }
+  .printer { text-align: right; min-width: 0 } .printer b { display: block; font-family: var(--font-display); font-weight: 600; font-size: 1rem; letter-spacing: -.01em } .printer span { display: block; font-family: var(--font-mono); font-size: .75rem; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40vw }
   h2 { font-family: var(--font-display); font-stretch: 112%; font-weight: 700; font-size: .75rem; text-transform: uppercase; letter-spacing: .12em; color: var(--text-3); margin: var(--s-6) 0 var(--s-3) }
+  .pmeta { display: block; font-size: .875rem; color: var(--text-2); margin-top: 2px }   /* prose in an empty-state card (body face, not mono) */
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--s-5) }
   .pill { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-display); font-stretch: 112%; font-size: .6875rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; line-height: 1.5; background: var(--accent-tint); color: var(--accent-text) }
   .pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor }
