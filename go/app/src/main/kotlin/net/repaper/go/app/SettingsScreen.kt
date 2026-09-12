@@ -28,6 +28,10 @@ import org.json.JSONObject
  *  Print2Go, and the account — matching the iOS Settings pass. */
 class SettingsScreen(private val c: AppCompatActivity) : Screen {
     private val list = LinearLayout(c).apply { orientation = LinearLayout.VERTICAL }
+    // Print2Go inline picker state
+    private var p2gExpanded = false
+    private var p2gDocks: List<org.json.JSONObject>? = null   // null = not loaded yet
+    private var p2gLoading = false
 
     override val view: View by lazy {
         val root = LinearLayout(c).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(16), dp(20), dp(8)) }
@@ -38,7 +42,7 @@ class SettingsScreen(private val c: AppCompatActivity) : Screen {
         ScrollView(c).apply { addView(root); setBackgroundColor(Ui.BG) }
     }
 
-    override fun onShow() { refresh() }
+    override fun onShow() { p2gDocks = null; refresh() }   // refetch the Dock list on each visit
 
     private fun refresh() {
         val cloud = CloudAgent.get(c)
@@ -88,26 +92,46 @@ class SettingsScreen(private val c: AppCompatActivity) : Screen {
             addView(techRow(R.drawable.ic_share, "Intake", "How pages reach this printer", listOf("Android Print", "Share to print")))
         })
 
-        // Print2Go
+        // Print2Go — a toggle that reveals the Dock picker inline (iOS)
         list.addView(Ui.sectionHeader(c, "Print2Go"))
+        val p2gOn = Prefs.print2goDock(c) != null || p2gExpanded
         list.addView(Ui.card(c).apply {
-            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
-            addView(settingIcon(R.drawable.ic_doc_down))
+            orientation = LinearLayout.VERTICAL
             addView(LinearLayout(c).apply {
-                orientation = LinearLayout.VERTICAL
-                addView(Ui.bodyText(c, "Print jobs from a Dock", 15f, Ui.TEXT).apply { setTypeface(typeface, Typeface.BOLD) })
-                val src = Prefs.print2goDock(c)
-                addView(Ui.bodyText(c, src?.let { "Printing jobs sent to $it, on this phone's sheets." } ?: "This phone prints the jobs sent to the Dock you pick.", 12f).apply { setPadding(0, dp(2), 0, 0) })
-            }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            addView(Switch(c).apply {
-                isChecked = Prefs.print2goDock(c) != null
-                setOnCheckedChangeListener { btn, on ->
-                    if (!btn.isPressed) return@setOnCheckedChangeListener
-                    if (on) pickPrint2goDock() else c.lifecycleScope.launch {
-                        withContext(Dispatchers.IO) { cloud.setMirrorFrom(null) }; Prefs.setPrint2goDock(c, null); refresh()
+                orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+                addView(settingIcon(R.drawable.ic_doc_down))
+                addView(LinearLayout(c).apply {
+                    orientation = LinearLayout.VERTICAL
+                    addView(Ui.bodyText(c, "Print jobs from a Dock", 15f, Ui.TEXT).apply { setTypeface(typeface, Typeface.BOLD) })
+                    addView(Ui.bodyText(c, "This phone prints the jobs sent to the Dock you pick, on its own sheets.", 12f).apply { setPadding(0, dp(2), 0, 0) })
+                }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                addView(Switch(c).apply {
+                    isChecked = p2gOn
+                    setOnCheckedChangeListener { btn, on ->
+                        if (!btn.isPressed) return@setOnCheckedChangeListener
+                        if (on) { p2gExpanded = true; p2gDocks = null; refresh() }
+                        else c.lifecycleScope.launch {
+                            withContext(Dispatchers.IO) { cloud.setMirrorFrom(null) }
+                            Prefs.setPrint2goDock(c, null); p2gExpanded = false; p2gDocks = null; refresh()
+                        }
+                    }
+                })
+            })
+            if (p2gOn) {
+                addView(divider())
+                val docks = p2gDocks
+                when {
+                    docks == null -> { addView(Ui.bodyText(c, "Finding Docks…", 13f, Ui.TEXT_2)); loadDocks() }
+                    docks.isEmpty() -> addView(Ui.bodyText(c, "No Docks in your fleet have Print2Go on yet. Turn it on in a Dock's settings first.", 13f, Ui.TEXT_3))
+                    else -> for ((i, d) in docks.withIndex()) {
+                        addView(dockRow(d))
+                        if (i != docks.lastIndex) addView(View(c).apply {
+                            setBackgroundColor(Ui.BORDER)
+                            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(1)).apply { topMargin = dp(6); bottomMargin = dp(6) }
+                        })
                     }
                 }
-            })
+            }
         })
 
         // Account
@@ -159,22 +183,41 @@ class SettingsScreen(private val c: AppCompatActivity) : Screen {
         isClickable = true; setOnClickListener { onTap() }
     }
 
-    private fun pickPrint2goDock() {
+    private fun loadDocks() {
+        if (p2gLoading) return
+        p2gLoading = true
         c.lifecycleScope.launch {
-            val cloud = CloudAgent.get(c)
-            val docks = withContext(Dispatchers.IO) { cloud.print2goDocks() }
-            if (docks.isEmpty()) { toast("No Docks in your fleet have Print2Go on yet."); refresh(); return@launch }
-            val names = docks.map { it.optString("name") + if (it.optBoolean("online")) "" else " (offline)" }.toTypedArray()
-            AlertDialog.Builder(c).setTitle("Print jobs from which Dock?")
-                .setItems(names) { _, w ->
-                    val dock = docks[w]
-                    c.lifecycleScope.launch {
-                        val ok = withContext(Dispatchers.IO) { cloud.setMirrorFrom(dock.optString("id")) }
-                        if (ok) { Prefs.setPrint2goDock(c, dock.optString("name")); toast("Jobs sent to ${dock.optString("name")} now print here too.") } else toast("Couldn't set that up — check the connection.")
-                        refresh()
-                    }
-                }.setOnCancelListener { refresh() }.show()
+            val docks = withContext(Dispatchers.IO) { CloudAgent.get(c).print2goDocks() }
+            p2gDocks = docks; p2gLoading = false; refresh()
         }
+    }
+
+    private fun chooseDock(id: String, name: String) {
+        c.lifecycleScope.launch {
+            val ok = withContext(Dispatchers.IO) { CloudAgent.get(c).setMirrorFrom(id) }
+            if (ok) { Prefs.setPrint2goDock(c, name); p2gDocks = null; refresh() }
+            else toast("Couldn't set that up — check the connection.")
+        }
+    }
+
+    /** One Dock in the inline picker: a live dot, its name, online/offline, and a check if current. */
+    private fun dockRow(d: org.json.JSONObject): View = LinearLayout(c).apply {
+        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+        setPadding(0, dp(6), 0, dp(6))
+        val online = d.optBoolean("online"); val current = d.optBoolean("current")
+        addView(View(c).apply {
+            background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(if (online) Ui.ACCENT else Ui.TEXT_3) }
+            layoutParams = LinearLayout.LayoutParams(dp(8), dp(8)).apply { rightMargin = dp(10) }
+            if (online) Ui.accentShadow(this, 3)
+        })
+        addView(Ui.bodyText(c, d.optString("name"), 15f, if (current) Ui.ACCENT else Ui.TEXT).apply { if (current) setTypeface(typeface, Typeface.BOLD) })
+        addView(Ui.monoText(c, if (online) "online" else "offline", 10f).apply { setPadding(dp(8), 0, 0, 0) })
+        addView(View(c), LinearLayout.LayoutParams(0, 1, 1f))   // spacer
+        if (current) addView(ImageView(c).apply {
+            setImageResource(R.drawable.ic_check)
+            layoutParams = LinearLayout.LayoutParams(dp(18), dp(18))
+        })
+        isClickable = true; setOnClickListener { chooseDock(d.optString("id"), d.optString("name")) }
     }
 
     private fun confirmSignOut(org: String?) {
