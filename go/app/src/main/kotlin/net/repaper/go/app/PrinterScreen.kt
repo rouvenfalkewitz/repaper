@@ -31,7 +31,6 @@ class PrinterScreen(private val act: AppCompatActivity) : Screen {
     private var busy = false
     private var flash: RingView.Led? = null
     private val autoTried = HashSet<String>()
-    private var showHelp = false
 
     private val ring = RingView(c)
     private val pillHolder = LinearLayout(c).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
@@ -62,7 +61,7 @@ class PrinterScreen(private val act: AppCompatActivity) : Screen {
                 typeface = Typeface.DEFAULT_BOLD
                 background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Ui.SURFACE); setStroke(dp(1), Ui.BORDER) }
                 layoutParams = LinearLayout.LayoutParams(dp(34), dp(34))
-                isClickable = true; setOnClickListener { showHelp = !showHelp; refresh() }
+                isClickable = true; setOnClickListener { showHelpPanel() }
             }
             addView(helpBtn)
         })
@@ -145,9 +144,15 @@ class PrinterScreen(private val act: AppCompatActivity) : Screen {
             jobList.addView(Ui.sectionHeader(c, "Waiting to print"))
             for (p in pending) jobList.addView(mirrorCard(p))
             for (job in waiting) jobList.addView(jobCard(job))
-        } else if (showHelp && !busy && flash == null) {
-            jobList.addView(howToCard())
         }
+    }
+
+    /** The how-to, faded in over the screen behind the "?" — matching the iOS help overlay. */
+    private fun showHelpPanel() = Overlays.topPanel(c) { panel, _ ->
+        panel.addView(Ui.displayText(c, "HOW TO USE", 11f, Ui.TEXT_3, weight = 700, width = 112).apply {
+            letterSpacing = 0.14f; setPadding(0, 0, 0, dp(10))
+        })
+        panel.addView(Ui.bodyText(c, "Share a photo or document from any app and pick “RePaper Go” — it lands on your sheet. Or tap a sheet to the phone when a job is waiting.", 13f, Ui.TEXT_2))
     }
 
     private fun mirrorCard(p: CloudAgent.Pending): View = Ui.card(c, ripple = true).apply {
@@ -168,12 +173,6 @@ class PrinterScreen(private val act: AppCompatActivity) : Screen {
         }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
         setOnClickListener { pickSheetFor(job) }
         setOnLongClickListener { job.delete(); refresh(); true }
-    }
-
-    private fun howToCard(): View = Ui.card(c).apply {
-        (layoutParams as LinearLayout.LayoutParams).topMargin = dp(18)
-        addView(Ui.displayText(c, "HOW TO USE", 11f, Ui.TEXT_3, weight = 700, width = 112).apply { letterSpacing = 0.12f })
-        addView(Ui.bodyText(c, "Share a photo or document from any app and pick “RePaper Go” — it lands on your sheet. Or tap a sheet to the phone when a job is waiting.", 13f).apply { setPadding(0, dp(8), 0, 0) })
     }
 
     private fun setState(led: RingView.Led, t: String, s: String) {
