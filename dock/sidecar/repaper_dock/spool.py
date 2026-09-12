@@ -5,7 +5,11 @@ from dataclasses import dataclass, asdict, field
 from pathlib import Path
 from typing import Optional
 from PIL import Image
-from .config import SPOOL
+from .config import SPOOL, HOME
+
+# A job being received/decoded (the slow part on a Pi) has no spool entry yet, so the
+# printer process drops a marker here for the daemon to surface as a "receiving" state.
+INCOMING = HOME / "incoming.json"
 
 
 @dataclass
@@ -42,6 +46,29 @@ def create_job(pages: list[Image.Image], name: str, user: str, source: str = "")
     job.dir.mkdir(parents=True, exist_ok=True)
     for i, img in enumerate(pages, 1): img.save(job.page_path(i))
     job.save(); return job
+
+
+def mark_incoming(name: str, user: str, size: int) -> None:
+    """Called right before the (possibly slow) decode, so the Dock can show it's working."""
+    try: INCOMING.write_text(json.dumps({"name": name or "Untitled", "user": user or "", "bytes": int(size), "since": time.time()}))
+    except Exception: pass
+
+
+def clear_incoming() -> None:
+    try: INCOMING.unlink()
+    except FileNotFoundError: pass
+    except Exception: pass
+
+
+def read_incoming() -> Optional[dict]:
+    """The job currently being received, or None. Stale markers (a crashed decode) are ignored."""
+    try:
+        if INCOMING.exists():
+            d = json.loads(INCOMING.read_text())
+            if time.time() - float(d.get("since", 0)) < 300: return d
+            clear_incoming()
+    except Exception: pass
+    return None
 
 
 def load_job(job_id: str) -> Job:

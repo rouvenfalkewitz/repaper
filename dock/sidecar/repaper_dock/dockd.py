@@ -14,7 +14,7 @@ def SheetModel_copy(m):
 from .sheets import SheetRegistry, load_transports
 from .identify import ManualIdentifier
 from .render import render_for_sheet
-from .spool import list_jobs, load_job, Job
+from .spool import list_jobs, load_job, read_incoming, Job
 
 log = logging.getLogger("repaper")
 
@@ -344,6 +344,7 @@ class Dock:
                                                       "next_page": self.current.next_page(), "state": self.current.state,
                                                       "printed": len(self.current.printed), "created": self.current.created},
                 "now": time.time(), "printing_since": getattr(self, "printing_since", None),
+                "incoming": read_incoming() if not self.current else None,   # a job being decoded, while idle
                 "sheets": sheets,
                 "recent": [{"id": j.id, "name": j.name, "state": j.state, "pages": j.pages, "user": j.user, "created": j.created,
                             "printed": [{"page": x["page"], "sheet": (self.registry.all().get(x["sheet"], {}) or {}).get("name") or x["sheet"], "at": x["at"]} for x in j.printed],

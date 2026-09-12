@@ -9,7 +9,7 @@ def print_command(argv=None):
     (PAPPL: stdin); metadata comes from IPP_* environment variables. Decodes it into a spool job. Exit 0 = accepted."""
     ensure_home()
     from .render import decode_document
-    from .spool import create_job
+    from .spool import create_job, mark_incoming, clear_incoming
     args = sys.argv[1:] if argv is None else argv
     if args and os.path.isfile(args[-1]):
         data = open(args[-1], "rb").read()
@@ -18,11 +18,16 @@ def print_command(argv=None):
     ctype = os.environ.get("CONTENT_TYPE") or os.environ.get("IPP_DOCUMENT_FORMAT_SUPPLIED") or os.environ.get("IPP_DOCUMENT_FORMAT") or ""
     name = os.environ.get("IPP_JOB_NAME") or ""
     user = os.environ.get("IPP_JOB_ORIGINATING_USER_NAME") or os.environ.get("IPP_REQUESTING_USER_NAME") or ""
+    # decoding a big raster takes real time on a Pi — tell the daemon a job is arriving so
+    # the Dock shows a "receiving" state instead of sitting on "Ready" until it's suddenly done
+    mark_incoming(name, user, len(data))
     try:
         pages = decode_document(data, ctype)
     except Exception as e:
+        clear_incoming()
         print(f"ERROR: cannot decode document ({ctype or 'unknown type'}): {e}", file=sys.stderr); return 1
     job = create_job(pages, name, user, source=ctype)
+    clear_incoming()   # the spool job now exists — the daemon takes it from here
     print(f"INFO: job {job.id} · {job.pages} page(s) · {ctype} · {len(data)} bytes", file=sys.stderr); return 0
 
 
