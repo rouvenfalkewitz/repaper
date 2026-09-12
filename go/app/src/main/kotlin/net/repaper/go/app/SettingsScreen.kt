@@ -51,7 +51,7 @@ class SettingsScreen(private val c: AppCompatActivity) : Screen {
             addView(brandRing(), LinearLayout.LayoutParams(dp(54), dp(54)).apply { rightMargin = dp(14) })
             addView(LinearLayout(c).apply {
                 orientation = LinearLayout.VERTICAL
-                addView(Ui.displayText(c, "RePaper Go", 18f, Ui.TEXT, weight = 800, width = 112).apply { maxLines = 1 })
+                addView(Ui.displayText(c, "RePaper Go", 17f, Ui.TEXT, weight = 800, width = 100).apply { maxLines = 1; setSingleLine(true) })
                 addView(LinearLayout(c).apply {
                     orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
                     addView(Ui.dot(c, if (cloud.state == "online") Ui.ACCENT else Ui.AMBER))

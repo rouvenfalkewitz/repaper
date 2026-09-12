@@ -43,9 +43,18 @@ class ShellActivity : AppCompatActivity() {
             setPadding(0, 0, 0, dp(90))   // room for the floating bar
         }
         root.addView(content)
-        root.addView(bottomBar(), FrameLayout.LayoutParams(
+        val bar = bottomBar()
+        root.addView(bar, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM))
         setContentView(root)
+        // targetSdk 35 draws edge-to-edge, so inset the content below the status bar (headers were
+        // colliding with the clock) and lift the floating bar above the gesture area
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
+            val bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            content.setPadding(0, bars.top, 0, dp(90))
+            bar.setPadding(dp(22), dp(14), dp(22), dp(18) + bars.bottom)
+            insets
+        }
         requestBlePermissions()
         CloudAgent.get(this).start()
         // relay the FCM token so the cloud can wake this phone for closed-app Print2Go jobs
@@ -153,8 +162,9 @@ class ShellActivity : AppCompatActivity() {
         val on = Ui.ACCENT; val off = Ui.TEXT_3
         sheetsIcon.setTextColor(if (tab == Tab.SHEETS) on else off); sheetsLabel.setTextColor(if (tab == Tab.SHEETS) on else off)
         settingsIcon.setTextColor(if (tab == Tab.SETTINGS) on else off); settingsLabel.setTextColor(if (tab == Tab.SETTINGS) on else off)
-        goText.setTextColor(if (tab == Tab.PRINTER) Ui.ACCENT else Ui.TEXT)
-        (goRing.background as? GradientDrawable)?.setStroke(dp(6), if (tab == Tab.PRINTER) Ui.ACCENT else Ui.BORDER_STRONG)
+        // GO is the printer home; like iOS it stays lit in the CI accent on every tab
+        goText.setTextColor(Ui.ACCENT)
+        (goRing.background as? GradientDrawable)?.setStroke(dp(6), Ui.ACCENT)
     }
 }
 

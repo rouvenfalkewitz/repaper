@@ -135,7 +135,7 @@ class PrinterScreen(private val act: AppCompatActivity) : Screen {
             flash == RingView.Led.ERR -> setState(flash!!, "Not printed", "Hold on — then just try again.")
             anyWaiting -> setState(RingView.Led.WAIT, "Job waiting", if (ids.isEmpty()) "Add a sheet in the Sheets tab first." else "Tap the sheet with this phone — or choose it below.")
             ids.isEmpty() -> setState(RingView.Led.SETUP, "Set me up", "Add your first sheet in the Sheets tab.")
-            else -> setState(RingView.Led.READY, "Ready to print", "Print from any app and pick “RePaper Go”.")
+            else -> setState(RingView.Led.READY, "Ready to print", "")   // iOS keeps the ready state clean; the how-to lives behind "?"
         }
         helpBtn.visibility = if (!anyWaiting && (flash == null) && !busy) View.VISIBLE else View.INVISIBLE
 

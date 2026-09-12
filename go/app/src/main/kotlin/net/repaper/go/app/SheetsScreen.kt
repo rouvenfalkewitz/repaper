@@ -100,9 +100,9 @@ class SheetsScreen(private val c: AppCompatActivity) : Screen {
         }
     }
 
-    /** A tuning glyph on a raised tile, like iOS's configureButton. */
+    /** A tuning glyph on a raised tile, like iOS's configureButton (slider.horizontal.3). */
     private fun configureButton(id: String): View = ImageView(c).apply {
-        setImageResource(R.drawable.ic_gear); setColorFilter(Ui.TEXT)
+        setImageResource(R.drawable.ic_sliders); setColorFilter(Ui.TEXT)
         background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(Ui.SURFACE_2, Ui.BG)).apply {
             shape = GradientDrawable.OVAL; setStroke(dp(1), Ui.BORDER_STRONG)
         }
