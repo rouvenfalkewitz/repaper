@@ -1,3 +1,4 @@
+0.2.15 (12 Sep 2026) — A closer match to the iPhone app: a two-step sign-in, a glowing GO ring, drawers you can swipe down to close, and the how-to told in pictures.
 0.2.14 (12 Sep 2026) — Push notifications wake the app for Dock (Print2Go) jobs even when it's closed. Final polish to match the iPhone app.
 0.2.13 (11 Sep 2026) — A whole new look to match the iPhone: a floating bottom bar with the GO ring, redesigned Sheets and Settings, scan-or-paste to add a sheet, and inherited Dock-Labels shown alongside your own.
 0.2.12 (11 Sep 2026) — Print2Go: print the jobs sent to a Dock on this phone (choose the Dock in Settings). Signing in now joins the fleet directly.
