@@ -8,7 +8,7 @@ import org.json.JSONObject
 import java.io.File
 import java.security.SecureRandom
 
-const val GO_VERSION = "0.2.15"
+const val GO_VERSION = "0.2.16"
 
 /** Sheets inherited from the paired Dock (Print2Go) — a live, in-memory mirror the cloud
  *  keeps current via {t:dock_sheets}. Overlaid onto the phone's own sheets by Registry, so

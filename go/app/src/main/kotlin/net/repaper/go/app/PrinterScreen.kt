@@ -158,9 +158,9 @@ class PrinterScreen(private val act: AppCompatActivity) : Screen {
             addView(howTile(1, "Share", ImageView(c).apply { setImageResource(R.drawable.ic_share); setColorFilter(Ui.TEXT)
                 layoutParams = FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER) }))
             addView(howArrow())
-            addView(howTile(2, "RePaper Go", ImageView(c).apply { setImageResource(R.drawable.ic_repaper)   // the ring mark, its own colours
-                background = GradientDrawable().apply { cornerRadius = dp(9).toFloat() }
-                layoutParams = FrameLayout.LayoutParams(dp(40), dp(40), Gravity.CENTER) }))
+            addView(howTile(2, "RePaper Go", ImageView(c).apply { setImageResource(R.drawable.brand_mark)   // the real app mark
+                adjustViewBounds = true; scaleType = ImageView.ScaleType.FIT_CENTER
+                layoutParams = FrameLayout.LayoutParams(dp(44), dp(44), Gravity.CENTER) }))
             addView(howArrow())
             addView(howTile(3, "On paper", miniSheet()))
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)

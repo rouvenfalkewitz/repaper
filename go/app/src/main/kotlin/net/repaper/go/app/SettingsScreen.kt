@@ -67,7 +67,7 @@ class SettingsScreen(private val c: AppCompatActivity) : Screen {
         // Printer
         list.addView(Ui.sectionHeader(c, "Printer"))
         list.addView(Ui.card(c).apply {
-            addView(row("Printer name", Prefs.printerName(c)) {
+            addView(row(R.drawable.ic_printer, "Printer name", Prefs.printerName(c)) {
                 val input = EditText(c).apply { setText(Prefs.printerName(c)) }
                 AlertDialog.Builder(c).setTitle("Printer name").setView(input)
                     .setPositiveButton("Save") { _, _ -> Prefs.setPrinterName(c, input.text.toString()); refresh() }
@@ -76,24 +76,26 @@ class SettingsScreen(private val c: AppCompatActivity) : Screen {
             addView(divider())
             addView(LinearLayout(c).apply {
                 orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+                addView(settingIcon(R.drawable.ic_reload))
                 addView(LinearLayout(c).apply {
                     orientation = LinearLayout.VERTICAL
-                    addView(Ui.displayText(c, "Cycle through sheets", 15f, Ui.TEXT, weight = 600))
+                    addView(Ui.bodyText(c, "Cycle through sheets", 15f, Ui.TEXT).apply { setTypeface(typeface, Typeface.BOLD) })
                     addView(Ui.bodyText(c, "With several sheets, jobs print on each in turn.", 12f).apply { setPadding(0, dp(2), 0, 0) })
                 }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
                 addView(Switch(c).apply { isChecked = Prefs.cycleSheets(c); setOnCheckedChangeListener { _, v -> Prefs.setCycleSheets(c, v) } })
             })
             addView(divider())
-            addView(techRow("Intake", "How pages reach this printer", listOf("Android Print", "Share to print")))
+            addView(techRow(R.drawable.ic_share, "Intake", "How pages reach this printer", listOf("Android Print", "Share to print")))
         })
 
         // Print2Go
         list.addView(Ui.sectionHeader(c, "Print2Go"))
         list.addView(Ui.card(c).apply {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            addView(settingIcon(R.drawable.ic_doc_down))
             addView(LinearLayout(c).apply {
                 orientation = LinearLayout.VERTICAL
-                addView(Ui.displayText(c, "Print jobs from a Dock", 15f, Ui.TEXT, weight = 600))
+                addView(Ui.bodyText(c, "Print jobs from a Dock", 15f, Ui.TEXT).apply { setTypeface(typeface, Typeface.BOLD) })
                 val src = Prefs.print2goDock(c)
                 addView(Ui.bodyText(c, src?.let { "Printing jobs sent to $it, on this phone's sheets." } ?: "This phone prints the jobs sent to the Dock you pick.", 12f).apply { setPadding(0, dp(2), 0, 0) })
             }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
@@ -120,25 +122,40 @@ class SettingsScreen(private val c: AppCompatActivity) : Screen {
             })
             addView(LinearLayout(c).apply {
                 orientation = LinearLayout.VERTICAL
-                addView(Ui.displayText(c, "Sign out", 15f, Ui.RED, weight = 600))
+                addView(Ui.bodyText(c, "Sign out", 15f, Ui.RED).apply { setTypeface(typeface, Typeface.BOLD) })
                 addView(Ui.bodyText(c, "Removes this phone from your fleet — sheets stay here.", 12f).apply { setPadding(0, dp(2), 0, 0) })
             }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
             setOnClickListener { confirmSignOut(cloud.org) }
         })
     }
 
-    private fun brandRing(): View = View(c).apply {
-        background = GradientDrawable().apply {
-            shape = GradientDrawable.OVAL
-            colors = intArrayOf(Ui.SURFACE_2, Ui.BG); orientation = GradientDrawable.Orientation.TL_BR
-            setStroke(dp(5), Ui.ACCENT)
+    /** A carbon puck with the green ring mark floating inside — echoes the printer hero (iOS). */
+    private fun brandRing(): View = android.widget.FrameLayout(c).apply {
+        background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(Ui.SURFACE_2, Ui.BG)).apply {
+            shape = GradientDrawable.OVAL; setStroke(dp(1), Ui.BORDER_STRONG)
         }
+        addView(View(c).apply {
+            background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(0x00000000); setStroke(dp(4), Ui.ACCENT) }
+            layoutParams = android.widget.FrameLayout.LayoutParams(dp(36), dp(36), Gravity.CENTER)
+        })
     }
 
-    private fun row(title: String, value: String, onTap: () -> Unit): View = LinearLayout(c).apply {
-        orientation = LinearLayout.VERTICAL
-        addView(Ui.displayText(c, title, 15f, Ui.TEXT, weight = 600))
-        addView(Ui.bodyText(c, value, 14f, Ui.TEXT_2).apply { setPadding(0, dp(2), 0, 0) })
+    /** A leading icon tile, like iOS's SettingIcon — carbon square, hairline, tinted glyph. */
+    private fun settingIcon(iconRes: Int, tint: Int = Ui.TEXT_2): View = ImageView(c).apply {
+        setImageResource(iconRes); setColorFilter(tint)
+        background = GradientDrawable().apply { setColor(Ui.SURFACE_2); cornerRadius = dp(9).toFloat(); setStroke(dp(1), Ui.BORDER) }
+        setPadding(dp(7), dp(7), dp(7), dp(7))
+        layoutParams = LinearLayout.LayoutParams(dp(34), dp(34)).apply { rightMargin = dp(12) }
+    }
+
+    private fun row(iconRes: Int, title: String, value: String, onTap: () -> Unit): View = LinearLayout(c).apply {
+        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+        addView(settingIcon(iconRes))
+        addView(LinearLayout(c).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(Ui.bodyText(c, title, 15f, Ui.TEXT).apply { setTypeface(typeface, Typeface.BOLD) })
+            addView(Ui.bodyText(c, value, 14f, Ui.TEXT_2).apply { setPadding(0, dp(2), 0, 0) })
+        }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
         isClickable = true; setOnClickListener { onTap() }
     }
 
@@ -186,11 +203,12 @@ class SettingsScreen(private val c: AppCompatActivity) : Screen {
         setBackgroundColor(Ui.BORDER)
         layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(1)).apply { topMargin = dp(10); bottomMargin = dp(10) }
     }
-    private fun techRow(title: String, sub: String, chips: List<String>): View = LinearLayout(c).apply {
+    private fun techRow(iconRes: Int, title: String, sub: String, chips: List<String>): View = LinearLayout(c).apply {
         orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+        addView(settingIcon(iconRes))
         addView(LinearLayout(c).apply {
             orientation = LinearLayout.VERTICAL
-            addView(Ui.bodyText(c, title, 14f, Ui.TEXT).apply { setTypeface(typeface, Typeface.BOLD) })
+            addView(Ui.bodyText(c, title, 15f, Ui.TEXT).apply { setTypeface(typeface, Typeface.BOLD) })
             addView(Ui.bodyText(c, sub, 12f).apply { setPadding(0, dp(2), 0, 0) })
         }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
         addView(LinearLayout(c).apply {
