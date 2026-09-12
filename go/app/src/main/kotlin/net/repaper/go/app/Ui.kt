@@ -179,6 +179,39 @@ object Ui {
         })
     }
 
+    /** A soft radial glow — the Android answer to iOS's `shadow(color: accent, radius:)`.
+     *  A view painted with a radial gradient from the colour out to transparent; place it
+     *  BEHIND a round element (larger than it) to make the accent bloom around it. */
+    fun glowHalo(c: Context, color: Int = ACCENT, intensity: Float = 0.6f): android.view.View =
+        android.view.View(c).apply {
+            background = object : android.graphics.drawable.Drawable() {
+                private val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+                override fun draw(canvas: android.graphics.Canvas) {
+                    val r = minOf(bounds.width(), bounds.height()) / 2f
+                    if (r <= 0) return
+                    val cx = bounds.exactCenterX(); val cy = bounds.exactCenterY()
+                    val core = (color and 0x00FFFFFF) or ((intensity.coerceIn(0f, 1f) * 255).toInt() shl 24)
+                    paint.shader = android.graphics.RadialGradient(cx, cy, r,
+                        intArrayOf(core, color and 0x00FFFFFF),
+                        floatArrayOf(0.30f, 1f), android.graphics.Shader.TileMode.CLAMP)
+                    canvas.drawCircle(cx, cy, r, paint)
+                }
+                override fun setAlpha(a: Int) {}
+                override fun setColorFilter(cf: android.graphics.ColorFilter?) {}
+                override fun getOpacity() = android.graphics.PixelFormat.TRANSLUCENT
+            }
+        }
+
+    /** Tint a view's elevation shadow in the accent — a subtle glow under accent buttons/cards
+     *  (iOS's `shadow(color: accent.opacity(0.3))`). Needs a set elevation; API 28+. */
+    fun accentShadow(v: android.view.View, elevationDp: Int = 8, color: Int = ACCENT) {
+        v.elevation = v.context.dp(elevationDp).toFloat()
+        if (android.os.Build.VERSION.SDK_INT >= 28) {
+            v.outlineSpotShadowColor = color
+            v.outlineAmbientShadowColor = color
+        }
+    }
+
     /** The calm status dot (green = good, amber = waiting/off). */
     fun dot(c: Context, color: Int) = android.view.View(c).apply {
         background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(color) }

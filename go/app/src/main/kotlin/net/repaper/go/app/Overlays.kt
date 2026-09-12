@@ -34,7 +34,7 @@ object Overlays {
         layer.addView(scrim, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
 
-        val panel = LinearLayout(act).apply {
+        val panel = DragPanel(act).apply {
             orientation = LinearLayout.VERTICAL
             background = GradientDrawable().apply {
                 setColor(Ui.SURFACE); cornerRadius = act.dp(22).toFloat(); setStroke(act.dp(1), Ui.BORDER)
@@ -71,27 +71,8 @@ object Overlays {
             panel.animate().translationY(0f).setDuration(280)
                 .setInterpolator(android.view.animation.OvershootInterpolator(0.7f)).start()
         }
-        // drag-to-dismiss: the panel follows a downward finger; past a threshold it lets go,
-        // otherwise it springs back (clickable children consume their own touches)
-        var downY = 0f; var dragging = false
-        panel.setOnTouchListener { v, e ->
-            when (e.actionMasked) {
-                MotionEvent.ACTION_DOWN -> { downY = e.rawY; dragging = false; false }
-                MotionEvent.ACTION_MOVE -> {
-                    val dy = e.rawY - downY
-                    if (dy > act.dp(6)) { dragging = true; panel.translationY = dy; true } else false
-                }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    if (dragging) {
-                        if (panel.translationY > act.dp(110)) dismiss()
-                        else panel.animate().translationY(0f).setDuration(220)
-                            .setInterpolator(android.view.animation.OvershootInterpolator(1.2f)).start()
-                        true
-                    } else false
-                }
-                else -> false
-            }
-        }
+        // drag-to-dismiss: DragPanel intercepts a downward drag (taps still reach children)
+        panel.onDismiss = dismiss
     }
 
     /** A panel that fades in from the top over a scrim — iOS's infoOverlay. `topInset` clears the
@@ -142,6 +123,42 @@ object Overlays {
             gravity = Gravity.CENTER_HORIZONTAL; bottomMargin = act.dp(14)
         }
     }
+}
+
+/** A bottom-sheet panel that follows a downward drag and lets go past a threshold — the drag
+ *  the grabber promises. It INTERCEPTS the gesture (onInterceptTouchEvent) only once the finger
+ *  clearly moves down, so buttons and fields inside still receive their taps. */
+private class DragPanel(c: android.content.Context) : LinearLayout(c) {
+    var onDismiss: (() -> Unit)? = null
+    private val slop = android.view.ViewConfiguration.get(c).scaledTouchSlop
+    private var downY = 0f
+    private var downX = 0f
+
+    override fun onInterceptTouchEvent(e: android.view.MotionEvent): Boolean {
+        when (e.actionMasked) {
+            android.view.MotionEvent.ACTION_DOWN -> { downY = e.rawY; downX = e.rawX }
+            android.view.MotionEvent.ACTION_MOVE -> {
+                val dy = e.rawY - downY
+                if (dy > slop && dy > kotlin.math.abs(e.rawX - downX)) return true   // a downward drag → take over
+            }
+        }
+        return false
+    }
+
+    override fun onTouchEvent(e: android.view.MotionEvent): Boolean {
+        when (e.actionMasked) {
+            android.view.MotionEvent.ACTION_MOVE -> { translationY = kotlin.math.max(0f, e.rawY - downY); return true }
+            android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                if (translationY > dpF(110)) onDismiss?.invoke()
+                else animate().translationY(0f).setDuration(220)
+                    .setInterpolator(android.view.animation.OvershootInterpolator(1.1f)).start()
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun dpF(v: Int) = v * resources.displayMetrics.density
 }
 
 /** The palette as a single dot — a circle sliced into the sheet's inks, like iOS's paletteDot

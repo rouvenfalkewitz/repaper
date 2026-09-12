@@ -147,12 +147,64 @@ class PrinterScreen(private val act: AppCompatActivity) : Screen {
         }
     }
 
-    /** The how-to, faded in over the screen behind the "?" — matching the iOS help overlay. */
+    /** The how-to told in pictures: Share → RePaper Go → On paper, three numbered tiles
+     *  with arrows between — matching the iOS help overlay. Faded in behind the "?". */
     private fun showHelpPanel() = Overlays.topPanel(c) { panel, _ ->
         panel.addView(Ui.displayText(c, "HOW TO USE", 11f, Ui.TEXT_3, weight = 700, width = 112).apply {
-            letterSpacing = 0.14f; setPadding(0, 0, 0, dp(10))
+            letterSpacing = 0.16f; setPadding(0, 0, 0, dp(14))
         })
-        panel.addView(Ui.bodyText(c, "Share a photo or document from any app and pick “RePaper Go” — it lands on your sheet. Or tap a sheet to the phone when a job is waiting.", 13f, Ui.TEXT_2))
+        panel.addView(LinearLayout(c).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            addView(howTile(1, "Share", ImageView(c).apply { setImageResource(R.drawable.ic_share); setColorFilter(Ui.TEXT)
+                layoutParams = FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER) }))
+            addView(howArrow())
+            addView(howTile(2, "RePaper Go", ImageView(c).apply { setImageResource(R.drawable.ic_repaper)   // the ring mark, its own colours
+                background = GradientDrawable().apply { cornerRadius = dp(9).toFloat() }
+                layoutParams = FrameLayout.LayoutParams(dp(40), dp(40), Gravity.CENTER) }))
+            addView(howArrow())
+            addView(howTile(3, "On paper", miniSheet()))
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        })
+    }
+
+    private fun howArrow(): View = TextView(c).apply {
+        text = "→"; textSize = 15f; setTextColor(Ui.TEXT_3); gravity = Gravity.CENTER
+        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { bottomMargin = dp(18) }
+    }
+
+    private fun howTile(step: Int, caption: String, content: View): View = LinearLayout(c).apply {
+        orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
+        addView(FrameLayout(c).apply {
+            background = GradientDrawable(GradientDrawable.Orientation.TL_BR, intArrayOf(Ui.SURFACE_2, Ui.BG)).apply {
+                cornerRadius = dp(16).toFloat(); setStroke(dp(1), Ui.BORDER_STRONG)
+            }
+            addView(content)
+            // the step number: a display numeral in a tinted accent badge, top-left
+            addView(Ui.displayText(c, step.toString(), 12f, Ui.ACCENT, weight = 700, width = 112).apply {
+                gravity = Gravity.CENTER
+                background = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(Ui.ACCENT_TINT); setStroke(dp(1), Ui.BORDER_STRONG) }
+                layoutParams = FrameLayout.LayoutParams(dp(20), dp(20)).apply { leftMargin = dp(4); topMargin = dp(4) }
+            })
+            layoutParams = LinearLayout.LayoutParams(dp(64), dp(64))
+        })
+        addView(Ui.monoText(c, caption, 10f).apply { gravity = Gravity.CENTER; setPadding(0, dp(8), 0, 0) })
+    }
+
+    /** The label in miniature — carbon bezel, paper panel, an ink line and a red line. */
+    private fun miniSheet(): View = LinearLayout(c).apply {
+        orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
+        background = GradientDrawable().apply { setColor(Ui.EPAPER_BEZEL); cornerRadius = dp(6).toFloat(); setStroke(dp(1), Ui.BORDER_STRONG) }
+        setPadding(dp(4), dp(4), dp(4), dp(4))
+        addView(LinearLayout(c).apply {
+            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
+            background = GradientDrawable().apply { setColor(Ui.EPAPER_PANEL); cornerRadius = dp(3).toFloat() }
+            layoutParams = FrameLayout.LayoutParams(dp(34), dp(22))
+            addView(View(c).apply { background = GradientDrawable().apply { setColor(Ui.INK); cornerRadius = dp(1).toFloat() }
+                layoutParams = LinearLayout.LayoutParams(dp(22), dp(3)) })
+            addView(View(c).apply { background = GradientDrawable().apply { setColor(Ui.EPAPER_RED); cornerRadius = dp(1).toFloat() }
+                layoutParams = LinearLayout.LayoutParams(dp(14), dp(3)).apply { topMargin = dp(3) } })
+        })
+        layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER)
     }
 
     private fun mirrorCard(p: CloudAgent.Pending): View = Ui.card(c, ripple = true).apply {

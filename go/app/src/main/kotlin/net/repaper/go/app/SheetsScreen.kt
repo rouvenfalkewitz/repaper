@@ -69,7 +69,7 @@ class SheetsScreen(private val c: AppCompatActivity) : Screen {
             shape = GradientDrawable.OVAL; setColor(if (accent) Ui.ACCENT else Ui.SURFACE)
             if (!accent) setStroke(dp(1), Ui.BORDER)
         }
-        if (accent) elevation = dp(3).toFloat()
+        if (accent) Ui.accentShadow(this, 6)
         layoutParams = LinearLayout.LayoutParams(dp(36), dp(36))
         isClickable = true; setOnClickListener { onTap() }
     }
@@ -210,7 +210,7 @@ class SheetsScreen(private val c: AppCompatActivity) : Screen {
     private fun scanCard(onTap: () -> Unit): View = LinearLayout(c).apply {
         orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
         background = GradientDrawable().apply { setColor(Ui.ACCENT); cornerRadius = dp(16).toFloat() }
-        elevation = dp(3).toFloat()
+        Ui.accentShadow(this, 8)   // accent bloom, like iOS's shadow(color: accent)
         setPadding(dp(14), dp(14), dp(14), dp(14))
         addView(FrameLayout(c).apply {
             background = GradientDrawable().apply { setColor(0x29000000.toInt()); cornerRadius = dp(11).toFloat() }

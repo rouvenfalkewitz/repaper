@@ -1,15 +1,15 @@
 package net.repaper.go.app
 
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import net.repaper.go.R
 import net.repaper.go.app.Ui.dp
 
 /** The claimed+approved app: three destinations on a floating bottom bar — Sheets on the
@@ -27,8 +27,8 @@ class ShellActivity : AppCompatActivity() {
     }
 
     // bottom-nav pieces we restyle on selection
-    private lateinit var sheetsIcon: TextView; private lateinit var sheetsLabel: TextView
-    private lateinit var settingsIcon: TextView; private lateinit var settingsLabel: TextView
+    private lateinit var sheetsIcon: ImageView; private lateinit var sheetsLabel: TextView
+    private lateinit var settingsIcon: ImageView; private lateinit var settingsLabel: TextView
     private lateinit var goRing: View; private lateinit var goText: TextView; private lateinit var goCol: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,7 +36,7 @@ class ShellActivity : AppCompatActivity() {
         if (!Prefs.isClaimed(this)) { start(AuthActivity::class.java); return }
         if (!Prefs.isApproved(this)) { start(PendingActivity::class.java); return }
 
-        val root = FrameLayout(this).apply { setBackgroundColor(Ui.BG) }
+        val root = FrameLayout(this).apply { setBackgroundColor(Ui.BG); clipChildren = false; clipToPadding = false }
         content = FrameLayout(this).apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
@@ -96,6 +96,7 @@ class ShellActivity : AppCompatActivity() {
     private fun bottomBar(): View {
         val bar = FrameLayout(this).apply {
             setPadding(dp(22), dp(14), dp(22), dp(30))   // clear the system gesture area
+            clipChildren = false; clipToPadding = false  // let the GO glow bloom past the bar
         }
         // the pill: a soft carbon capsule with a hairline
         val pill = LinearLayout(this).apply {
@@ -103,55 +104,62 @@ class ShellActivity : AppCompatActivity() {
             background = GradientDrawable().apply {
                 setColor(Ui.SURFACE); cornerRadius = dp(30).toFloat(); setStroke(dp(1), Ui.BORDER)
             }
-            elevation = dp(8).toFloat()
+            elevation = dp(12).toFloat()
             setPadding(dp(22), dp(8), dp(22), dp(8))
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, dp(60), Gravity.CENTER_VERTICAL)
         }
-        sheetsIcon = navGlyph("▤"); sheetsLabel = navLabel("Sheets")
-        settingsIcon = navGlyph("⚙"); settingsLabel = navLabel("Settings")
+        sheetsIcon = navIcon(R.drawable.ic_stack); sheetsLabel = navLabel("Sheets")
+        settingsIcon = navIcon(R.drawable.ic_gear); settingsLabel = navLabel("Settings")
         pill.addView(navTab(sheetsIcon, sheetsLabel) { select(Tab.SHEETS) },
             LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
         pill.addView(View(this), LinearLayout.LayoutParams(dp(64), 1))   // gap for the GO button
         pill.addView(navTab(settingsIcon, settingsLabel) { select(Tab.SETTINGS) },
             LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
         bar.addView(pill)
-        bar.addView(goButton(), FrameLayout.LayoutParams(dp(66), dp(66), Gravity.CENTER))
+        bar.addView(goButton(), FrameLayout.LayoutParams(dp(104), dp(104), Gravity.CENTER))
         return bar
     }
 
-    private fun navGlyph(s: String) = TextView(this).apply {
-        text = s; textSize = 20f; gravity = Gravity.CENTER; setTextColor(Ui.TEXT_3)
+    private fun navIcon(res: Int) = ImageView(this).apply {
+        setImageResource(res); setColorFilter(Ui.TEXT_3)
+        layoutParams = LinearLayout.LayoutParams(dp(22), dp(22)).apply { bottomMargin = dp(3) }
     }
     private fun navLabel(s: String) = TextView(this).apply {
-        text = s; textSize = 10f; gravity = Gravity.CENTER; setTextColor(Ui.TEXT_3); typeface = Typeface.MONOSPACE
+        text = s; textSize = 9f; gravity = Gravity.CENTER; setTextColor(Ui.TEXT_3); typeface = android.graphics.Typeface.MONOSPACE
     }
-    private fun navTab(icon: TextView, label: TextView, onTap: () -> Unit) = LinearLayout(this).apply {
+    private fun navTab(icon: View, label: TextView, onTap: () -> Unit) = LinearLayout(this).apply {
         orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
         addView(icon); addView(label)
         isClickable = true; setOnClickListener { onTap() }
     }
 
     private fun goButton(): View {
-        val wrap = FrameLayout(this)
+        // the glowing brand ring, blooming an accent halo like iOS's shadow(color: accent)
+        val glow = Ui.glowHalo(this, Ui.ACCENT, 0.5f).apply {
+            layoutParams = FrameLayout.LayoutParams(dp(104), dp(104), Gravity.CENTER)
+        }
         goRing = View(this).apply {
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 colors = intArrayOf(Ui.SURFACE_2, Ui.BG); orientation = GradientDrawable.Orientation.TL_BR
                 setStroke(dp(6), Ui.ACCENT)   // the CI ring, thick like the logo
             }
-            layoutParams = FrameLayout.LayoutParams(dp(66), dp(66), Gravity.CENTER)
+            layoutParams = FrameLayout.LayoutParams(dp(64), dp(64), Gravity.CENTER)
         }
         goText = Ui.displayText(this, "GO", 22f, Ui.ACCENT, weight = 800, width = 125).apply {
             gravity = Gravity.CENTER
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT).apply { this.gravity = Gravity.CENTER }
         }
-        wrap.addView(goRing); wrap.addView(goText)
+        val wrap = FrameLayout(this).apply {
+            clipChildren = false
+            addView(glow); addView(goRing); addView(goText)
+        }
         val col = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
-            elevation = dp(14).toFloat()   // above the pill (elevation 8) so it isn't hidden
-            addView(wrap, LinearLayout.LayoutParams(dp(66), dp(66)))
+            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER; clipChildren = false
+            elevation = dp(14).toFloat()   // above the pill (elevation 12) so it isn't hidden
+            addView(wrap, LinearLayout.LayoutParams(dp(104), dp(104)))
             isClickable = true; setOnClickListener { select(Tab.PRINTER) }
         }
         goCol = col
@@ -160,10 +168,10 @@ class ShellActivity : AppCompatActivity() {
 
     private fun styleBar() {
         val on = Ui.ACCENT; val off = Ui.TEXT_3
-        sheetsIcon.setTextColor(if (tab == Tab.SHEETS) on else off); sheetsLabel.setTextColor(if (tab == Tab.SHEETS) on else off)
-        settingsIcon.setTextColor(if (tab == Tab.SETTINGS) on else off); settingsLabel.setTextColor(if (tab == Tab.SETTINGS) on else off)
-        // GO is the printer home; like iOS it stays lit in the CI accent on every tab
-        goText.setTextColor(Ui.ACCENT)
+        sheetsIcon.setColorFilter(if (tab == Tab.SHEETS) on else off); sheetsLabel.setTextColor(if (tab == Tab.SHEETS) on else off)
+        settingsIcon.setColorFilter(if (tab == Tab.SETTINGS) on else off); settingsLabel.setTextColor(if (tab == Tab.SETTINGS) on else off)
+        // the ring always glows in the CI accent; GO reads accent on its own tab, white otherwise (iOS)
+        goText.setTextColor(if (tab == Tab.PRINTER) Ui.ACCENT else Ui.TEXT)
         (goRing.background as? GradientDrawable)?.setStroke(dp(6), Ui.ACCENT)
     }
 }
