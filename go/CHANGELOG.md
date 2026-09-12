@@ -1,3 +1,5 @@
+0.2.14 (12 Sep 2026) — Push notifications wake the app for Dock (Print2Go) jobs even when it's closed. Final polish to match the iPhone app.
+0.2.13 (11 Sep 2026) — A whole new look to match the iPhone: a floating bottom bar with the GO ring, redesigned Sheets and Settings, scan-or-paste to add a sheet, and inherited Dock-Labels shown alongside your own.
 0.2.12 (11 Sep 2026) — Print2Go: print the jobs sent to a Dock on this phone (choose the Dock in Settings). Signing in now joins the fleet directly.
 0.2.11 (10 Sep 2026) — Receives jobs mirrored from a RePaper Dock Light and prints them like any shared page. Ready-screen how-to reads above the pictures.
 0.2.10 (10 Sep 2026) — Tap-to-print reads even mangled NFC tags; unreadable tags show what they contain; sheet adding reports whether the tag was programmed.
