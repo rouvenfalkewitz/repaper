@@ -48,6 +48,9 @@ class ShellActivity : AppCompatActivity() {
         setContentView(root)
         requestBlePermissions()
         CloudAgent.get(this).start()
+        // relay the FCM token so the cloud can wake this phone for closed-app Print2Go jobs
+        com.google.firebase.messaging.FirebaseMessaging.getInstance().token
+            .addOnSuccessListener { CloudAgent.get(this).setPushToken(it) }
         select(Tab.PRINTER)
     }
 

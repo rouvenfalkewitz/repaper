@@ -25,7 +25,7 @@ import java.util.UUID
 /** The phone's own radio as a SheetTransport: same OdLink contract the core drives,
  *  same single-characteristic GATT layout the Dock's SDK uses. All calls are sequential
  *  (the protocol is stop-and-wait), so one Channel of notifications suffices. */
-@SuppressLint("MissingPermission")   // callers gate on runtime permissions in MainActivity
+@SuppressLint("MissingPermission")   // callers gate on runtime permissions in ShellActivity
 class GattLink private constructor(private val gatt: BluetoothGatt, private val char_: BluetoothGattCharacteristic,
                                    private val notifications: Channel<ByteArray>,
                                    private val writeDone: Channel<Int>) : OdLink {

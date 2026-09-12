@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <print-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:vendor="@string/app_name"
-    android:settingsActivity="net.repaper.go.app.MainActivity" />
+    android:settingsActivity="net.repaper.go.app.ShellActivity" />

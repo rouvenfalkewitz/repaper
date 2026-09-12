@@ -20,8 +20,6 @@
         android:theme="@style/Theme.RePaperGo"
         android:supportsRtl="true">
 
-        <activity android:name=".app.SettingsActivity" android:exported="false" />
-        <activity android:name=".app.MainActivity" android:exported="false" />
         <activity android:name=".app.AuthActivity" android:exported="false" />
         <activity android:name=".app.PendingActivity" android:exported="false" />
         <activity android:name=".app.ShellActivity" android:exported="true" android:launchMode="singleTop">
@@ -40,6 +38,13 @@
                 <action android:name="android.printservice.PrintService" />
             </intent-filter>
             <meta-data android:name="android.printservice" android:resource="@xml/print_service" />
+        </service>
+
+        <!-- FCM: receives the push token and wake-up pushes for closed-app Print2Go jobs. -->
+        <service android:name=".app.PushService" android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
         </service>
     </application>
 </manifest>
