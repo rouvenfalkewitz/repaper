@@ -1,3 +1,4 @@
+0.0.31 — Accepts a print the moment it arrives and renders it in the background, so the phone's print completes right away instead of hanging while the Dock prepares the page.
 0.0.30 — Says "Preparing" (not "Receiving") once a page has arrived, since by then it's fully received and the Dock is rendering it.
 0.0.29 — Fits the Dock/Dock Light name to the logo, and the receiving progress bar no longer restarts each second.
 0.0.28 — Shows its model (Dock or Dock Light) on the logo, and a progress state while it prepares an arriving page instead of jumping from Ready to Printed. Its sheets appear on paired RePaper Go phones as Dock-Labels.

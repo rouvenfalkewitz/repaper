@@ -18,17 +18,31 @@ def print_command(argv=None):
     ctype = os.environ.get("CONTENT_TYPE") or os.environ.get("IPP_DOCUMENT_FORMAT_SUPPLIED") or os.environ.get("IPP_DOCUMENT_FORMAT") or ""
     name = os.environ.get("IPP_JOB_NAME") or ""
     user = os.environ.get("IPP_JOB_ORIGINATING_USER_NAME") or os.environ.get("IPP_REQUESTING_USER_NAME") or ""
-    # decoding a big raster takes real time on a Pi — tell the daemon a job is arriving so
-    # the Dock shows a "receiving" state instead of sitting on "Ready" until it's suddenly done
+    # We hold the whole document now. Decoding a big raster takes real time on a Pi, and if we
+    # do it here the IPP job stays "processing" the whole time — the phone's print sits at 0 %
+    # and only closes when we finish. So ACCEPT the job now (return success), and finish the
+    # decode in a detached child. The Dock shows "Preparing" meanwhile via the incoming marker.
     mark_incoming(name, user, len(data))
+    print(f"INFO: accepted {name or 'job'} · {len(data)} bytes · {ctype or 'unknown'}", file=sys.stderr)
+    sys.stdout.flush(); sys.stderr.flush()
+    if os.fork() > 0:
+        return 0   # parent: the client's print job is complete as soon as the Dock has the bytes
+
+    # child: detach from the printer process and decode in the background
+    try:
+        os.setsid()
+        dn = os.open(os.devnull, os.O_RDWR)
+        os.dup2(dn, 0); os.dup2(dn, 1); os.dup2(dn, 2)
+    except Exception:
+        pass
     try:
         pages = decode_document(data, ctype)
-    except Exception as e:
-        clear_incoming()
-        print(f"ERROR: cannot decode document ({ctype or 'unknown type'}): {e}", file=sys.stderr); return 1
-    job = create_job(pages, name, user, source=ctype)
-    clear_incoming()   # the spool job now exists — the daemon takes it from here
-    print(f"INFO: job {job.id} · {job.pages} page(s) · {ctype} · {len(data)} bytes", file=sys.stderr); return 0
+        create_job(pages, name, user, source=ctype)   # meta.json is written last, so the daemon only sees it when ready
+    except Exception:
+        pass
+    finally:
+        clear_incoming()   # the spool job now exists (or decoding failed) — the daemon takes it from here
+    os._exit(0)
 
 
 def dockd(argv=None):
