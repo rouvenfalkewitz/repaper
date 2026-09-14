@@ -77,7 +77,11 @@ class ShellActivity : AppCompatActivity() {
         super.onResume()
         if (!Prefs.isClaimed(this)) { start(AuthActivity::class.java); return }
         screens[tab]?.onShow()
-        CloudAgent.get(this).onJobArrived = { runOnUiThread { screens[tab]?.onShow() } }
+        // the fleet can sign this device out while the app is open — react to it, don't wait
+        // for the next onResume: return to the sign-in gate the moment claim state drops
+        CloudAgent.get(this).onJobArrived = { runOnUiThread {
+            if (!Prefs.isClaimed(this)) start(AuthActivity::class.java) else screens[tab]?.onShow()
+        } }
     }
     override fun onPause() { CloudAgent.get(this).onJobArrived = null; screens[tab]?.onHide(); super.onPause() }
 

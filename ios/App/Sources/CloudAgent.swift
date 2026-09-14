@@ -102,6 +102,12 @@ struct MirrorPending: Identifiable, Equatable {
             org = (msg["org"] as? String).flatMap { $0.isEmpty ? nil : $0 }
             Prefs.claimed = claimed          // fleet removed us → the sign-in gate returns
             if claimed { Prefs.approved = approved }
+            // reconnect is authoritative: drop the whole waiting list, then let the burst
+            // of mirror_job messages the server sends right after rebuild it from ground
+            // truth. Without this, a job printed/expired while we were briefly offline —
+            // whose mirror_taken/done we never received — would ghost here forever.
+            pending = []
+            NotificationCenter.default.post(name: .mirrorJobArrived, object: nil)
         case "claimed":
             claimed = true
             approved = msg["approved"] as? Bool ?? true
@@ -112,6 +118,8 @@ struct MirrorPending: Identifiable, Equatable {
             break   // a phone has no LED ring; the app could vibrate later
         case "signed_out":
             claimed = false; Prefs.claimed = false
+            pending = []; dismissed = []                 // don't carry a signed-out session's queue into the next one
+            SheetStore.shared.setDockSheets([])          // drop inherited Dock-Labels too
             NotificationCenter.default.post(name: .signedOut, object: nil)
         case "mirror_job":
             // a Dock offered a job to the pool — remember it; we only claim when we print
@@ -120,9 +128,11 @@ struct MirrorPending: Identifiable, Equatable {
                 NotificationCenter.default.post(name: .mirrorJobArrived, object: nil)
             }
         case "mirror_taken", "mirror_done":
-            // another device grabbed/printed it — drop it from our waiting list
+            // another device grabbed/printed it (or it expired) — drop it from our waiting
+            // list, and stop remembering it as dismissed (the job no longer exists)
             if let job = msg["job"] as? [String: Any], let id = job["id"] as? String {
                 pending.removeAll { $0.id == id }
+                dismissed.remove(id)
                 NotificationCenter.default.post(name: .mirrorJobArrived, object: nil)
             }
         case "dock_sheets":

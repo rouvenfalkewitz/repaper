@@ -41,7 +41,9 @@ class CloudAgent(private val context: Context) {
     /** A Print2Go job offered but not yet claimed — first to actually print wins. */
     data class Pending(val id: String, val name: String, val from: String)
     @Volatile var pending: List<Pending> = emptyList(); private set
-    private val dismissed = HashSet<String>()   // Print2Go jobs the user swiped away on this phone
+    // mutated from both the WS callback thread (remove/clear) and the UI thread (dismiss) —
+    // synchronized so concurrent access can't corrupt it or throw
+    private val dismissed = java.util.Collections.synchronizedSet(HashSet<String>())
 
     /** The FCM registration token — handed over so a closed app can be woken for a Dock job.
      *  Set from the Firebase messaging service; relayed to the cloud on each connect. */
@@ -104,6 +106,11 @@ class CloudAgent(private val context: Context) {
                 org = msg.optString("org").ifEmpty { null }
                 Prefs.setClaimed(context, claimed)   // fleet removed us → the sign-in gate returns
                 if (claimed) Prefs.setApproved(context, approved)
+                // reconnect is authoritative: drop the whole waiting list, then let the burst
+                // of mirror_job messages the server sends right after rebuild it from ground
+                // truth — otherwise a job resolved while we were briefly offline ghosts here.
+                pending = emptyList()
+                onJobArrived?.invoke()
             }
             "claimed" -> {
                 claimed = true; approved = msg.optBoolean("approved", true)
@@ -114,6 +121,8 @@ class CloudAgent(private val context: Context) {
             "identify" -> {} // a phone has no LED ring; the app could vibrate later
             "signed_out" -> {
                 claimed = false; Prefs.setClaimed(context, false)   // the sign-in gate returns
+                pending = emptyList(); dismissed.clear()            // don't carry a signed-out queue forward
+                InheritedSheets.set(JSONArray(), null)              // drop inherited Dock-Labels
                 onJobArrived?.invoke()
             }
             "mirror_job" -> {
@@ -128,6 +137,7 @@ class CloudAgent(private val context: Context) {
             "mirror_taken", "mirror_done" -> {
                 val id = msg.optJSONObject("job")?.optString("id") ?: return
                 pending = pending.filterNot { it.id == id }
+                dismissed.remove(id)   // the job no longer exists — stop remembering it as dismissed
                 onJobArrived?.invoke()
             }
             "dock_sheets" -> {

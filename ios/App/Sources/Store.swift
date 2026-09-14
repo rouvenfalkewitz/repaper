@@ -2,7 +2,7 @@ import Foundation
 import UIKit
 import RePaperKit
 
-let GO_IOS_VERSION = "0.1.31"
+let GO_IOS_VERSION = "0.1.32"
 
 /// Which APNs environment this build's push tokens belong to. Development/Xcode
 /// builds get sandbox tokens; flip to "production" for TestFlight/App Store.
@@ -223,8 +223,20 @@ extension Sheet {
     }
     func remove(_ id: String) { localSheets.removeAll { $0.id == id }; save(); refresh() }
 
-    /// Replace the inherited set from the paired Dock (empty when unpaired).
-    func setDockSheets(_ list: [Sheet]) { dockSheetsList = list; refresh() }
+    /// Replace the inherited set from the paired Dock (empty when unpaired). Carry forward a
+    /// tag we already learned for a sheet the fresh snapshot has none for — otherwise a Dock
+    /// republish that predates our just-learned tap (sent up but not yet reflected) would
+    /// silently wipe tap-to-print for a link-less Dock-Label.
+    func setDockSheets(_ list: [Sheet]) {
+        let priorTag = Dictionary(dockSheetsList.compactMap { s in s.tagUid.map { (s.id, $0) } },
+                                  uniquingKeysWith: { a, _ in a })
+        dockSheetsList = list.map { s in
+            var s = s
+            if s.tagUid == nil, let carried = priorTag[s.id] { s.tagUid = carried }
+            return s
+        }
+        refresh()
+    }
 
     func find(_ landing: Landing) -> Sheet? {
         sheets.first { $0.id.caseInsensitiveCompare(landing.name) == .orderedSame

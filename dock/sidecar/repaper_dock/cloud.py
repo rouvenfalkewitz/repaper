@@ -181,8 +181,11 @@ class CloudAgent(threading.Thread):
             img = Image.open(job.page_path(page_no)).convert("RGB")
             buf = io.BytesIO(); img.save(buf, "PNG")
             name = job.name if job.pages == 1 else f"{job.name} (page {page_no} of {job.pages})"
+            # idempotency key: a stable id for this exact page, so a Dock that restarts and
+            # re-forwards is deduped by the cloud instead of minting a second print
             resp = self._post("/api/device/forward-job",
-                              {"name": name, "type": "png", "data": base64.b64encode(buf.getvalue()).decode()})
+                              {"name": name, "type": "png", "idem": f"{job.id}:{page_no}",
+                               "data": base64.b64encode(buf.getvalue()).decode()})
             if not resp.get("ok"): return False, None, resp.get("error", "the cloud refused the job")
             return True, resp.get("job_id"), f"{resp.get('phones', 0)} phone(s)"
         except Exception as e:
@@ -196,6 +199,14 @@ class CloudAgent(threading.Thread):
             return False   # 409 taken, 404 gone — either way not ours
         except Exception:
             return False
+
+    def job_state(self, cloud_job_id: str) -> str:
+        """Ask the cloud a forwarded job's fate — 'open' | 'claimed' | 'mine' | 'gone'.
+        On any error assume 'open' (keep waiting) so a blip never fakes a printed page."""
+        try:
+            return str(self._post(f"/api/device/mirror-job/{cloud_job_id}/state").get("state") or "open")
+        except Exception:
+            return "open"
 
     def job_done(self, cloud_job_id: str) -> None:
         try: self._post(f"/api/device/mirror-job/{cloud_job_id}/done")

@@ -1,3 +1,4 @@
+0.0.35 — Print2Go reliability: the Dock now reconciles each forwarded page against the cloud instead of trusting only live messages, so a page printed on a phone is never left showing as "waiting for a phone" (nor wrongly cancelled as timed out), and re-forwarding after a restart is deduplicated so a page cannot print twice.
 0.0.34 — Auto-print now happens only when "cycle through sheets" is on. With it off, every job waits for a tap — even when just one sheet is registered (previously a single sheet always printed on its own).
 0.0.33 — Print2Go: shares each sheet's encryption key with paired phones so a phone can print onto a Dock's sheet that was added without a QR link (previously failed with "device requires an encryption key").
 0.0.32 — UI polish: a tidy one-line address in the header, the model shown on the Settings page too, and prose set in the reading face instead of the mono face.

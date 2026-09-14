@@ -35,6 +35,7 @@ class Dock:
         self._p2g_pages: dict[str, str] = {} # Print2Go: local page key → cloud job id
         self._p2g_taken: set[str] = set()    # cloud job ids a phone has claimed
         self._p2g_done: dict[str, str] = {}  # cloud job id → the phone that printed it
+        self._p2g_checked: dict[str, float] = {}  # cloud job id → last time we polled its state
         self.sheet_status: dict[str, dict] = {}         # sheet id → {battery_volts, temperature_c, online, seen, at}
         self._status_lock = threading.Lock()
         for sid in self.registry.ids():                 # last known readings survive a restart; "online" is unknown until the first scan
@@ -88,16 +89,23 @@ class Dock:
             if not pending:
                 self.state, self.current = "ready", None; time.sleep(0.5); continue
             job = pending[0]; self.current = job
-            if time.time() - job.created > self.cfg["job_timeout_seconds"]:
-                job.state = "cancelled"; job.error = "nobody held a sheet in time"; job.save()
-                log.info("job %s expired", job.id); continue
             page_no = job.next_page()
             key = f"{job.id}:{page_no}"
             p2g = bool(self.cfg.get("dock_light") or self.cfg.get("print2go"))
+            if time.time() - job.created > self.cfg["job_timeout_seconds"]:
+                # a Print2Go page might have printed on a phone while we missed the frame —
+                # confirm with the cloud before ever calling it a failure
+                cid = self._p2g_pages.get(key)
+                if cid and self.cloud.job_state(cid) == "gone":
+                    self._mark_printed_elsewhere(job, page_no, "a phone"); continue
+                job.state = "cancelled"; job.error = "nobody held a sheet in time"; job.save()
+                log.info("job %s expired", job.id); continue
 
             if p2g:
                 # Print2Go: the page joins the shared pool so phones can print it too.
                 cloud_id = self._p2g_ensure(job, page_no, key)
+                # reconcile with the cloud in case we missed the live taken/done frame
+                if cloud_id: self._p2g_reconcile(cloud_id)
                 if cloud_id and cloud_id in self._p2g_done:
                     # a phone printed it — record it and move on
                     who = self._p2g_done.pop(cloud_id)
@@ -142,6 +150,22 @@ class Dock:
         ok, cloud_id, _ = self.cloud.forward_page(job, page_no)
         if ok and cloud_id: self._p2g_pages[key] = cloud_id
         return cloud_id if ok else None
+
+    def _p2g_reconcile(self, cloud_id: str) -> None:
+        """Catch a job up from the cloud when we may have missed its live taken/done frame
+        (a reconnect, a socket hiccup). Throttled so it costs one small request every few
+        seconds per waiting job. gone → printed elsewhere/expired; open → back in the pool;
+        claimed → a phone is printing it."""
+        now = time.time()
+        if now - self._p2g_checked.get(cloud_id, 0.0) < 4.0: return
+        self._p2g_checked[cloud_id] = now
+        state = self.cloud.job_state(cloud_id)
+        if state == "gone":
+            self._p2g_done.setdefault(cloud_id, "a phone")   # resolved elsewhere
+        elif state == "open":
+            self._p2g_taken.discard(cloud_id)                # released — back to waiting
+        elif state == "claimed":
+            self._p2g_taken.add(cloud_id)                    # a phone is printing it
 
     def _mark_printed_elsewhere(self, job: Job, page_no: int, who: str):
         job.printed.append({"page": page_no, "sheet": f"(phone) {who}", "at": time.time()})

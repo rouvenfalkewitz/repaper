@@ -83,24 +83,33 @@ struct MainView: View {
 
                         if !jobs.isEmpty || !cloud.pending.isEmpty {
                             SectionHeader(text: "Waiting to print")
-                            // while a print is running, the queue below is not actionable —
-                            // no picking another sheet or discarding mid-print
+                            // while a print runs the queue is frozen — say so plainly, so a
+                            // dimmed, unresponsive card doesn't read as broken
+                            if busy {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "lock.fill").font(.system(size: 10, weight: .bold))
+                                    Text("Paused — finishing the current print")
+                                        .font(Ui.mono(11))
+                                }
+                                .foregroundColor(Ui.text3)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.bottom, 2)
+                            }
                             Group {
                                 ForEach(cloud.pending) { p in
                                     SwipeToDiscard(onTap: { if !busy { pickMirrorFor = p } },
                                                    onDiscard: { cloud.dismiss(p.id) }) {
-                                        MirrorCard(pending: p)
+                                        MirrorCard(pending: p, busy: busy)
                                     }
                                 }
                                 ForEach(jobs, id: \.self) { job in
                                     SwipeToDiscard(onTap: { if !busy { pickFor = job } },
                                                    onDiscard: { try? FileManager.default.removeItem(at: job); refresh() }) {
-                                        JobCard(job: job)
+                                        JobCard(job: job, busy: busy)
                                     }
                                 }
                             }
-                            // while a print is running the queue is frozen — no picking or
-                            // discarding mid-print, and no way to kick off a second print
+                            // no picking or discarding mid-print, and no way to start a second print
                             .disabled(busy)
                             .opacity(busy ? 0.5 : 1)
                             .allowsHitTesting(!busy)
@@ -471,8 +480,10 @@ struct MainView: View {
                 busy = false; refresh()   // another device grabbed it — just move on
                 return
             }
+            var spooled: URL?   // hoisted so a failed print can still delete it
             do {
                 let url = JobStore.newJobURL(label: name, ext: ext)
+                spooled = url
                 try bytes.write(to: url)
                 try await PrintFlow.printJob(url, sheet: sheet) { phase = $0 }
                 try? FileManager.default.removeItem(at: url)
@@ -480,6 +491,9 @@ struct MainView: View {
                 if advanceCycle { Prefs.bumpCycleIx() }
                 busy = false; flashState(.done, seconds: 3)
             } catch {
+                // delete the spooled page — leaving it behind would resurface it as a local
+                // JobCard and let this phone print the same page a second time
+                if let u = spooled { try? FileManager.default.removeItem(at: u) }
                 await cloud.jobReleased(p.id)   // couldn't print — back to the pool
                 busy = false; errorNote = error.localizedDescription; flashState(.err, seconds: 6)
             }
@@ -496,14 +510,20 @@ struct MainView: View {
 }
 
 /// Swipe a waiting-job card left to reveal a red discard action (trash, no label).
-/// Tapping the card picks a sheet; swiping left reveals discard; tapping the card
-/// again (while revealed) snaps it closed. A full-bleed red panel sits behind the
-/// card so any amount of reveal reads as an intentional swipe, not a floating pill.
+/// Tapping the card picks a sheet; tapping the card again while open snaps it closed;
+/// tapping the red strip discards.
+///
+/// Two things make this reliable where a naïve version breaks:
+///  • the drag captures the offset it started from and only engages on a clearly
+///    HORIZONTAL move, so it stops fighting the vertical scroll and never jumps;
+///  • the discard target is drawn ON TOP of the revealed strip — SwiftUI's `.offset`
+///    moves pixels but NOT hit regions, so a target sitting *under* the shifted card
+///    would never receive the tap (that was why "delete didn't work").
 struct SwipeToDiscard<Content: View>: View {
     let onTap: () -> Void
     let onDiscard: () -> Void
     @ViewBuilder var content: Content
-    @State private var offset: CGFloat = 0        // resting/live x of the card (0 or -reveal)
+    @State private var offset: CGFloat = 0        // live x of the card (0 … -reveal)
     @State private var startOffset: CGFloat = 0   // offset captured at the start of a swipe
     @State private var dragging = false
     private let reveal: CGFloat = 76
@@ -512,20 +532,6 @@ struct SwipeToDiscard<Content: View>: View {
 
     var body: some View {
         ZStack(alignment: .trailing) {
-            // the red panel fills the card's footprint; the trash sits at the trailing edge
-            ZStack(alignment: .trailing) {
-                Ui.red
-                Image(systemName: "trash")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(Ui.onAccent)
-                    .frame(width: reveal)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .padding(.top, 8)                     // matches the card's own .padding(.top, 8)
-            .opacity(offset < -1 ? 1 : 0)
-            .allowsHitTesting(isOpen)             // only tappable once fully revealed
-            .onTapGesture { snap(open: false); onDiscard() }
-
             content
                 .offset(x: offset)
                 .contentShape(Rectangle())
@@ -544,6 +550,26 @@ struct SwipeToDiscard<Content: View>: View {
                             snap(open: offset < -reveal * 0.5)
                         }
                 )
+
+            // the discard target: a red strip pinned to the trailing edge whose width
+            // tracks the swipe, so the reveal grows cleanly from the right edge and the
+            // tap lands exactly where the red is drawn (only armed once fully open)
+            Button { snap(open: false); onDiscard() } label: {
+                ZStack(alignment: .trailing) {
+                    Ui.red
+                    Image(systemName: "trash")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(Ui.onAccent)
+                        .frame(width: reveal)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+            }
+            .buttonStyle(.plain)
+            .frame(width: max(0, -offset))
+            .frame(maxHeight: .infinity)
+            .padding(.top, 8)                     // matches the card's own .padding(.top, 8)
+            .opacity(offset < -1 ? 1 : 0)
+            .allowsHitTesting(isOpen)
         }
     }
 
@@ -556,6 +582,7 @@ struct SwipeToDiscard<Content: View>: View {
 /// until we claim it), just the name and where it came from.
 struct MirrorCard: View {
     let pending: MirrorPending
+    var busy = false
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
@@ -568,7 +595,7 @@ struct MirrorCard: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(pending.name)
                     .font(Ui.body(16, weight: 600)).foregroundColor(Ui.text).lineLimit(1)
-                Text("from \(pending.from) · swipe to discard")
+                Text(busy ? "from \(pending.from) · in the queue" : "from \(pending.from) · swipe to discard")
                     .font(Ui.mono(11)).foregroundColor(Ui.text3)
             }
             Spacer()
@@ -580,6 +607,7 @@ struct MirrorCard: View {
 /// A waiting job: first-page preview in an e-paper frame + the shared file's name.
 struct JobCard: View {
     let job: URL
+    var busy = false
     @State private var thumb: CGImage?
 
     var body: some View {
@@ -600,7 +628,7 @@ struct JobCard: View {
                 Text(JobStore.title(job))
                     .font(Ui.body(16, weight: 600)).foregroundColor(Ui.text)
                     .lineLimit(1)
-                Text("tap to choose · swipe to discard")
+                Text(busy ? "in the queue" : "tap to choose · swipe to discard")
                     .font(Ui.mono(11)).foregroundColor(Ui.text3)
             }
             Spacer()

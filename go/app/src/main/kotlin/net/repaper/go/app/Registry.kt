@@ -8,7 +8,7 @@ import org.json.JSONObject
 import java.io.File
 import java.security.SecureRandom
 
-const val GO_VERSION = "0.2.21"
+const val GO_VERSION = "0.2.22"
 
 /** Sheets inherited from the paired Dock (Print2Go) — a live, in-memory mirror the cloud
  *  keeps current via {t:dock_sheets}. Overlaid onto the phone's own sheets by Registry, so
@@ -21,7 +21,16 @@ object InheritedSheets {
     @Volatile var onChange: (() -> Unit)? = null
 
     fun set(sheets: JSONArray, dock: String?) {
-        entries = (0 until sheets.length()).map { sheets.getJSONObject(it) }
+        // carry forward a tag we already learned for a sheet the fresh snapshot has none
+        // for — otherwise a Dock republish that predates our just-learned tap silently
+        // wipes tap-to-print for a link-less Dock-Label
+        val priorTag = entries.filter { it.optString("tag_uid").isNotEmpty() }
+            .associate { it.optString("id") to it.optString("tag_uid") }
+        entries = (0 until sheets.length()).map { i ->
+            val e = sheets.getJSONObject(i)
+            if (e.optString("tag_uid").isEmpty()) priorTag[e.optString("id")]?.let { e.put("tag_uid", it) }
+            e
+        }
         dockName = dock?.ifEmpty { null }
         onChange?.invoke()
     }

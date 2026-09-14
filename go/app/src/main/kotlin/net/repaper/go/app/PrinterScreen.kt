@@ -149,6 +149,11 @@ class PrinterScreen(private val act: AppCompatActivity) : Screen {
         jobList.removeAllViews()
         if (anyWaiting) {
             jobList.addView(Ui.sectionHeader(c, "Waiting to print"))
+            // while a print runs the queue is frozen — say so plainly, so a dimmed,
+            // unresponsive card doesn't read as broken
+            if (busy) jobList.addView(Ui.monoText(c, "Paused — finishing the current print", 11f).apply {
+                setTextColor(Ui.TEXT_3); setPadding(0, 0, 0, dp(2))
+            })
             for (p in pending) jobList.addView(swipeToDiscard(mirrorCard(p), enabled = !busy,
                 onTap = { if (!busy) pickSheetForMirror(p) }, onDiscard = { CloudAgent.get(c).dismiss(p.id); refresh() }))
             for (job in waiting) jobList.addView(swipeToDiscard(jobCard(job), enabled = !busy,

@@ -17,15 +17,15 @@ import {
   createRelease, getRelease, latestRelease, listReleases, setTargetVersion,
   setOrgLogo, setUserName, setUserRole, updateCompany, updatePassword, useRecoveryCode, userApiKeys,
   COMPANY_FIELDS, DATA_DIR, type DeviceRow, type UserRow,
-  addMirrorJob, claimMirrorJob, clearPushToken, deleteMirrorJob, deviceLabel, findByClaimCode, getMirrorJob,
-  isPrint2Go, markDormant, mirrorPhones, print2goDocks, reactivateDevice, releaseMirrorJob,
+  addMirrorJob, claimMirrorJob, cleanupDockData, clearPushToken, deleteMirrorJob, deviceLabel, findByClaimCode, getMirrorJob,
+  isPrint2Go, markDormant, mirrorJobByIdem, mirrorJobsClaimedBy, mirrorPhones, print2goDocks, reactivateDevice, releaseMirrorJob,
   setMirrorFrom, staleMirrorJobs,
 } from "./db.js";
 import { apnsConfigured, sendPush } from "./apns.js";
 import { fcmConfigured, sendFcm } from "./fcm.js";
 import { COOKIE, endSession, hashPassword, loginAllowed, loginFailed, loginOk, requireUser, secretMatches, startSession, verifyPassword } from "./auth.js";
 import { mailEnabled, sendInviteMail, sendRegisterMail, sendResetMail } from "./mail/index.js";
-import { dropDevice, isOnline, notifyDockPeers, onlineCount, pushDockSheets, sendToDevice, setUpdateOffer } from "./devices.js";
+import { dropDevice, isFresh, isOnline, notifyDockPeers, onlineCount, pushDockSheets, sendToDevice, setJobOffer, setUpdateOffer } from "./devices.js";
 
 const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -147,7 +147,20 @@ export const registerApi = (app: FastifyInstance) => {
     try { unlinkSync(j.path); } catch {}
     deleteMirrorJob(id);
   };
-  const purgeStaleMirrorJobs = () => { for (const j of staleMirrorJobs(Date.now() - 3_600_000)) dropMirrorJob(j.id); };
+  /* Tell everyone who could still be showing this job that it's gone (reusing mirror_taken,
+     which clients already handle by dropping it), then delete it. */
+  const removeMirrorJob = (id: string) => {
+    const j = getMirrorJob(id);
+    if (!j) return;
+    const gone = { t: "mirror_taken", job: { id: j.id } };
+    for (const p of mirrorPhones(j.dock_id)) sendToDevice(p.id, gone);
+    sendToDevice(j.dock_id, gone);
+    dropMirrorJob(id);
+  };
+  const purgeStaleMirrorJobs = () => { for (const j of staleMirrorJobs(Date.now() - 3_600_000)) removeMirrorJob(j.id); };
+  // expiry is enforced on a timer, not only when a new job happens to be forwarded, so a
+  // stale job can't linger (or be claimed past its life) just because the pool went quiet
+  setInterval(purgeStaleMirrorJobs, 60_000).unref?.();
   const deviceAuth = (body: unknown): DeviceRow | null => {
     const { id, secret } = (body ?? {}) as { id?: string; secret?: string };
     if (typeof id !== "string" || typeof secret !== "string") return null;
@@ -161,24 +174,32 @@ export const registerApi = (app: FastifyInstance) => {
     const msg = { t: "mirror_job", job: { id: j.id, name: j.name, from } };
     let phones = 0;
     for (const p of mirrorPhones(j.dock_id)) {
-      if (sendToDevice(p.id, msg)) { phones++; continue; }   // online: the app shows the card
-      // offline: wake it with a push — Android via FCM, iOS via APNs
+      // deliver over the socket when we can — but "socket OPEN" isn't proof the app is
+      // actually reachable (a backgrounded phone stays OPEN for ~30-60s before the ping
+      // notices). Only a FRESH socket counts as delivered; otherwise fall through to a
+      // push so a job is never silently lost in that window.
+      const fresh = isFresh(p.id);
+      if (fresh) { sendToDevice(p.id, msg); phones++; continue; }
+      sendToDevice(p.id, msg);   // best-effort socket send too (harmless: clients dedupe by id)
       if (!p.push_token) continue;
+      const token = p.push_token;
       const alert = { title: "Ready to print", body: `A page from ${from} is waiting — tap to put it on a sheet.` };
       const warn = { warn: (s: string) => app.log.warn(s) };
       if (p.platform === "android" && fcmConfigured()) {
-        sendFcm(p.push_token, alert, warn)
-          .then((r) => { if (r.status === 404 || r.reason === "UNREGISTERED") clearPushToken(p.id); })
+        sendFcm(token, alert, warn)
+          .then((r) => { if (r.status === 404 || r.reason === "UNREGISTERED") clearPushToken(p.id, token); })
           .catch(() => {});
       } else if (apnsConfigured()) {
-        sendPush(p.push_token, p.push_env, alert, warn)
-          .then((r) => { if (r.status === 410) clearPushToken(p.id); })   // dead token — forget it
+        sendPush(token, p.push_env, alert, warn)
+          .then((r) => { if (r.status === 410) clearPushToken(p.id, token); })   // dead token — forget it
           .catch(() => {});
       }
     }
     sendToDevice(j.dock_id, msg);   // the Dock itself is in the pool (its own sheets)
     return phones;
   };
+  // let the device layer put a job back into the pool when a claimer disconnects (H2)
+  setJobOffer((j) => { offerJob({ id: j.id, dock_id: j.dock_id, name: j.name }); });
 
   /* the Dock forwards an incoming job into the shared pool */
   app.post("/api/device/forward-job", { bodyLimit: 24 * 1024 * 1024 }, async (req, reply) => {
@@ -186,16 +207,27 @@ export const registerApi = (app: FastifyInstance) => {
     const d = deviceAuth(req.body);
     if (!d) return reply.code(401).send({ error: "auth" });
     if (!d.org_id) return reply.code(409).send({ error: "claim this device in the console first" });
-    const { name, type, data } = (req.body ?? {}) as { name?: string; type?: string; data?: string };
+    const { name, type, data, idem } = (req.body ?? {}) as { name?: string; type?: string; data?: string; idem?: string };
     if (!data) return reply.code(400).send({ error: "no job" });
     const buf = Buffer.from(data, "base64");
     if (buf.length < 16) return reply.code(400).send({ error: "empty job" });
+    const jobName = String(name ?? "job").slice(0, 80);
+    const idemKey = typeof idem === "string" && idem ? idem.slice(0, 128) : null;
+    // idempotent forward: a Dock that restarts (memory of its cloud job ids lost) and
+    // re-forwards the same page must NOT mint a second claimable job — that page would
+    // then print twice. Same (dock, page) key ⇒ hand back the existing job, re-offered.
+    if (idemKey) {
+      const existing = mirrorJobByIdem(d.id, idemKey);
+      if (existing) {
+        const phones = existing.claimed_by ? 0 : offerJob({ id: existing.id, dock_id: d.id, name: existing.name });
+        return { ok: true, job_id: existing.id, phones, deduped: true };
+      }
+    }
     const jobId = randomUUID();
     const path = join(MIRROR_DIR, jobId);
     writeFileSync(path, buf);
-    const jobName = String(name ?? "job").slice(0, 80);
     addMirrorJob({ id: jobId, dock_id: d.id, name: jobName, type: type === "pdf" ? "pdf" : "png",
-                   path, created: Date.now(), claimed_by: null, claimed_at: null });
+                   path, created: Date.now(), claimed_by: null, claimed_at: null, idem: idemKey });
     const phones = offerJob({ id: jobId, dock_id: d.id, name: jobName });
     addEvent(d.id, "print2go_forwarded", `${jobName} → ${phones} device${phones === 1 ? "" : "s"}`);
     return { ok: true, job_id: jobId, phones };
@@ -204,23 +236,37 @@ export const registerApi = (app: FastifyInstance) => {
   /* claim a job (first wins) and, for phones, hand over the page. The source Dock
      already has the bytes — it claims to reserve the job, printing locally. */
   app.post("/api/device/mirror-job/:jid/take", async (req, reply) => {
+    purgeStaleMirrorJobs();   // a job past its life must not be claimable even between sweeps
     const d = deviceAuth(req.body);
     if (!d) return reply.code(401).send({ error: "auth" });
     const j = getMirrorJob((req.params as { jid: string }).jid);
     if (!j) return reply.code(404).send({ error: "no such job" });
     const eligible = j.dock_id === d.id || (d.kind === "go" && d.mirror_from === j.dock_id);
     if (!eligible) return reply.code(403).send({ error: "not your job" });
+    // for a phone, read the page BEFORE committing the claim, so a read failure leaves the
+    // job open in the pool instead of claiming-then-dropping it (which would lose the page)
+    let payload: string | undefined;
+    if (d.kind === "go") {
+      try { payload = readFileSync(j.path).toString("base64"); }
+      catch { removeMirrorJob(j.id); return reply.code(404).send({ error: "job expired" }); }
+    }
     if (!claimMirrorJob(j.id, d.id)) return reply.code(409).send({ error: "taken" });
     // tell the rest of the pool it's gone
     const taken = { t: "mirror_taken", job: { id: j.id } };
     for (const p of mirrorPhones(j.dock_id)) if (p.id !== d.id) sendToDevice(p.id, taken);
     if (j.dock_id !== d.id) sendToDevice(j.dock_id, taken);
-    let payload: string | undefined;
-    if (d.kind === "go") {
-      try { payload = readFileSync(j.path).toString("base64"); }
-      catch { dropMirrorJob(j.id); return reply.code(404).send({ error: "job expired" }); }
-    }
     return { ok: true, name: j.name, type: j.type, data: payload };
+  });
+
+  /* the Dock polls a job it forwarded to reconcile its own view when it missed the live
+     taken/done frames (a reconnect, a socket hiccup): open | claimed | gone. */
+  app.post("/api/device/mirror-job/:jid/state", async (req, reply) => {
+    const d = deviceAuth(req.body);
+    if (!d) return reply.code(401).send({ error: "auth" });
+    const j = getMirrorJob((req.params as { jid: string }).jid);
+    if (!j) return { state: "gone" };                                   // printed elsewhere or expired
+    if (j.dock_id !== d.id && d.mirror_from !== j.dock_id) return reply.code(403).send({ error: "not your job" });
+    return { state: j.claimed_by ? (j.claimed_by === d.id ? "mine" : "claimed") : "open" };
   });
 
   /* the claimer finished — forget the job */
@@ -287,10 +333,12 @@ export const registerApi = (app: FastifyInstance) => {
     const d = getDevice(id);
     if (!d) return { ok: true };   // never registered — nothing to do
     if (!secretMatches(secret, d.secret_hash)) return reply.code(401).send({ error: "auth" });
+    const prevDock = d.mirror_from;
     setMirrorFrom(d.id, null);
     markDormant(d.id);
     addEvent(d.id, "signed_out");
     sendToDevice(d.id, { t: "signed_out" });   // the app returns to its sign-in gate
+    if (prevDock) notifyDockPeers(prevDock);   // the Dock it mirrored loses this phone
     return { ok: true };
   });
 
@@ -818,8 +866,22 @@ export const registerApi = (app: FastifyInstance) => {
     f.post("/api/devices/:id/remove", async (req, reply) => {
       const d = ownDevice(req as Authed);
       if (!d) return reply.code(404).send({ error: "unknown device" });
+      dropDevice(d.id);         // evict the live socket FIRST (synchronously) so its later
+                                // close event can't touch the row we're about to delete
+      // if it was a Dock, clean up rows that have no FK cascade (its pool jobs, its
+      // Dock-Labels) and un-point every phone that mirrored it — otherwise those phones
+      // are left mirroring a ghost with a frozen sheet list
+      if (d.kind === "dock" || d.kind === "dock-light") {
+        const { paths, phones } = cleanupDockData(d.id);
+        for (const p of paths) { try { unlinkSync(p); } catch {} }
+        for (const p of phones) sendToDevice(p.id, { t: "dock_sheets", dock: null, dock_name: null, sheets: [] });
+      } else {
+        // a phone removed mid-print: release any job it was holding back to the pool, so
+        // the page isn't stuck claimed by a device that no longer exists (parity with a
+        // normal disconnect, which the close handler already re-pools)
+        for (const j of mirrorJobsClaimedBy(d.id)) { releaseMirrorJob(j.id); offerJob({ id: j.id, dock_id: j.dock_id, name: j.name }); }
+      }
       deleteDevice(d.id);       // it can be claimed again any time — next hello re-registers it
-      dropDevice(d.id);
       return { ok: true };
     });
 

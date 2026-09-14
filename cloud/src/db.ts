@@ -131,8 +131,14 @@ if (!dcols.includes("claimed_by")) db.exec("ALTER TABLE device ADD COLUMN claime
     path TEXT NOT NULL,
     created INTEGER NOT NULL,
     claimed_by TEXT,
-    claimed_at INTEGER
+    claimed_at INTEGER,
+    idem TEXT
   )`);
+  // idempotency key (dock's stable id for a page): a Dock that restarts and re-forwards
+  // the same page is deduped instead of minting a second claimable job (double print).
+  // Guard on dock_id (not just non-empty): a v1 table was just DROP+recreated WITH idem
+  // above, but mjCols is the pre-drop snapshot — ALTERing then would be a duplicate column.
+  if (mjCols.includes("dock_id") && !mjCols.includes("idem")) db.exec("ALTER TABLE mirror_job ADD COLUMN idem TEXT");
   if (!dcols.includes("diag_at")) db.exec("ALTER TABLE device ADD COLUMN diag_at REAL");
   if (!dcols.includes("dormant")) db.exec("ALTER TABLE device ADD COLUMN dormant INTEGER NOT NULL DEFAULT 0"); // signed out but still a seat
   if (!dcols.includes("platform")) db.exec("ALTER TABLE device ADD COLUMN platform TEXT"); // ios | android for Go apps
@@ -228,7 +234,7 @@ export type DeviceRow = {
   approved: number; claimed_by: number | null; mirror_to: string | null; mirror_from: string | null; dormant: number;
   platform: string | null; push_token: string | null; push_env: string | null;
 };
-export type MirrorJobRow = { id: string; dock_id: string; name: string; type: string; path: string; created: number; claimed_by: string | null; claimed_at: number | null };
+export type MirrorJobRow = { id: string; dock_id: string; name: string; type: string; path: string; created: number; claimed_by: string | null; claimed_at: number | null; idem: string | null };
 
 // ── orgs & users ────────────────────────────────────────────────────────────
 export const getOrg = (id: number) => db.prepare("SELECT * FROM org WHERE id=?").get(id) as OrgRow | undefined;
@@ -339,8 +345,10 @@ export const setDevicePlatform = (id: string, platform: string) =>
 /** The APNs token a Go app reports, so the cloud can wake it for a waiting job. */
 export const setPushToken = (id: string, token: string, env: string) =>
   db.prepare("UPDATE device SET push_token=?, push_env=? WHERE id=?").run(token, env, id);
-export const clearPushToken = (id: string) =>
-  db.prepare("UPDATE device SET push_token=NULL WHERE id=?").run(id);
+/** Forget a dead push token — but ONLY if it's still the one that failed, so a token
+ *  the device refreshed in the meantime (over a reconnect) is never wrongly wiped. */
+export const clearPushToken = (id: string, token: string) =>
+  db.prepare("UPDATE device SET push_token=NULL WHERE id=? AND push_token=?").run(id, token);
 
 // ── Print2Go: a Dock's sheets, inherited by its paired phones as Dock-Labels ──
 export type DockSheetRow = {
@@ -397,9 +405,15 @@ export const print2goDocks = (orgId: number) =>
     .filter(isPrint2Go);
 
 export const addMirrorJob = (j: MirrorJobRow) =>
-  db.prepare("INSERT INTO mirror_job(id, dock_id, name, type, path, created, claimed_by, claimed_at) VALUES(?,?,?,?,?,?,?,?)")
-    .run(j.id, j.dock_id, j.name, j.type, j.path, j.created, j.claimed_by, j.claimed_at);
+  db.prepare("INSERT INTO mirror_job(id, dock_id, name, type, path, created, claimed_by, claimed_at, idem) VALUES(?,?,?,?,?,?,?,?,?)")
+    .run(j.id, j.dock_id, j.name, j.type, j.path, j.created, j.claimed_by, j.claimed_at, j.idem);
 export const getMirrorJob = (id: string) => db.prepare("SELECT * FROM mirror_job WHERE id=?").get(id) as MirrorJobRow | undefined;
+/** An existing, still-live job for the same (dock, page) — so a re-forward is deduped. */
+export const mirrorJobByIdem = (dockId: string, idem: string) =>
+  db.prepare("SELECT * FROM mirror_job WHERE dock_id=? AND idem=?").get(dockId, idem) as MirrorJobRow | undefined;
+/** Every mirror job a device is currently holding a claim on (to release on disconnect). */
+export const mirrorJobsClaimedBy = (deviceId: string) =>
+  db.prepare("SELECT * FROM mirror_job WHERE claimed_by=?").all(deviceId) as MirrorJobRow[];
 export const deleteMirrorJob = (id: string) => db.prepare("DELETE FROM mirror_job WHERE id=?").run(id);
 /** Atomic claim: only the first caller wins (returns true). */
 export const claimMirrorJob = (id: string, by: string): boolean =>
@@ -486,6 +500,17 @@ export const markDormant = (id: string) => db.prepare("UPDATE device SET dormant
 export const reactivateDevice = (id: string) => db.prepare("UPDATE device SET dormant=0 WHERE id=?").run(id);
 export const approveDevice = (id: string) => db.prepare("UPDATE device SET approved=1 WHERE id=?").run(id);
 export const deleteDevice = (id: string) => db.prepare("DELETE FROM device WHERE id=?").run(id);
+/** Rows keyed by a Dock's id that have no FK cascade — clean them up when the Dock is
+ *  removed, and return the mirror_job file paths + orphaned phones so the caller can
+ *  delete the spooled files and clear each phone's now-dangling mirror_from. */
+export const cleanupDockData = (dockId: string): { paths: string[]; phones: DeviceRow[] } => {
+  const paths = (db.prepare("SELECT path FROM mirror_job WHERE dock_id=?").all(dockId) as { path: string }[]).map((r) => r.path);
+  const phones = mirrorPhones(dockId);
+  db.prepare("DELETE FROM mirror_job WHERE dock_id=?").run(dockId);
+  db.prepare("DELETE FROM dock_sheet WHERE dock_id=?").run(dockId);
+  db.prepare("UPDATE device SET mirror_from=NULL WHERE mirror_from=?").run(dockId);
+  return { paths, phones };
+};
 
 // ── events ──────────────────────────────────────────────────────────────────
 export const addEvent = (deviceId: string, type: string, data = "") =>

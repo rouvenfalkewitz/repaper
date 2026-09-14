@@ -4,10 +4,12 @@
    signed-in user enters their claim code in the console. */
 import type { WebSocket } from "ws";
 import { hashSecret, secretMatches } from "./auth.js";
-import { addEvent, deviceLabel, dockSheets, getDevice, getOrg, mirrorPhones, openMirrorJobsFor, registerDevice, saveDeviceStatus, saveDiag, setDeviceKind, setDevicePlatform, setDockSheetNfc, setPushToken, setTargetVersion, syncDockSheets, touchDevice, upsertStat } from "./db.js";
+import { addEvent, deviceLabel, dockSheets, getDevice, getOrg, mirrorJobsClaimedBy, mirrorPhones, openMirrorJobsFor, registerDevice, releaseMirrorJob, saveDeviceStatus, saveDiag, setDeviceKind, setDevicePlatform, setDockSheetNfc, setPushToken, setTargetVersion, syncDockSheets, touchDevice, upsertStat } from "./db.js";
+import type { MirrorJobRow } from "./db.js";
 
 const live = new Map<string, WebSocket>(); // device id → open socket
 const alive = new WeakMap<WebSocket, boolean>();
+const lastPong = new WeakMap<WebSocket, number>(); // when the socket last proved itself alive
 
 /* the server pings every device socket; a missed pong means the link is dead
    and the map must not lie about it */
@@ -27,6 +29,20 @@ export const setUpdateOffer = (fn: (deviceId: string) => void) => { offerUpdate 
 export const isOnline = (id: string) => live.has(id);
 export const onlineCount = () => live.size;
 
+/* "Online" is not the same as "recently proven alive": a backgrounded phone or a dead
+   radio keeps a socket OPEN until a ping goes unanswered (~30-60s). A caller that must
+   choose between a silent socket delivery and a push should treat only a FRESH socket as
+   reliably reachable, and fall back to push otherwise. */
+export const isFresh = (id: string): boolean => {
+  const ws = live.get(id);
+  return !!ws && ws.readyState === ws.OPEN && Date.now() - (lastPong.get(ws) ?? 0) < 40_000;
+};
+
+/* Re-offer a job to the pool — set by the API so the close handler can put a job a
+   disconnecting device was holding back into play (H2). */
+export let offerJobToPool: (j: MirrorJobRow) => void = () => {};
+export const setJobOffer = (fn: (j: MirrorJobRow) => void) => { offerJobToPool = fn; };
+
 /* Push a message to a connected device; false if it is offline. */
 export const sendToDevice = (id: string, msg: object): boolean => {
   const ws = live.get(id);
@@ -35,7 +51,15 @@ export const sendToDevice = (id: string, msg: object): boolean => {
   return true;
 };
 
-export const dropDevice = (id: string) => live.get(id)?.close(4001, "removed");
+/* Evict a device NOW: remove it from the live map synchronously (so a later async close
+   event on this socket becomes a no-op), then close the socket. Removing the map entry
+   up front is what stops a since-deleted device's close handler from touching a row that
+   no longer exists (which would throw an uncaught FK error and take the process down). */
+export const dropDevice = (id: string) => {
+  const ws = live.get(id);
+  live.delete(id);
+  ws?.close(4001, "removed");
+};
 
 /** Tell a Dock the current list of phones printing from it (for its settings view). */
 export const notifyDockPeers = (dockId: string) => {
@@ -99,6 +123,7 @@ export const handleDeviceSocket = (ws: WebSocket, remote: string) => {
       live.get(deviceId)?.close(4002, "replaced"); // a reconnect supersedes a stale socket
       live.set(deviceId, ws);
       alive.set(ws, true);
+      lastPong.set(ws, Date.now());   // a fresh connection is proven alive right now
       const d = getDevice(deviceId)!;
       const org = d.org_id ? getOrg(d.org_id) : undefined;
       // a dormant (signed-out) device keeps its seat but the app returns to its gate
@@ -118,6 +143,10 @@ export const handleDeviceSocket = (ws: WebSocket, remote: string) => {
       if (claimed && d.kind === "go" && d.mirror_from) pushDockSheets(d.id, d.mirror_from);
       return;
     }
+
+    // a superseded socket (the device reconnected on a newer one) must not keep writing
+    // shared state from late buffered frames — the live map is the single source of truth
+    if (live.get(deviceId) !== ws) return;
 
     if (msg.t === "status") {
       const { t: _t, ...status } = msg;
@@ -179,12 +208,20 @@ export const handleDeviceSocket = (ws: WebSocket, remote: string) => {
     clearTimeout(helloDeadline);
     if (deviceId && live.get(deviceId) === ws) {
       live.delete(deviceId);
-      touchDevice(deviceId);
-      addEvent(deviceId, "offline");
-      const d = getDevice(deviceId);   // a phone going offline updates its Dock's peer list
-      if (d?.kind === "go" && d.mirror_from) notifyDockPeers(d.mirror_from);
+      // release any Print2Go job this device was holding a claim on, back into the pool,
+      // so a device that dies mid-claim doesn't orphan the page for an hour (H2)
+      for (const j of mirrorJobsClaimedBy(deviceId)) { releaseMirrorJob(j.id); offerJobToPool(j); }
+      // the device row may have been removed by an admin between the socket opening and
+      // this close firing — never touch a row that's gone (would throw an uncaught FK
+      // error and take the whole process down)
+      const d = getDevice(deviceId);
+      if (d) {
+        touchDevice(deviceId);
+        addEvent(deviceId, "offline");
+        if (d.kind === "go" && d.mirror_from) notifyDockPeers(d.mirror_from);   // update its Dock's peer list
+      }
     }
   });
   ws.on("error", () => { /* close follows */ });
-  ws.on("pong", () => alive.set(ws, true));
+  ws.on("pong", () => { alive.set(ws, true); lastPong.set(ws, Date.now()); });
 };
