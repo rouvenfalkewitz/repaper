@@ -610,15 +610,23 @@ a.stat-tile:hover, .dev:hover {
   border: max(3px, calc(var(--box) * .056)) solid var(--accent);
   box-shadow: 0 0 calc(var(--box) * .17) rgba(30,227,165,.5), inset 0 0 calc(var(--box) * .12) rgba(30,227,165,.3);
   animation: var(--ring-breathe) }
-/* Dock Light: the relay — same box, a quieter mist ring + a mirror target */
-.devbox.light::after { background: radial-gradient(56% 56% at 50% 46%, rgba(167,176,170,.10), transparent 72%) }
-.devbox.light .devring { border-color: var(--mist); animation: none;
-  box-shadow: 0 0 calc(var(--box) * .08) rgba(167,176,170,.28), inset 0 0 calc(var(--box) * .08) rgba(167,176,170,.18) }
-.devbox.light .relay { position: absolute; z-index: 2; right: 15%; bottom: 16%; width: 20%; height: 20%; border-radius: 26%;
-  border: 2px solid var(--accent); background: var(--bg); box-shadow: 0 0 10px rgba(30,227,165,.45) }
-.devbox.light .relay::before { content: ""; position: absolute; left: -68%; top: 50%; width: 60%; height: 2px; transform: translateY(-50%);
-  background: linear-gradient(90deg, transparent, var(--accent)); opacity: .55 }
-/* Go: the pocket printer — a phone-shaped box with a big ring holding the GO mark */
+/* Dock Light: the relay — the same green ring as the Dock, plus a little Go
+   device-box in the corner (it mirrors jobs onto a Go). */
+.golet { position: absolute; z-index: 2; right: 8%; bottom: 9%; width: 38%; height: 38%;
+  border-radius: 26%; background: linear-gradient(135deg, var(--surface-2), var(--bg));
+  border: 1px solid var(--border-strong); display: grid; place-items: center; overflow: hidden;
+  box-shadow: 0 6px 16px -6px rgba(0,0,0,.65) }
+.golet .gomark { --go: calc(var(--box) * .27) }
+/* The Go mark — the app's Go button: a carbon puck, a thick glowing brand ring,
+   and GO in the wide CI letterforms (Archivo 800 / width 125), in paper white. */
+.gomark { --go: 84px; position: relative; width: var(--go); height: var(--go); flex: none; border-radius: 50%;
+  background: linear-gradient(135deg, var(--surface-2), var(--bg)); display: grid; place-items: center }
+.gomark::before { content: ""; position: absolute; inset: calc(var(--go) * .05); border-radius: 50%;
+  border: max(2.5px, calc(var(--go) * .096)) solid var(--accent);
+  box-shadow: 0 0 calc(var(--go) * .17) rgba(30,227,165,.55), inset 0 0 calc(var(--go) * .1) rgba(30,227,165,.25) }
+.gomark .go { position: relative; z-index: 1; font-family: var(--font-display); font-weight: 800; font-stretch: 125%;
+  letter-spacing: -.02em; color: var(--text); font-size: calc(var(--go) * .34); line-height: 1 }
+/* Go: the pocket printer — a phone-shaped box holding the Go mark, large */
 .devphone { --pw: 132px; position: relative; width: var(--pw); aspect-ratio: 92 / 166; flex: none;
   border-radius: calc(var(--pw) * .17);
   background: linear-gradient(135deg, var(--surface-2), var(--bg));
@@ -628,12 +636,7 @@ a.stat-tile:hover, .dev:hover {
 .devphone::before { content: ""; position: absolute; top: 5.5%; left: 50%; transform: translateX(-50%); width: 22%; height: 4px; border-radius: 3px; background: var(--carbon-5); z-index: 2 }
 .devphone::after { content: ""; position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(52% 40% at 50% 46%, rgba(30,227,165,.15), transparent 72%) }
-.devphone .devring { width: 62%; height: auto; aspect-ratio: 1; animation: none;
-  border-width: max(3px, calc(var(--pw) * .05));
-  box-shadow: 0 0 calc(var(--pw) * .2) rgba(30,227,165,.55), inset 0 0 calc(var(--pw) * .12) rgba(30,227,165,.3) }
-.devphone .devring .goword { position: absolute; inset: 0; display: grid; place-items: center;
-  font-family: var(--font-display); font-weight: 800; font-stretch: 100%; letter-spacing: -.03em;
-  color: var(--accent-text); font-size: calc(var(--pw) * .2); line-height: 1 }
+.devphone .gomark { --go: calc(var(--pw) * .62) }
 /* ════════════════════════════════════════════════════════════════════════════ */
 
 /* ══ Modern user menu (sidebar foot) ═════════════════════════════════════════ */
