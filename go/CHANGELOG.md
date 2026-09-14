@@ -1,3 +1,5 @@
+0.2.20 · 2026-09-14 · Auto-print now happens only when "Cycle through sheets" is on. With it off, every job waits for a tap — even with a single sheet (before, one sheet always printed automatically).
+
 0.2.19 · 2026-09-14 · Print2Go: prints onto a Dock sheet even when it was added without a QR link (the key now comes through). Swipe a waiting job left to discard it, and the queue is fully locked while a print runs.
 
 0.2.18 (12 Sep 2026) — Fix: the waiting jobs can't be tapped or re-routed while a print is already running.

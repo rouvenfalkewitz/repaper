@@ -116,11 +116,13 @@ class Dock:
             self.state = "job-waiting"; self.phase = ""
             if key not in self._announced:
                 log.info("job %s (%s) page %d/%d waiting — hold a sheet", job.id, job.name, page_no, job.pages); self._announced.add(key)
-            # automatic sheet choice: a single sheet decides itself; with sheet_cycle on,
-            # several sheets take turns. One attempt per page — a failure stays visible
-            # and waits for a manual retry; the rotation only advances on success.
+            # automatic sheet choice happens ONLY with sheet_cycle on — then each page
+            # prints without a tap (a single sheet, or several taking turns). With cycling
+            # off every job waits for a tap, even when there's just one sheet. One attempt
+            # per page — a failure stays visible and waits for a manual retry; the rotation
+            # only advances on success.
             ids = self.registry.ids()
-            auto = len(ids) == 1 or (self.cfg.get("sheet_cycle") and len(ids) > 1)
+            auto = bool(self.cfg.get("sheet_cycle"))
             if auto and ids and key not in self._auto_tried:
                 self._auto_tried.add(key)
                 pick = ids[0] if len(ids) == 1 else ids[self._cycle_ix % len(ids)]

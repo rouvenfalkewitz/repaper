@@ -12,8 +12,8 @@ android {
         applicationId = "net.repaper.go"
         minSdk = 26
         targetSdk = 35
-        versionCode = 15
-        versionName = "0.2.19"
+        versionCode = 16
+        versionName = "0.2.20"
     }
 
     buildTypes {

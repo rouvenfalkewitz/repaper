@@ -62,15 +62,19 @@ struct MainView: View {
                         // tap-to-print appears only when a job actually needs a sheet CHOICE
                         // (several sheets, cycling off); the list is the fallback.
                         VStack(spacing: 8) {
-                            if led == .wait, sheets.sheets.count > 1, !Prefs.cycleSheets {
+                            // cycling off ⇒ every waiting job needs a manual print, whether there's
+                            // one sheet or several. Offer tap-to-print (or a picker) right here.
+                            if led == .wait, !sheets.sheets.isEmpty, !Prefs.cycleSheets {
                                 if NfcReader.available {
                                     nfcTapButton
-                                    Button { pickFor = jobs.first } label: {
-                                        Text("or choose from the list")
-                                            .font(Ui.mono(11)).foregroundColor(Ui.text3).underline()
+                                    if sheets.sheets.count > 1 {
+                                        Button { pickFor = jobs.first } label: {
+                                            Text("or choose from the list")
+                                                .font(Ui.mono(11)).foregroundColor(Ui.text3).underline()
+                                        }
                                     }
                                 } else {
-                                    UiButton(label: "Choose the sheet", primary: true) { pickFor = jobs.first }
+                                    UiButton(label: sheets.sheets.count > 1 ? "Choose the sheet" : "Print", primary: true) { pickFor = jobs.first }
                                 }
                             }
                         }
@@ -404,10 +408,12 @@ struct MainView: View {
 
     private func refresh() {
         jobs = JobStore.list()
-        // automatic sheet choice: one sheet decides itself; with "cycle through sheets"
-        // on, several take turns. One attempt each — a failure waits for a tap.
+        // auto-print happens ONLY while "cycle through sheets" is on — then each job
+        // prints itself (a single sheet, or several taking turns). With cycling off a
+        // job always waits for a tap, even when there's just one sheet. One attempt
+        // each — a failure waits for a tap.
         let ids = sheets.sheets
-        let auto = ids.count == 1 || (Prefs.cycleSheets && ids.count > 1)
+        let auto = Prefs.cycleSheets
         guard !busy, flash == nil, !ids.isEmpty else { return }
         if let job = jobs.first, auto, !autoTried.contains(job.lastPathComponent) {
             autoTried.insert(job.lastPathComponent)

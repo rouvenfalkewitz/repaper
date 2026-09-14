@@ -123,7 +123,10 @@ class PrinterScreen(private val act: AppCompatActivity) : Screen {
         val waiting = jobs.list()
         val pending = CloudAgent.get(c).pending
         val ids = registry.ids()
-        val auto = ids.size == 1 || (Prefs.cycleSheets(c) && ids.size > 1)
+        // auto-print happens ONLY while "cycle through sheets" is on — then each job prints
+        // itself (a single sheet, or several taking turns). With cycling off a job always
+        // waits for a tap, even when there's just one sheet.
+        val auto = Prefs.cycleSheets(c) && ids.isNotEmpty()
         if (!busy && flash == null && auto && ids.isNotEmpty()) {
             if (waiting.isNotEmpty()) { val job = waiting.first(); if (autoTried.add(job.name)) { printJob(job, if (ids.size == 1) ids[0] else ids[Prefs.cycleIx(c) % ids.size], ids.size > 1); return } }
             else if (pending.isNotEmpty()) { val p = pending.first(); if (autoTried.add(p.id)) { printMirror(p, if (ids.size == 1) ids[0] else ids[Prefs.cycleIx(c) % ids.size], ids.size > 1); return } }

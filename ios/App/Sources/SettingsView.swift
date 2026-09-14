@@ -99,7 +99,7 @@ struct SettingsView: View {
                 SettingIcon(name: "arrow.triangle.2.circlepath")
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Cycle through sheets").font(Ui.body(15, weight: 600)).foregroundColor(Ui.text)
-                    Text("With several sheets, jobs print on each in turn.")
+                    Text("Print automatically without a tap — one sheet, or several in turn. Off: jobs wait for a tap.")
                         .font(Ui.body(12)).foregroundColor(Ui.text3)
                 }
                 Spacer()

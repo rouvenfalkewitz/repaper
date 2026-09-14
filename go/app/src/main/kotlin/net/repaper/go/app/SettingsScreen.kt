@@ -84,7 +84,7 @@ class SettingsScreen(private val c: AppCompatActivity) : Screen {
                 addView(LinearLayout(c).apply {
                     orientation = LinearLayout.VERTICAL
                     addView(Ui.bodyText(c, "Cycle through sheets", 15f, Ui.TEXT).apply { setTypeface(typeface, Typeface.BOLD) })
-                    addView(Ui.bodyText(c, "With several sheets, jobs print on each in turn.", 12f).apply { setPadding(0, dp(2), 0, 0) })
+                    addView(Ui.bodyText(c, "Print automatically without a tap — one sheet, or several in turn. Off: jobs wait for a tap.", 12f).apply { setPadding(0, dp(2), 0, 0) })
                 }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
                 addView(Switch(c).apply { isChecked = Prefs.cycleSheets(c); setOnCheckedChangeListener { _, v -> Prefs.setCycleSheets(c, v) } })
             })
