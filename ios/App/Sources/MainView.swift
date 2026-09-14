@@ -151,6 +151,7 @@ struct MainView: View {
             Text("This iPhone can also print the jobs people send to one of your RePaper Docks — on its own sheets. You can set it up in Settings any time.")
         }
         .onAppear {
+            JobStore.sweepMirrorOrphans()   // clear any Print2Go spool left by an interrupted print
             cloud.start(); refresh()
             maybeOfferPrint2Go()
             // visual-test hooks: `simctl launch … --open-settings`/`--open-sheets` jump straight there
@@ -482,7 +483,7 @@ struct MainView: View {
             }
             var spooled: URL?   // hoisted so a failed print can still delete it
             do {
-                let url = JobStore.newJobURL(label: name, ext: ext)
+                let url = JobStore.newMirrorJobURL(label: name, ext: ext)   // marked, kept out of the local job list
                 spooled = url
                 try bytes.write(to: url)
                 try await PrintFlow.printJob(url, sheet: sheet) { phase = $0 }
