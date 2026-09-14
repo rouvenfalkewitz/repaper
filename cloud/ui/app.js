@@ -126,8 +126,7 @@ function renderShell() {
     const head = n.group && n.group !== lastGroup ? (lastGroup = n.group, `<div class="navlabel">${n.group}</div>`) : "";
     return `${head}<a href="${n.href}" class="${n.key === active ? "active" : ""}">${ICON[n.icon]}<span>${n.label}</span>${n.tag ? `<span class="tag">${n.tag}</span>` : ""}</a>`;
   }).join("");
-  side.innerHTML = `<a href="/" class="sidelogo">${LOGO}</a>
-    <button class="cmdk-trigger" type="button" onclick="openCmdK()" aria-label="Search (Command K)"><span class="ct-l">${ICON.search}<span>Search</span></span><kbd>⌘K</kbd></button>
+  side.innerHTML = `<div class="sidetop"><a href="/" class="sidelogo">${LOGO}</a><button class="cmdk-trigger" type="button" onclick="openCmdK()" title="Search — ⌘K" aria-label="Search (Command K)">${ICON.search}</button></div>
     <nav class="nav">${navItems}</nav>
     <div class="foot"><div class="userbar" id="userbar"></div></div>`;
   initCmdK();

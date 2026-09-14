@@ -43,15 +43,13 @@ h2.rowh { display: flex; justify-content: space-between; align-items: center; ga
 section[data-sec] > h2:first-child { margin-top: 0 }
 @media (max-width: 720px) {
   .layout { flex-direction: column }
-  .side { width: auto; height: auto; position: static; flex-direction: row; align-items: center; gap: var(--s-3); border-right: 0; border-bottom: 1px solid var(--border); padding: 10px var(--s-3); overflow-x: auto }
-  .side { overflow-y: visible }
+  .side { width: auto; height: auto; position: static; flex-direction: row; align-items: center; gap: var(--s-3); border-right: 0; border-bottom: 1px solid var(--border); padding: 10px var(--s-3); overflow: visible; flex-wrap: nowrap }
+  .sidetop { flex: none; padding: 0 }
   .sidelogo { padding: 0 } .sidelogo .logo { height: 20px }
-  .nav { display: flex; gap: 2px } .nav a { padding: 7px 10px; white-space: nowrap } .nav .tag, .navlabel { display: none }
+  .nav { display: flex; gap: 2px; flex: 1 1 auto; min-width: 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none } .nav::-webkit-scrollbar { display: none }
+  .nav a { padding: 7px 10px; white-space: nowrap } .nav .tag, .navlabel { display: none }
   .nav a.active::before { display: none }
-  .side .foot { margin: 0 0 0 auto }
-  .userchip { padding: 4px; border: 0; background: none } .userchip:hover, .userchip[aria-expanded="true"] { background: none }
-  .userchip .who3, .userchip .uchev, .userchip .iconbtn { display: none }
-  .usermenu { left: auto; right: 0; bottom: auto; top: calc(100% + 10px); width: 210px }
+  .side .foot { margin: 0 0 0 auto; flex: none }
   .main { flex: 1 1 auto; margin: 0; padding: var(--s-5) var(--s-4) var(--s-8) }
 }
 
@@ -572,11 +570,10 @@ a.stat-tile:hover, .dev:hover {
 /* ════════════════════════════════════════════════════════════════════════════ */
 
 /* ══ ⌘K command palette ══════════════════════════════════════════════════════ */
-.cmdk-trigger { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 8px 12px; border-radius: var(--r-control); border: 1px solid var(--border); background: var(--surface); color: var(--text-3); cursor: pointer; font: 500 .8125rem var(--font-body); transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out) }
-.cmdk-trigger:hover { border-color: var(--border-strong); color: var(--text-2) }
-.cmdk-trigger .ct-l { display: inline-flex; align-items: center; gap: 8px; min-width: 0 }
-.cmdk-trigger svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: none }
-.cmdk-trigger kbd { font: 600 .625rem var(--font-mono); color: var(--text-3); background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 2px 6px; flex: none }
+.sidetop { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-right: 4px }
+.cmdk-trigger { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text-3); cursor: pointer; flex: none; transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out) }
+.cmdk-trigger:hover { border-color: var(--border-strong); color: var(--text); background: var(--surface-2) }
+.cmdk-trigger svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round }
 
 .cmdk { position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-start; justify-content: center; padding: 12vh 16px 16px }
 .cmdk-back { position: absolute; inset: 0; background: rgba(12,16,15,.72); backdrop-filter: blur(4px) }
@@ -623,7 +620,13 @@ a.stat-tile:hover, .dev:hover {
   background: linear-gradient(135deg, var(--surface-2), var(--bg)); display: grid; place-items: center }
 .gomark::before { content: ""; position: absolute; inset: calc(var(--go) * .05); border-radius: 50%;
   border: max(2.5px, calc(var(--go) * .096)) solid var(--accent);
-  box-shadow: 0 0 calc(var(--go) * .17) rgba(30,227,165,.55), inset 0 0 calc(var(--go) * .1) rgba(30,227,165,.25) }
+  box-shadow: 0 0 calc(var(--go) * .17) rgba(30,227,165,.55), inset 0 0 calc(var(--go) * .1) rgba(30,227,165,.25);
+  animation: gopulse 2.4s ease-in-out infinite }
+@keyframes gopulse {
+  0%, 100% { box-shadow: 0 0 calc(var(--go) * .1) rgba(30,227,165,.38), inset 0 0 calc(var(--go) * .07) rgba(30,227,165,.18) }
+  50% { box-shadow: 0 0 calc(var(--go) * .3) rgba(30,227,165,.8), inset 0 0 calc(var(--go) * .14) rgba(30,227,165,.42) }
+}
+@media (prefers-reduced-motion: reduce) { .gomark::before { animation: none } }
 .gomark .go { position: relative; z-index: 1; font-family: var(--font-display); font-weight: 800; font-stretch: 125%;
   letter-spacing: -.02em; color: var(--text); font-size: calc(var(--go) * .34); line-height: 1 }
 /* Go: the pocket printer — a phone-shaped box holding the Go mark, large */
@@ -656,3 +659,12 @@ a.stat-tile:hover, .dev:hover {
 .umi:hover { background: var(--surface-2) }
 .umi svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; color: var(--text-3); flex: none }
 /* ════════════════════════════════════════════════════════════════════════════ */
+
+/* Mobile user menu — placed after the base .userchip/.usermenu so it wins the cascade
+   (the avatar collapses to icon-only; the menu is fixed so the top-bar scroll can't clip it). */
+@media (max-width: 720px) {
+  .userchip { padding: 4px; border: 0; background: none }
+  .userchip:hover, .userchip[aria-expanded="true"] { background: none; border-color: transparent }
+  .userchip .who3, .userchip .uchev { display: none }
+  .usermenu { position: fixed; left: auto; right: 12px; bottom: auto; top: 58px; width: min(220px, calc(100vw - 24px)) }
+}
