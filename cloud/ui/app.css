@@ -29,7 +29,7 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 .userchip .who3 span { display: block; font-family: var(--font-mono); font-size: .6875rem; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .orgmini { width: 13px; height: 13px; border-radius: 4px; object-fit: cover; vertical-align: -2px; margin-right: 5px }
 .av { border-radius: 50%; flex: none; object-fit: cover; display: inline-grid; place-items: center; font-family: var(--font-display); font-weight: 700 }
-.main { flex: 0 1 920px; margin: 0 auto; min-width: 0; padding: var(--s-6) var(--s-6) var(--s-9) }
+.main { flex: 1 1 auto; max-width: 1120px; margin: 0 auto; min-width: 0; padding: var(--s-6) var(--s-7) var(--s-9) }
 .pagehead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: var(--s-5); flex-wrap: wrap }
 .pagehead h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 1.5rem; letter-spacing: -.02em }
 .main h2:first-of-type { margin-top: 0 }
@@ -48,7 +48,10 @@ section[data-sec] > h2:first-child { margin-top: 0 }
   .sidelogo { padding: 0 } .sidelogo .logo { height: 20px }
   .nav { display: flex; gap: 2px } .nav a { padding: 7px 10px; white-space: nowrap } .nav .tag, .navlabel { display: none }
   .nav a.active::before { display: none }
-  .side .foot { margin: 0 0 0 auto } .userchip { padding: 4px; border: 0; background: none } .userchip .who3, .userchip .iconbtn { display: none }
+  .side .foot { margin: 0 0 0 auto }
+  .userchip { padding: 4px; border: 0; background: none } .userchip:hover, .userchip[aria-expanded="true"] { background: none }
+  .userchip .who3, .userchip .uchev, .userchip .iconbtn { display: none }
+  .usermenu { left: auto; right: 0; bottom: auto; top: calc(100% + 10px); width: 210px }
   .main { flex: 1 1 auto; margin: 0; padding: var(--s-5) var(--s-4) var(--s-8) }
 }
 
@@ -403,13 +406,18 @@ a.stat-tile:hover { border-color: var(--border-strong); transform: translateY(-1
 .vs { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); align-items: stretch }
 @media (max-width: 820px) { .vs { grid-template-columns: 1fr } }
 .vscard { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--s-5); display: flex; flex-direction: column; gap: 8px; min-width: 0 }
-.vsart { height: 148px; border-radius: var(--r-control); border: 1px solid var(--border); display: grid; place-items: center; background:
+.vsart { height: 184px; border-radius: var(--r-control); border: 1px solid var(--border); display: grid; place-items: center; overflow: hidden; background:
   radial-gradient(circle at 30% 20%, var(--carbon-3), var(--carbon) 70%) }
 .dockring { width: 74px; height: 74px; border-radius: 50%; border: 6px solid var(--accent); box-shadow: 0 0 24px rgba(30,227,165,.55), inset 0 0 18px rgba(30,227,165,.3); animation: var(--ring-breathe) }
 .phoneart { position: relative; width: 66px; height: 112px; border-radius: 14px; background: var(--carbon); border: 2px solid var(--carbon-5); box-shadow: 0 8px 24px rgba(0,0,0,.45); display: grid; place-items: center }
 .phoneart::before { content: ""; position: absolute; top: 7px; left: 50%; transform: translateX(-50%); width: 16px; height: 3px; border-radius: 2px; background: var(--carbon-5) }
 .phoneart .pring { width: 30px; height: 30px; border-radius: 50%; border: 3.5px solid var(--accent); box-shadow: 0 0 12px rgba(30,227,165,.55); animation: var(--ring-breathe) }
-.vstitle { font-family: var(--font-display); font-weight: 700; font-size: 1.375rem; letter-spacing: -.02em; margin-top: 6px }
+.vskick { font: 700 .625rem var(--font-display); font-stretch: 112%; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3); margin-top: 8px }
+.vscard.flagship { border-color: var(--border-strong) }
+.vscard.flagship .vsart { border-color: var(--accent-tint) }
+.vscard.flagship::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: .6 }
+.vscard { position: relative }
+.vstitle { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 700; font-size: 1.375rem; letter-spacing: -.02em; margin-top: 4px }
 .vssub { color: var(--text-2); margin-top: -4px }
 .vslist { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 8px }
 .vslist li { position: relative; padding-left: 26px; color: var(--text-2); font-size: .9375rem }
@@ -585,4 +593,63 @@ a.stat-tile:hover, .dev:hover {
 .cmdk-item.sel { background: var(--accent-tint) } .cmdk-item.sel .ci-ic { background: var(--accent); color: var(--on-accent) } .cmdk-item.sel .ci-l { color: var(--accent-text) }
 .cmdk-empty { padding: 24px; text-align: center; color: var(--text-3); font-size: .9375rem }
 @media (max-width: 720px) { .cmdk-trigger { display: none } .cmdk { padding: 8vh 12px 12px } }
+/* ════════════════════════════════════════════════════════════════════════════ */
+
+/* ══ Product visuals — the reusable "device box" (from the iOS RingBox) ═══════
+   A rounded-square outcut (radius = size/4), carbon diagonal gradient, hairline
+   border, with the brand light-ring inside. Scales via --box; drop it anywhere. */
+.devbox { --box: 150px; position: relative; width: var(--box); height: var(--box); flex: none;
+  border-radius: calc(var(--box) * .25);
+  background: linear-gradient(135deg, var(--surface-2), var(--bg));
+  border: 1px solid var(--border-strong);
+  display: grid; place-items: center; overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 10px 30px -12px rgba(0,0,0,.6) }
+.devbox::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(56% 56% at 50% 46%, rgba(30,227,165,.13), transparent 72%) }
+.devring { position: relative; z-index: 1; width: 58.6%; height: 58.6%; border-radius: 50%;
+  border: max(3px, calc(var(--box) * .056)) solid var(--accent);
+  box-shadow: 0 0 calc(var(--box) * .17) rgba(30,227,165,.5), inset 0 0 calc(var(--box) * .12) rgba(30,227,165,.3);
+  animation: var(--ring-breathe) }
+/* Dock Light: the relay — same box, a quieter mist ring + a mirror target */
+.devbox.light::after { background: radial-gradient(56% 56% at 50% 46%, rgba(167,176,170,.10), transparent 72%) }
+.devbox.light .devring { border-color: var(--mist); animation: none;
+  box-shadow: 0 0 calc(var(--box) * .08) rgba(167,176,170,.28), inset 0 0 calc(var(--box) * .08) rgba(167,176,170,.18) }
+.devbox.light .relay { position: absolute; z-index: 2; right: 15%; bottom: 16%; width: 20%; height: 20%; border-radius: 26%;
+  border: 2px solid var(--accent); background: var(--bg); box-shadow: 0 0 10px rgba(30,227,165,.45) }
+.devbox.light .relay::before { content: ""; position: absolute; left: -68%; top: 50%; width: 60%; height: 2px; transform: translateY(-50%);
+  background: linear-gradient(90deg, transparent, var(--accent)); opacity: .55 }
+/* Go: the pocket printer — a phone-shaped box with a big ring holding the GO mark */
+.devphone { --pw: 132px; position: relative; width: var(--pw); aspect-ratio: 92 / 166; flex: none;
+  border-radius: calc(var(--pw) * .17);
+  background: linear-gradient(135deg, var(--surface-2), var(--bg));
+  border: 1px solid var(--border-strong);
+  display: grid; place-items: center; overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 14px 34px -14px rgba(0,0,0,.62) }
+.devphone::before { content: ""; position: absolute; top: 5.5%; left: 50%; transform: translateX(-50%); width: 22%; height: 4px; border-radius: 3px; background: var(--carbon-5); z-index: 2 }
+.devphone::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(52% 40% at 50% 46%, rgba(30,227,165,.15), transparent 72%) }
+.devphone .devring { width: 62%; height: auto; aspect-ratio: 1; animation: none;
+  border-width: max(3px, calc(var(--pw) * .05));
+  box-shadow: 0 0 calc(var(--pw) * .2) rgba(30,227,165,.55), inset 0 0 calc(var(--pw) * .12) rgba(30,227,165,.3) }
+.devphone .devring .goword { position: absolute; inset: 0; display: grid; place-items: center;
+  font-family: var(--font-display); font-weight: 800; font-stretch: 100%; letter-spacing: -.03em;
+  color: var(--accent-text); font-size: calc(var(--pw) * .2); line-height: 1 }
+/* ════════════════════════════════════════════════════════════════════════════ */
+
+/* ══ Modern user menu (sidebar foot) ═════════════════════════════════════════ */
+.userbar { position: relative }
+.userchip { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); cursor: pointer; text-align: left; font: inherit; color: var(--text); transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out) }
+.userchip:hover, .userchip[aria-expanded="true"] { border-color: var(--border-strong); background: var(--surface-2) }
+.userchip.active { border-color: var(--accent) }
+.userchip .uav { position: relative; flex: none; display: inline-grid }
+.userchip .uonline { position: absolute; right: -1px; bottom: -1px; width: 11px; height: 11px; border-radius: 50%; background: var(--accent); border: 2px solid var(--surface); box-shadow: 0 0 8px rgba(30,227,165,.6) }
+.userchip:hover .uonline, .userchip[aria-expanded="true"] .uonline { border-color: var(--surface-2) }
+.userchip .who3 { flex: 1; min-width: 0 }
+.userchip .uchev { flex: none; color: var(--text-3); display: inline-grid; transition: color var(--dur-fast) var(--ease-out) }
+.userchip:hover .uchev, .userchip[aria-expanded="true"] .uchev { color: var(--text-2) }
+.userchip .uchev svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round }
+.usermenu { position: absolute; left: 0; right: 0; bottom: calc(100% + 8px); background: var(--surface); border: 1px solid var(--border-strong); border-radius: 14px; box-shadow: var(--shadow-float); padding: 6px; display: grid; gap: 2px; z-index: 40; animation: rise var(--dur-base) var(--ease-out) both }
+.umi { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; border: 0; background: transparent; color: var(--text); text-decoration: none; font: 500 .875rem var(--font-body); cursor: pointer; text-align: left; width: 100% }
+.umi:hover { background: var(--surface-2) }
+.umi svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; color: var(--text-3); flex: none }
 /* ════════════════════════════════════════════════════════════════════════════ */
