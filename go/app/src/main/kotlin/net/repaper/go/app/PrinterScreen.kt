@@ -111,11 +111,15 @@ class PrinterScreen(private val act: AppCompatActivity) : Screen {
     private fun onSheetTap(uri: String) {
         val landing = runCatching { net.repaper.go.core.LandingUrl.parse(uri) }.getOrNull() ?: run { toast("That tag doesn't look like a RePaper sheet."); return }
         val known = SheetOps.findRegistered(registry, landing)
+        // a waiting item is either a local job or a Print2Go job relayed from a Dock —
+        // print whichever is waiting on the tapped sheet (this is what a tap means)
         val job = jobs.list().firstOrNull()
+        val pending = CloudAgent.get(c).pending.firstOrNull()
         when {
-            known != null && job != null -> printJob(job, known)
-            known != null -> toast("That's ${registry.name(known)} — nothing waiting to print.")
-            else -> toast("${landing.name} isn't on this phone yet — add it in the Sheets tab.")
+            known == null -> toast("${landing.name} isn't on this phone yet — add it in the Sheets tab.")
+            job != null -> printJob(job, known)
+            pending != null -> printMirror(pending, known)
+            else -> toast("That's ${registry.name(known)} — nothing waiting to print.")
         }
     }
 
@@ -240,16 +244,19 @@ class PrinterScreen(private val act: AppCompatActivity) : Screen {
         val container = FrameLayout(c).apply {
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
         }
+        // a full-bleed red panel behind the card; the trash sits in the trailing reveal
+        // strip, so any amount of swipe reads as intentional (not a floating pill)
         val trash = FrameLayout(c).apply {
             background = GradientDrawable().apply { setColor(Ui.RED); cornerRadius = dp(16).toFloat() }
             addView(ImageView(c).apply {
                 setImageResource(R.drawable.ic_trash); setColorFilter(Ui.ON_ACCENT)
-                layoutParams = FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER)
+                layoutParams = FrameLayout.LayoutParams(dp(22), dp(22), Gravity.END or Gravity.CENTER_VERTICAL)
+                    .apply { rightMargin = (reveal - dp(22)) / 2 }
             })
             isClickable = true; setOnClickListener { onDiscard() }
             visibility = View.INVISIBLE
         }
-        container.addView(trash, FrameLayout.LayoutParams(reveal, FrameLayout.LayoutParams.MATCH_PARENT, Gravity.END).apply { topMargin = dp(8) })
+        container.addView(trash, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT, Gravity.END).apply { topMargin = dp(8) })
         container.addView(card)
         if (enabled) {
             val slop = android.view.ViewConfiguration.get(c).scaledTouchSlop

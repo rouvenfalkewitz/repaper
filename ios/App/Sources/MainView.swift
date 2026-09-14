@@ -68,13 +68,13 @@ struct MainView: View {
                                 if NfcReader.available {
                                     nfcTapButton
                                     if sheets.sheets.count > 1 {
-                                        Button { pickFor = jobs.first } label: {
+                                        Button { startFirstWaiting() } label: {
                                             Text("or choose from the list")
                                                 .font(Ui.mono(11)).foregroundColor(Ui.text3).underline()
                                         }
                                     }
                                 } else {
-                                    UiButton(label: sheets.sheets.count > 1 ? "Choose the sheet" : "Print", primary: true) { pickFor = jobs.first }
+                                    UiButton(label: sheets.sheets.count > 1 ? "Choose the sheet" : "Print", primary: true) { startFirstWaiting() }
                                 }
                             }
                         }
@@ -203,10 +203,26 @@ struct MainView: View {
             info = "This sheet isn't set up for tapping on this iPhone yet — add it in the Sheets tab, or hold it there to set up tapping."
             return
         }
-        guard let job = jobs.first else {
-            info = "That's \(known.name) — nothing waiting to print."; return
+        // a waiting item is either a local job or a Print2Go job relayed from a Dock —
+        // print whichever is waiting on the tapped sheet (this is what a tap means)
+        if let job = jobs.first {
+            print(job: job, on: known)
+        } else if let p = cloud.pending.first {
+            printMirror(p, on: known)
+        } else {
+            info = "That's \(known.name) — nothing waiting to print."
         }
-        print(job: job, on: known)
+    }
+
+    /// Start the first waiting item (a local job or a Print2Go job) on a chosen sheet —
+    /// print straight away when there's a single sheet, otherwise open the sheet picker.
+    private func startFirstWaiting() {
+        let only = sheets.sheets.count == 1 ? sheets.sheets.first : nil
+        if let job = jobs.first {
+            if let s = only { print(job: job, on: s) } else { pickFor = job }
+        } else if let p = cloud.pending.first {
+            if let s = only { printMirror(p, on: s) } else { pickMirrorFor = p }
+        }
     }
 
     // ── help: the how-to hides until you ask for it ──────────────────────────
@@ -479,41 +495,60 @@ struct MainView: View {
     }
 }
 
-/// Swipe a waiting-job card left to reveal a red discard button (trash, no label).
-/// Tapping the card still picks a sheet; a small drag reveals discard; tap the card
-/// again (while revealed) to snap it closed.
+/// Swipe a waiting-job card left to reveal a red discard action (trash, no label).
+/// Tapping the card picks a sheet; swiping left reveals discard; tapping the card
+/// again (while revealed) snaps it closed. A full-bleed red panel sits behind the
+/// card so any amount of reveal reads as an intentional swipe, not a floating pill.
 struct SwipeToDiscard<Content: View>: View {
     let onTap: () -> Void
     let onDiscard: () -> Void
     @ViewBuilder var content: Content
-    @State private var offset: CGFloat = 0
-    private let reveal: CGFloat = 72
+    @State private var offset: CGFloat = 0        // resting/live x of the card (0 or -reveal)
+    @State private var startOffset: CGFloat = 0   // offset captured at the start of a swipe
+    @State private var dragging = false
+    private let reveal: CGFloat = 76
+
+    private var isOpen: Bool { offset <= -reveal + 8 }
 
     var body: some View {
         ZStack(alignment: .trailing) {
-            Button {
-                withAnimation(.easeOut(duration: 0.16)) { offset = 0 }
-                onDiscard()
-            } label: {
+            // the red panel fills the card's footprint; the trash sits at the trailing edge
+            ZStack(alignment: .trailing) {
+                Ui.red
                 Image(systemName: "trash")
-                    .font(.system(size: 19, weight: .semibold))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(Ui.onAccent)
-                    .frame(width: reveal).frame(maxHeight: .infinity)
-                    .background(RoundedRectangle(cornerRadius: 16).fill(Ui.red))
+                    .frame(width: reveal)
             }
-            .opacity(offset < -6 ? 1 : 0)
-            .padding(.top, 8)   // the cards carry a .padding(.top, 8)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .padding(.top, 8)                     // matches the card's own .padding(.top, 8)
+            .opacity(offset < -1 ? 1 : 0)
+            .allowsHitTesting(isOpen)             // only tappable once fully revealed
+            .onTapGesture { snap(open: false); onDiscard() }
 
             content
                 .offset(x: offset)
                 .contentShape(Rectangle())
-                .onTapGesture { if offset != 0 { withAnimation(.easeOut(duration: 0.16)) { offset = 0 } } else { onTap() } }
+                .onTapGesture { if offset != 0 { snap(open: false) } else { onTap() } }
                 .gesture(
-                    DragGesture(minimumDistance: 16, coordinateSpace: .local)
-                        .onChanged { v in if v.translation.width < 0 { offset = max(-reveal - 20, v.translation.width) } }
-                        .onEnded { v in withAnimation(.easeOut(duration: 0.2)) { offset = v.translation.width < -reveal * 0.5 ? -reveal : 0 } }
+                    DragGesture(minimumDistance: 18, coordinateSpace: .local)
+                        .onChanged { v in
+                            // engage only on a clearly horizontal drag, so swiping up/down
+                            // over a card scrolls the list instead of dragging the card
+                            guard abs(v.translation.width) >= abs(v.translation.height) else { return }
+                            if !dragging { dragging = true; startOffset = offset }
+                            offset = min(0, max(-reveal - 24, startOffset + v.translation.width))
+                        }
+                        .onEnded { _ in
+                            dragging = false
+                            snap(open: offset < -reveal * 0.5)
+                        }
                 )
         }
+    }
+
+    private func snap(open: Bool) {
+        withAnimation(.easeOut(duration: 0.2)) { offset = open ? -reveal : 0 }
     }
 }
 
