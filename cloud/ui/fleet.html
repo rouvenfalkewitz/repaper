@@ -253,9 +253,9 @@ function openDetails(id) {
         <div class="det-headline">${statusPill(d)}<div class="det-sub mono">${esc([st.printer, d.site].filter(Boolean).join(" · ")) || esc(d.kind)}${d.version ? " · v" + esc(d.version) : ""}</div></div>
       </div>
       <div class="det-actions">
-        ${st.lan ? `<a class="btn primary small openbtn" href="${esc(st.lan)}" target="_blank" rel="noopener">${ICON.external}<span>Open device page</span></a>` : ""}
-        <button class="btn soft small" onclick="identifyDevice('${esc(d.id)}', this)" title="Blinks this Dock's light ring so you can spot it in the room" ${d.online ? "" : "disabled"}>${ICON.ping}<span>Find it</span></button>
-        <button class="btn soft small" onclick="remoteReboot('${esc(d.id)}', this)" title="Restart the device — it reports back in about a minute" ${d.online ? "" : "disabled"}>${ICON.restart}<span>Restart</span></button>
+        ${st.lan ? `<a class="btn primary openbtn" href="${esc(st.lan)}" target="_blank" rel="noopener">${ICON.external}<span>Open device page</span></a>` : ""}
+        <button class="btn soft" onclick="identifyDevice('${esc(d.id)}', this)" title="Blinks this Dock's light ring so you can spot it in the room" ${d.online ? "" : "disabled"}>${ICON.ping}<span>Find it</span></button>
+        <button class="btn soft" onclick="remoteReboot('${esc(d.id)}', this)" title="Restart the device — it reports back in about a minute" ${d.online ? "" : "disabled"}>${ICON.restart}<span>Restart</span></button>
       </div>
       ${st.lan ? `<p class="det-note">${ICON.globe}<span>Opens only on the Dock's own network — <b>${esc(lanHost)}</b></span></p>` : ""}
       <div class="dstats det-stats">${deviceStats(d).join("")}</div>

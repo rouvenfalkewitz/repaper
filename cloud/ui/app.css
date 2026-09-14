@@ -720,14 +720,15 @@ a.stat-tile:hover, .dev:hover {
 
 /* ══ Fleet stat tiles + redesigned details modal ═════════════════════════════ */
 .dstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px }
-.dstat { display: grid; justify-items: center; align-content: center; gap: 5px; padding: 12px 6px; min-height: 82px; border-radius: 12px; text-align: center;
-  background: linear-gradient(180deg, var(--surface-2), var(--bg)); border: 1px solid var(--border); box-shadow: inset 0 1px 0 rgba(255,255,255,.04) }
-.dstat .di { display: inline-grid; color: var(--text-3) } .dstat .di svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round }
+.dstat { display: grid; justify-items: center; align-content: center; gap: 7px; padding: 13px 6px 12px; min-height: 88px; border-radius: 12px; text-align: center;
+  background: var(--bg); border: 1px solid var(--border) }
+.dstat .di { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: var(--surface-2); color: var(--text-2) }
+.dstat .di svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round }
 .dstat b { font-family: var(--font-display); font-weight: 800; font-size: 1.375rem; letter-spacing: -.02em; line-height: 1; color: var(--text); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .dstat b.txt { font-size: 1.0625rem; font-weight: 700; letter-spacing: -.01em }
 .dstat .dl { font: 700 .5625rem var(--font-display); font-stretch: 108%; letter-spacing: .05em; text-transform: uppercase; color: var(--text-3); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
-.dstat.warn { border-color: transparent; background: var(--amber-tint) } .dstat.warn .di, .dstat.warn b, .dstat.warn .dl { color: var(--amber) }
-.dstat.ok .di, .dstat.ok b, .dstat.ok .dl { color: var(--accent-text) }
+.dstat.warn { border-color: transparent; background: var(--amber-tint) } .dstat.warn .di { background: transparent; color: var(--amber) } .dstat.warn b, .dstat.warn .dl { color: var(--amber) }
+.dstat.ok .di { background: var(--accent-tint); color: var(--accent-text) } .dstat.ok b, .dstat.ok .dl { color: var(--accent-text) }
 .dstat.muted b { color: var(--text-3) }
 .dev.off .dstat b { color: var(--text-2) }
 
@@ -794,3 +795,44 @@ a.stat-tile:hover, .dev:hover {
 .det-sechead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 10px }
 .det-sechead h2 { margin: 0 }
 /* ════════════════════════════════════════════════════════════════════════════ */
+
+/* ══ Auth (login / 2FA) — the app's glowing brand aesthetic ══════════════════ */
+.auth { min-height: 100svh; display: grid; grid-template-columns: 1.05fr .95fr }
+.authside { position: relative; overflow: hidden; border-right: 1px solid var(--border);
+  background: radial-gradient(120% 90% at 28% 18%, var(--carbon-3), var(--carbon) 62%); display: grid; place-items: center; padding: var(--s-8) }
+.authside::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(46% 40% at 40% 42%, rgba(30,227,165,.13), transparent 70%) }
+.authside-in { position: relative; max-width: 420px; display: grid; justify-items: start; gap: var(--s-5) }
+.authlogo .logo, .authlogo-sm .logo { height: 26px; display: block } .authlogo .logo .ring, .authlogo-sm .logo .ring { fill: var(--accent) } .authlogo .logo .letters, .authlogo-sm .logo .letters { fill: var(--text) }
+.authring { margin: var(--s-2) 0 }
+.authtag { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: clamp(1.9rem, 3.4vw, 2.75rem); line-height: 1.03; letter-spacing: -.03em; font-stretch: 116%; color: var(--text); text-wrap: balance }
+.authtag em { font-style: normal; color: var(--accent-text) }
+.authtagsub { margin: 0; color: var(--text-2); font-size: 1.0625rem; line-height: 1.55; max-width: 40ch }
+.authmain { display: grid; place-items: center; padding: var(--s-6) var(--s-5) }
+.authmain-in { width: min(400px, 100%); display: grid; gap: var(--s-5) }
+.authlogo-sm { display: none; justify-content: center }
+@media (max-width: 900px) { .authlogo-sm { display: flex } .authlogo-sm .logo { height: 30px } }
+.authmain .login { width: 100%; margin: 0; padding: var(--s-6); box-shadow: var(--shadow-float) }
+/* 2FA step */
+.card.authcode { text-align: center }
+.card.authcode .sub { margin: -8px 0 0 }
+.card.authcode form { margin-top: 4px }
+.authbadge { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; margin: 0 auto; background: var(--accent-tint); color: var(--accent-text);
+  box-shadow: 0 0 0 1px rgba(30,227,165,.25), 0 0 26px -6px var(--accent) }
+.authbadge svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round }
+.codebig { font-family: var(--font-mono); font-size: 1.75rem; letter-spacing: .3em; text-align: center; padding: 14px 12px; border-radius: var(--r-control); border: 1px solid var(--border-strong); background: var(--bg); color: var(--text); width: 100% }
+.codebig::placeholder { color: var(--text-3); letter-spacing: .3em }
+.codebig:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint) }
+/* mobile: hide the brand panel, show the inline logo — placed last to win the cascade */
+@media (max-width: 900px) { .auth { grid-template-columns: 1fr } .authside { display: none } .authlogo-sm { display: flex } }
+/* ════════════════════════════════════════════════════════════════════════════ */
+
+/* 2FA status + setup */
+.okic:not(.off) { box-shadow: 0 0 0 1px rgba(30,227,165,.22), 0 0 22px -8px var(--accent) }
+.twofa-setup .twofa-steps { display: grid; gap: 14px }
+.twofa-step { display: flex; align-items: flex-start; gap: 12px }
+.twofa-step .tnum { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--accent-tint); color: var(--accent-text); font: 800 .75rem var(--font-display) }
+.twofa-step b { display: block; font-weight: 600; font-size: .9375rem } .twofa-step span { display: block; color: var(--text-2); font-size: .8125rem; margin-top: 2px }
+.qrwrap { justify-self: center; box-shadow: 0 0 0 1px var(--border), 0 10px 30px -12px rgba(0,0,0,.6) }
+.secretline { display: flex; align-items: center; gap: 10px; justify-content: center; flex-wrap: wrap }
+.secretline .mono { font-size: .75rem; color: var(--text-2); background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; overflow-wrap: anywhere; letter-spacing: .12em }
+.twofa-setup .codebig { font-size: 1.5rem; letter-spacing: .26em }

@@ -148,12 +148,15 @@ function renderTwofa() {
 async function startEnable() {
   try {
     const r = await api("/api/2fa/setup", {});
-    setModal("Turn on two-factor auth", `<form class="ed" data-ed="enable">
-      <p>Scan this with your authenticator app, then enter the 6-digit code it shows.</p>
-      <div class="qrwrap"><img src="${r.qr}" width="180" height="180" alt="QR code for the authenticator app"></div>
-      <p class="mono" style="font-size:.6875rem;color:var(--text-3);overflow-wrap:anywhere">Can't scan? Enter this secret manually: ${esc(r.secret)}</p>
-      <label for="edCode">Code from the app</label><input id="edCode" name="code" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" required autocomplete="one-time-code" style="font-family:var(--font-mono);letter-spacing:.2em">
-      <div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Verify & turn on</button></div></form>`);
+    setModal("Turn on two-factor auth", `<form class="ed twofa-setup" data-ed="enable">
+      <div class="twofa-steps">
+        <div class="twofa-step"><span class="tnum">1</span><div><b>Scan the code</b><span>Open your authenticator app (1Password, Google Authenticator, Apple Passwords…) and scan this.</span></div></div>
+        <div class="qrwrap"><img src="${r.qr}" width="184" height="184" alt="QR code for the authenticator app"></div>
+        <div class="secretline"><span class="mono">${esc(r.secret)}</span><button class="btn ghost small" type="button" onclick="navigator.clipboard.writeText('${esc(r.secret)}').then(()=>toast('Secret copied.'))">${ICON.copy}Copy</button></div>
+        <div class="twofa-step"><span class="tnum">2</span><div><b>Enter the code it shows</b></div></div>
+        <input id="edCode" class="codebig" name="code" inputmode="numeric" pattern="[0-9 ]*" maxlength="7" required autocomplete="one-time-code" placeholder="000000" aria-label="Code from the app">
+      </div>
+      <div class="row end"><button class="btn outline" type="button" data-act="close">Cancel</button><button class="btn primary" type="submit">Verify &amp; turn on</button></div></form>`);
   } catch (x) { toast(x.message, "err"); }
 }
 function openDisable() {
