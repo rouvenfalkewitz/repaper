@@ -13,7 +13,13 @@
 <div class="layout">
   <aside class="side" id="side"></aside>
   <main class="main">
-    <div class="pagehead"><h1>Fleet</h1><div class="fleet-controls"><div class="viewtoggle" id="viewtoggle"></div><div class="filters" id="filters"></div></div></div>
+    <div class="pagehead"><h1>Fleet</h1>
+      <div class="fleet-controls">
+        <label class="fsearch"><span class="si"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></span><input id="fsearch" type="search" placeholder="Search devices…" autocomplete="off" spellcheck="false"></label>
+        <div class="viewtoggle" id="viewtoggle"></div>
+      </div>
+    </div>
+    <div class="filterbar" id="filters"></div>
     <div id="alerts"></div>
     <div class="fleet" id="fleet"></div>
   </main>
@@ -84,27 +90,27 @@ document.addEventListener("click", e => {
   VIEW = b.dataset.v; try { localStorage.setItem("fleetView", VIEW); } catch {}
   renderViewToggle(); render();
 });
+let Q = "";
 renderViewToggle();
+el("fsearch").addEventListener("input", e => { Q = e.target.value.trim().toLowerCase(); render(); });
 el("fleet").innerHTML = skeletons("cards", 2);
 
 /* the stats, as clear icon + value + unit tiles (equal width, uniform icons) */
 function statTile(icon, value, label, tone) {
   const isTxt = typeof value === "string" && isNaN(Number(value));
-  return `<div class="dstat ${tone || ""}"><b class="${isTxt ? "txt" : ""}">${isTxt ? esc(value) : value}</b><span class="dl">${icon}<span>${label}</span></span></div>`;
+  return `<div class="dstat ${tone || ""}"><span class="di">${icon}</span><b class="${isTxt ? "txt" : ""}">${isTxt ? esc(value) : value}</b><span class="dl">${label}</span></div>`;
 }
-function deviceStats(d, full) {
+function deviceStats(d) {
   const st = d.status || {}, sheets = st.sheets || [];
   const low = sheets.filter(x => x.battery_volts != null && x.battery_volts * 1000 < 2700).length;
-  const phones = (d.mirror_phones || []).length, jobs = st.jobs_today || 0;
-  if (d.kind === "go") {
-    const a = [statTile(ICON.printer, jobs, "today")];
-    if (d.mirror_from_name) a.push(statTile(ICON.dock, d.mirror_from_name, "prints from"));
-    return a;
-  }
-  const a = [statTile(ICON.sheet, sheets.length, sheets.length === 1 ? "sheet" : "sheets"), statTile(ICON.printer, jobs, "today")];
-  if (low) a.push(statTile(ICON.warn, low, "low", "warn"));
-  if (d.print2go) a.push(statTile(ICON.phone, phones, phones === 1 ? "phone" : "phones"));
-  return full ? a : a.slice(0, 3);
+  const jobs = st.jobs_today || 0;
+  const p2gOn = !!(d.print2go || d.mirror_from);
+  return [
+    low ? statTile(ICON.sheet, sheets.length, `${low} low`, "warn")
+        : statTile(ICON.sheet, sheets.length, sheets.length === 1 ? "sheet" : "sheets"),
+    statTile(ICON.printer, jobs, "today"),
+    statTile(ICON.phone, p2gOn ? "On" : "Off", "print2go", p2gOn ? "ok" : "muted"),
+  ];
 }
 function statusPill(d) {
   const st = d.status || {};
@@ -143,7 +149,7 @@ function card(d, showSite = true) {
     <div class="dev-foot">
       <span class="presence ${off ? "off" : ""} ${printing ? "printing" : ""}"><span class="dot"></span><b>${off ? "seen " + ago(d.last_seen) : printing ? "printing" : "online"}</b></span>
       ${upd ? `<span class="upi" title="Update available: ${esc(d.target_version)}" aria-label="Update available">${ICON.download}</span>` : ""}
-      <span class="iconrow"><button class="iconbtn" data-act="identify" title="Identify" aria-label="Identify" ${off ? "disabled" : ""}>${ICON.ping}</button><button class="iconbtn" data-act="name" title="Rename" aria-label="Rename">${ICON.pencil}</button><button class="iconbtn danger" data-act="remove" title="Remove" aria-label="Remove">${ICON.trash}</button></span>
+      <span class="iconrow"><button class="iconbtn" data-act="identify" title="Find it — blink the light ring" aria-label="Find it" ${off ? "disabled" : ""}>${ICON.ping}</button><button class="iconbtn" data-act="name" title="Rename" aria-label="Rename">${ICON.pencil}</button><button class="iconbtn danger" data-act="remove" title="Remove" aria-label="Remove">${ICON.trash}</button></span>
     </div></div>`;
 }
 
@@ -167,7 +173,7 @@ function listRow(d, showSite = true) {
     <span class="fcell">${status}</span>
     <span class="fcell mono">${d.version ? "v" + esc(d.version) : "—"}${d.target_version && d.target_version !== d.version ? ` <span class="dchip mono">↑ ${esc(d.target_version)}</span>` : ""}</span>
     <span class="fcell mono">${count}${low ? ` <span class="dchip mono warn">${low} low</span>` : ""}</span>
-    <span class="fcell fact-cell"><span class="iconrow">${openBtn}<button class="iconbtn" data-act="identify" title="Identify" aria-label="Identify" ${off ? "disabled" : ""}>${ICON.ping}</button><button class="iconbtn" data-act="name" title="Rename" aria-label="Rename">${ICON.pencil}</button><button class="iconbtn danger" data-act="remove" title="Remove" aria-label="Remove">${ICON.trash}</button></span></span>
+    <span class="fcell fact-cell"><span class="iconrow">${openBtn}<button class="iconbtn" data-act="identify" title="Find it — blink the light ring" aria-label="Find it" ${off ? "disabled" : ""}>${ICON.ping}</button><button class="iconbtn" data-act="name" title="Rename" aria-label="Rename">${ICON.pencil}</button><button class="iconbtn danger" data-act="remove" title="Remove" aria-label="Remove">${ICON.trash}</button></span></span>
   </div>`;
 }
 const LIST_HEAD = `<div class="frow head"><span class="fcell">Device</span><span class="fcell">Status</span><span class="fcell">Software</span><span class="fcell">Sheets</span><span class="fcell"></span></div>`;
@@ -176,23 +182,32 @@ function render() {
   const list = VIEW === "list";
   el("fleet").classList.toggle("aslist", list);
   const fn = (FILTERS.find(([k]) => k === FILTER) || FILTERS[0])[2];
-  const shown = S.devices.filter(fn);
+  let shown = S.devices.filter(fn);
+  if (Q) shown = shown.filter(d => [d.name, (d.status || {}).printer, d.site, d.id].filter(Boolean).join(" ").toLowerCase().includes(Q));
+
+  // group by named site only — devices with no site list plainly, no "No site" header
   const bySite = new Map();
   for (const d of shown) { const k = d.site || ""; if (!bySite.has(k)) bySite.set(k, []); bySite.get(k).push(d); }
-  const grouped = bySite.size > 1;
+  const named = [...bySite.entries()].filter(([k]) => k).sort((a, b) => a[0].localeCompare(b[0]));
+  const nosite = bySite.get("") || [];
+
+  const renderDevs = (devs) => list
+    ? `<div class="flist">${LIST_HEAD}${devs.map(d => listRow(d, false)).join("")}</div>`
+    : devs.map(d => card(d, false)).join("");
+
   let html = "";
-  if (grouped) {
-    for (const [site, devs] of [...bySite.entries()].sort((a, b) => (a[0] || "~").localeCompare(b[0] || "~")))
-      html += `<div class="sitehead">${esc(site || "No site")}<span>${devs.length}</span></div>` + (list
-        ? `<div class="flist">${LIST_HEAD}${devs.map(d => listRow(d, false)).join("")}</div>`
-        : devs.map(d => card(d, false)).join(""));
+  if (named.length) {
+    if (nosite.length) html += renderDevs(nosite);
+    for (const [site, devs] of named) html += `<div class="sitehead">${esc(site)}<span>${devs.length}</span></div>` + renderDevs(devs);
   } else {
-    html = list ? `<div class="flist">${LIST_HEAD}${shown.map(d => listRow(d)).join("")}</div>` : shown.map(d => card(d)).join("");
+    html = renderDevs(shown);
   }
+
+  const filtered = Q || FILTER !== "all";
   setHTML("fleet", html
-    + (FILTER !== "all" && !shown.length ? `<div class="empty-hint" style="grid-column:1/-1">Nothing here — switch the filter above.</div>` : "")
-    + (FILTER === "all" && !list ? `<button class="addcard" type="button" onclick="openModal('claim')"><span class="plus">${ICON.plus}</span><span>${S.devices.length ? "Claim a device" : "Claim your first device"}</span></button>` : "")
-    + (FILTER === "all" && list && S.devices.length ? `<button class="btn outline claimline" type="button" onclick="openModal('claim')">${ICON.plus}<span>Claim a device</span></button>` : "")
+    + (!shown.length && filtered ? `<div class="empty-hint" style="grid-column:1/-1">No devices match${Q ? ` “${esc(Q)}”` : " this filter"}.</div>` : "")
+    + (!filtered && !list ? `<button class="addcard" type="button" onclick="openModal('claim')"><span class="plus">${ICON.plus}</span><span>${S.devices.length ? "Claim a device" : "Claim your first device"}</span></button>` : "")
+    + (!filtered && list && S.devices.length ? `<button class="btn outline claimline" type="button" onclick="openModal('claim')">${ICON.plus}<span>Claim a device</span></button>` : "")
     + (S.devices.length ? "" : `<div class="empty-hint" style="grid-column:1/-1">A Dock shows its claim code on its settings page under <b>RePaper Cloud</b> once it is pointed at this cloud. Enter the code here and it joins your fleet.</div>`));
 }
 
@@ -239,12 +254,11 @@ function openDetails(id) {
       </div>
       <div class="det-actions">
         ${st.lan ? `<a class="btn primary small openbtn" href="${esc(st.lan)}" target="_blank" rel="noopener">${ICON.external}<span>Open device page</span></a>` : ""}
-        <button class="btn outline small" onclick="identifyDevice('${esc(d.id)}', this)" ${d.online ? "" : "disabled"}>${ICON.ping}<span>Identify</span></button>
-        <button class="btn outline small" onclick="requestDiag('${esc(d.id)}', this)" ${d.online ? "" : "disabled"}>Request logs</button>
-        <button class="btn outline small" onclick="remoteReboot('${esc(d.id)}', this)" ${d.online ? "" : "disabled"}>Restart</button>
+        <button class="btn soft small" onclick="identifyDevice('${esc(d.id)}', this)" title="Blinks this Dock's light ring so you can spot it in the room" ${d.online ? "" : "disabled"}>${ICON.ping}<span>Find it</span></button>
+        <button class="btn soft small" onclick="remoteReboot('${esc(d.id)}', this)" title="Restart the device — it reports back in about a minute" ${d.online ? "" : "disabled"}>${ICON.restart}<span>Restart</span></button>
       </div>
       ${st.lan ? `<p class="det-note">${ICON.globe}<span>Opens only on the Dock's own network — <b>${esc(lanHost)}</b></span></p>` : ""}
-      <div class="dstats det-stats">${deviceStats(d, true).join("")}</div>
+      <div class="dstats det-stats">${deviceStats(d).join("")}</div>
       <div class="det-card"><div class="facts grid">${
         fact("Kind", d.kind === "dock-light" ? "Dock Light" : d.kind) + fact("Reader", st.identifier)
         + (d.dormant ? fact("Status", "signed out (seat kept)") : "")
@@ -255,7 +269,7 @@ function openDetails(id) {
       ${p2gCard}
       ${sheets.length ? `<section class="det-sec"><h2>Sheets</h2><div class="dsheets">${rows}</div></section>` : ""}
       ${tl ? `<section class="det-sec"><h2>Activity</h2><div class="det-timeline">${tl}</div></section>` : ""}
-      <section class="det-sec"><h2>Diagnostics</h2>${full.diag ? `<pre class="diaglog mono">${esc(full.diag.log)}</pre><div class="hint" style="color:var(--text-3);font-size:.75rem">captured ${ago(full.diag.at)}</div>` : `<div class="devmeta">No bundle yet — use “Request logs” above.</div>`}</section>`;
+      <section class="det-sec"><div class="det-sechead"><h2>Diagnostics</h2><button class="btn soft small" onclick="requestDiag('${esc(d.id)}', this)" ${d.online ? "" : "disabled"}>${ICON.doc}<span>Request logs</span></button></div>${full.diag ? `<pre class="diaglog mono">${esc(full.diag.log)}</pre><div class="hint" style="color:var(--text-3);font-size:.75rem">captured ${ago(full.diag.at)}</div>` : `<div class="devmeta">No log yet — tap “Request logs” and it arrives in a few seconds.</div>`}</section>`;
     el("detDlg").showModal();
   }).catch(x => toast(x.message, "err"));
 }
@@ -265,8 +279,8 @@ async function remoteReboot(id, b) {
   catch (x) { done("Failed", true); toast(x.message, "err"); }
 }
 async function identifyDevice(id, b) {
-  const done = busy(b, "Saying hi…");
-  try { await api(`/api/devices/${id}/identify`, {}); done("Sent"); toast("The device says hi — watch its ring / log."); }
+  const done = busy(b, "Blinking…");
+  try { await api(`/api/devices/${id}/identify`, {}); done("Blinking"); toast("Blinking now — find the Dock whose light ring is flashing."); }
   catch (x) { done("Failed", true); toast(x.message, "err"); }
 }
 async function requestDiag(id, b) {
@@ -319,7 +333,7 @@ el("fleet").addEventListener("click", async e => {
   }
   if (act === "identify") {
     b.disabled = true;
-    try { await api(`/api/devices/${id}/identify`, {}); toast("The device says hi — watch its ring / log."); }
+    try { await api(`/api/devices/${id}/identify`, {}); toast("Blinking now — find the Dock whose light ring is flashing."); }
     catch (x) { toast(x.message, "err"); }
     b.disabled = false;
   }
