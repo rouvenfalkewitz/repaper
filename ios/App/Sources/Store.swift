@@ -134,7 +134,9 @@ extension Sheet {
         self.init(id: id,
                   name: (d["name"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? id,
                   address: (d["address"] as? String) ?? id,
-                  keyHex: landing?.keyHex,
+                  // the raw AES key comes through for sheets the Dock added without a
+                  // landing link (OD-name / MAC / BLE discovery); fall back to the link's key
+                  keyHex: (d["key"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? landing?.keyHex,
                   bleAddress: nil,
                   landingUrl: link,
                   tagUid: (d["tag_uid"] as? String).flatMap { $0.isEmpty ? nil : $0 },

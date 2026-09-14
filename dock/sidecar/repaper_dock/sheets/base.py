@@ -156,8 +156,10 @@ class SheetRegistry:
 
     def snapshot(self) -> list[dict]:
         """The sheet set the Dock publishes to the cloud so paired phones inherit it as
-        Dock-Labels. `link` is the QR/landing URL (carries the BLE key); `model` is a JSON
-        string; the NFC fields are the one bidirectional zone."""
+        Dock-Labels. `link` is the QR/landing URL (carries the BLE key); `key` is the raw
+        AES key hex, sent so a phone can still write to a sheet added WITHOUT a landing
+        link (by OD-name / MAC / BLE discovery); `model` is a JSON string; the NFC fields
+        are the one bidirectional zone."""
         out = []
         for sid, e in self._data.items():
             keys = e.get("keys", {})
@@ -166,6 +168,7 @@ class SheetRegistry:
                 "name": e.get("name") or sid,
                 "address": e.get("address", ""),
                 "link": keys.get("landing", ""),
+                "key": keys.get("key", ""),
                 "model": json.dumps(e.get("model", {})),
                 "tag_uid": keys.get("tag_uid"),
                 "tag_programmed": bool(keys.get("tag_programmed", False)),

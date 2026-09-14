@@ -116,6 +116,10 @@ if (!dcols.includes("claimed_by")) db.exec("ALTER TABLE device ADD COLUMN claime
   if (!dcols.includes("diag")) db.exec("ALTER TABLE device ADD COLUMN diag TEXT");
   if (!dcols.includes("mirror_to")) db.exec("ALTER TABLE device ADD COLUMN mirror_to TEXT");   // v1, unused now
   if (!dcols.includes("mirror_from")) db.exec("ALTER TABLE device ADD COLUMN mirror_from TEXT"); // Print2Go: the Dock a Go device pulls from
+  // Print2Go: the raw AES key for a Dock-Label sheet added without a landing link,
+  // so a paired phone can still write to it over BLE
+  const dscols = (db.prepare("PRAGMA table_info(dock_sheet)").all() as { name: string }[]).map((c) => c.name);
+  if (dscols.length && !dscols.includes("key")) db.exec("ALTER TABLE dock_sheet ADD COLUMN key TEXT NOT NULL DEFAULT ''");
   // Print2Go shared-pool job: claimable by the source Dock + every phone mirroring it
   const mjCols = (db.prepare("PRAGMA table_info(mirror_job)").all() as { name: string }[]).map((c) => c.name);
   if (mjCols.length && !mjCols.includes("dock_id")) db.exec("DROP TABLE mirror_job");   // v1 schema → rebuild (jobs are ephemeral)
@@ -189,6 +193,7 @@ CREATE TABLE IF NOT EXISTS dock_sheet (
   name TEXT NOT NULL DEFAULT '',
   address TEXT NOT NULL DEFAULT '',
   link TEXT NOT NULL DEFAULT '',
+  key TEXT NOT NULL DEFAULT '',
   model TEXT NOT NULL DEFAULT '{}',
   tag_uid TEXT,
   tag_programmed INTEGER NOT NULL DEFAULT 0,
@@ -340,12 +345,12 @@ export const clearPushToken = (id: string) =>
 // ── Print2Go: a Dock's sheets, inherited by its paired phones as Dock-Labels ──
 export type DockSheetRow = {
   dock_id: string; sheet_id: string; name: string; address: string;
-  link: string; model: string; tag_uid: string | null; tag_programmed: number;
+  link: string; key: string; model: string; tag_uid: string | null; tag_programmed: number;
 };
 export const dockSheets = (dockId: string): DockSheetRow[] =>
   db.prepare("SELECT * FROM dock_sheet WHERE dock_id=? ORDER BY sheet_id").all(dockId) as DockSheetRow[];
 
-type IncomingSheet = { id: string; name?: string; address?: string; link?: string; model?: string; tag_uid?: string | null; tag_programmed?: boolean };
+type IncomingSheet = { id: string; name?: string; address?: string; link?: string; key?: string; model?: string; tag_uid?: string | null; tag_programmed?: boolean };
 /** Snapshot upsert: the Dock owns the definition zone. Rows it no longer lists are
  *  dropped; a snapshot that omits NFC leaves a phone-learned tag intact. */
 export const syncDockSheets = (dockId: string, sheets: IncomingSheet[]): void => {
@@ -353,15 +358,15 @@ export const syncDockSheets = (dockId: string, sheets: IncomingSheet[]): void =>
   const existing = new Map(dockSheets(dockId).map((r) => [r.sheet_id, r]));
   const del = db.prepare("DELETE FROM dock_sheet WHERE dock_id=? AND sheet_id=?");
   for (const id of existing.keys()) if (!keep.has(id)) del.run(dockId, id);
-  const up = db.prepare(`INSERT INTO dock_sheet(dock_id,sheet_id,name,address,link,model,tag_uid,tag_programmed)
-    VALUES(@dock_id,@sheet_id,@name,@address,@link,@model,@tag_uid,@tag_programmed)
-    ON CONFLICT(dock_id,sheet_id) DO UPDATE SET name=@name,address=@address,link=@link,model=@model,
+  const up = db.prepare(`INSERT INTO dock_sheet(dock_id,sheet_id,name,address,link,key,model,tag_uid,tag_programmed)
+    VALUES(@dock_id,@sheet_id,@name,@address,@link,@key,@model,@tag_uid,@tag_programmed)
+    ON CONFLICT(dock_id,sheet_id) DO UPDATE SET name=@name,address=@address,link=@link,key=@key,model=@model,
       tag_uid=COALESCE(@tag_uid,tag_uid), tag_programmed=CASE WHEN @tag_uid IS NULL THEN tag_programmed ELSE @tag_programmed END`);
   for (const s of sheets) {
     const prev = existing.get(s.id);
     up.run({
       dock_id: dockId, sheet_id: s.id, name: s.name ?? "", address: s.address ?? "",
-      link: s.link ?? "", model: s.model ?? "{}",
+      link: s.link ?? "", key: s.key ?? "", model: s.model ?? "{}",
       tag_uid: s.tag_uid ?? null,
       tag_programmed: s.tag_programmed ? 1 : (prev?.tag_programmed ?? 0),
     });

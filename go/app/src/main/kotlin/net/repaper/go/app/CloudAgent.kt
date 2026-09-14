@@ -41,6 +41,7 @@ class CloudAgent(private val context: Context) {
     /** A Print2Go job offered but not yet claimed — first to actually print wins. */
     data class Pending(val id: String, val name: String, val from: String)
     @Volatile var pending: List<Pending> = emptyList(); private set
+    private val dismissed = HashSet<String>()   // Print2Go jobs the user swiped away on this phone
 
     /** The FCM registration token — handed over so a closed app can be woken for a Dock job.
      *  Set from the Firebase messaging service; relayed to the cloud on each connect. */
@@ -119,7 +120,7 @@ class CloudAgent(private val context: Context) {
                 // a Dock offered a job to the pool — remember it; we only claim when we print
                 val job = msg.optJSONObject("job") ?: return
                 val id = job.optString("id")
-                if (id.isNotEmpty() && pending.none { it.id == id }) {
+                if (id.isNotEmpty() && pending.none { it.id == id } && !dismissed.contains(id)) {
                     pending = pending + Pending(id, job.optString("name", "job"), job.optString("from", "a Dock"))
                     onJobArrived?.invoke()
                 }
@@ -158,6 +159,14 @@ class CloudAgent(private val context: Context) {
     }
     fun jobDone(id: String) { post("mirror-job/$id/done") }
     fun jobReleased(id: String) { post("mirror-job/$id/release") }
+
+    /** The user swiped a waiting Print2Go job away on this phone: stop offering it here
+     *  (it stays available to other devices — first to print still wins). */
+    fun dismiss(id: String) {
+        dismissed.add(id)
+        pending = pending.filterNot { it.id == id }
+        onJobArrived?.invoke()
+    }
 
     /** Relay a learned NFC tag up so the paired Dock and other phones converge (the one
      *  field that syncs back). Optimistically reflected locally too. */

@@ -51,7 +51,10 @@ class Registry(context: Context) {
         for (e in InheritedSheets.entries) {
             val id = e.optString("id"); if (id.isEmpty()) continue
             val link = e.optString("link").ifEmpty { null }
-            val keyHex = link?.let { runCatching { LandingUrl.parse(it).keyHex }.getOrNull() }
+            // the raw AES key comes through for sheets the Dock added without a landing
+            // link (OD-name / MAC / BLE discovery); fall back to the link's embedded key
+            val keyHex = e.optString("key").ifEmpty { null }
+                ?: link?.let { runCatching { LandingUrl.parse(it).keyHex }.getOrNull() }
             val tag = e.optString("tag_uid").ifEmpty {
                 local.optJSONObject(id)?.optJSONObject("keys")?.optString("tag_uid")?.ifEmpty { null }
             }

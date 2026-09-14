@@ -83,21 +83,23 @@ struct MainView: View {
                             // no picking another sheet or discarding mid-print
                             Group {
                                 ForEach(cloud.pending) { p in
-                                    MirrorCard(pending: p)
-                                        .onTapGesture { if !busy { pickMirrorFor = p } }
+                                    SwipeToDiscard(onTap: { if !busy { pickMirrorFor = p } },
+                                                   onDiscard: { cloud.dismiss(p.id) }) {
+                                        MirrorCard(pending: p)
+                                    }
                                 }
                                 ForEach(jobs, id: \.self) { job in
-                                    JobCard(job: job)
-                                        .onTapGesture { if !busy { pickFor = job } }
-                                        .contextMenu {
-                                            Button(role: .destructive) {
-                                                try? FileManager.default.removeItem(at: job); refresh()
-                                            } label: { Label("Discard", systemImage: "trash") }
-                                        }
+                                    SwipeToDiscard(onTap: { if !busy { pickFor = job } },
+                                                   onDiscard: { try? FileManager.default.removeItem(at: job); refresh() }) {
+                                        JobCard(job: job)
+                                    }
                                 }
                             }
+                            // while a print is running the queue is frozen — no picking or
+                            // discarding mid-print, and no way to kick off a second print
                             .disabled(busy)
                             .opacity(busy ? 0.5 : 1)
+                            .allowsHitTesting(!busy)
                         }
                         Spacer(minLength: 20)
                     }
@@ -471,6 +473,44 @@ struct MainView: View {
     }
 }
 
+/// Swipe a waiting-job card left to reveal a red discard button (trash, no label).
+/// Tapping the card still picks a sheet; a small drag reveals discard; tap the card
+/// again (while revealed) to snap it closed.
+struct SwipeToDiscard<Content: View>: View {
+    let onTap: () -> Void
+    let onDiscard: () -> Void
+    @ViewBuilder var content: Content
+    @State private var offset: CGFloat = 0
+    private let reveal: CGFloat = 72
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            Button {
+                withAnimation(.easeOut(duration: 0.16)) { offset = 0 }
+                onDiscard()
+            } label: {
+                Image(systemName: "trash")
+                    .font(.system(size: 19, weight: .semibold))
+                    .foregroundColor(Ui.onAccent)
+                    .frame(width: reveal).frame(maxHeight: .infinity)
+                    .background(RoundedRectangle(cornerRadius: 16).fill(Ui.red))
+            }
+            .opacity(offset < -6 ? 1 : 0)
+            .padding(.top, 8)   // the cards carry a .padding(.top, 8)
+
+            content
+                .offset(x: offset)
+                .contentShape(Rectangle())
+                .onTapGesture { if offset != 0 { withAnimation(.easeOut(duration: 0.16)) { offset = 0 } } else { onTap() } }
+                .gesture(
+                    DragGesture(minimumDistance: 16, coordinateSpace: .local)
+                        .onChanged { v in if v.translation.width < 0 { offset = max(-reveal - 20, v.translation.width) } }
+                        .onEnded { v in withAnimation(.easeOut(duration: 0.2)) { offset = v.translation.width < -reveal * 0.5 ? -reveal : 0 } }
+                )
+        }
+    }
+}
+
 /// A Print2Go job waiting from a Dock — no local preview (we don't hold the page
 /// until we claim it), just the name and where it came from.
 struct MirrorCard: View {
@@ -487,7 +527,7 @@ struct MirrorCard: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(pending.name)
                     .font(Ui.body(16, weight: 600)).foregroundColor(Ui.text).lineLimit(1)
-                Text("from \(pending.from) · tap to choose a sheet")
+                Text("from \(pending.from) · swipe to discard")
                     .font(Ui.mono(11)).foregroundColor(Ui.text3)
             }
             Spacer()
@@ -519,7 +559,7 @@ struct JobCard: View {
                 Text(JobStore.title(job))
                     .font(Ui.body(16, weight: 600)).foregroundColor(Ui.text)
                     .lineLimit(1)
-                Text("tap to choose a sheet · hold to discard")
+                Text("tap to choose · swipe to discard")
                     .font(Ui.mono(11)).foregroundColor(Ui.text3)
             }
             Spacer()

@@ -29,6 +29,7 @@ struct MirrorPending: Identifiable, Equatable {
     var claimCode: String { Identity.shared.claimCode }
 
     private var running = false
+    private var dismissed: Set<String> = []   // Print2Go jobs the user swiped away on this phone
     private var task: URLSessionWebSocketTask?
     private var pushToken: String?   // APNs token from the app delegate, sent over the socket
 
@@ -114,7 +115,7 @@ struct MirrorPending: Identifiable, Equatable {
             NotificationCenter.default.post(name: .signedOut, object: nil)
         case "mirror_job":
             // a Dock offered a job to the pool — remember it; we only claim when we print
-            if let job = msg["job"] as? [String: Any], let id = job["id"] as? String, pending.allSatisfy({ $0.id != id }) {
+            if let job = msg["job"] as? [String: Any], let id = job["id"] as? String, pending.allSatisfy({ $0.id != id }), !dismissed.contains(id) {
                 pending.append(MirrorPending(id: id, name: job["name"] as? String ?? "job", from: job["from"] as? String ?? "a Dock"))
                 NotificationCenter.default.post(name: .mirrorJobArrived, object: nil)
             }
@@ -159,6 +160,14 @@ struct MirrorPending: Identifiable, Equatable {
     }
     func jobDone(_ id: String) async { _ = try? await post("mirror-job/\(id)/done") }
     func jobReleased(_ id: String) async { _ = try? await post("mirror-job/\(id)/release") }
+
+    /// The user swiped a waiting Print2Go job away on this phone: stop offering it here
+    /// (it stays available to other devices — first to print still wins).
+    func dismiss(_ id: String) {
+        dismissed.insert(id)
+        pending.removeAll { $0.id == id }
+        NotificationCenter.default.post(name: .mirrorJobArrived, object: nil)
+    }
 
     /// The org's Print2Go Docks this phone can print from.
     func print2goDocks() async -> [(id: String, name: String, online: Bool, current: Bool)] {

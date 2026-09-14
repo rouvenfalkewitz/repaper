@@ -1,3 +1,4 @@
+0.0.33 — Print2Go: shares each sheet's encryption key with paired phones so a phone can print onto a Dock's sheet that was added without a QR link (previously failed with "device requires an encryption key").
 0.0.32 — UI polish: a tidy one-line address in the header, the model shown on the Settings page too, and prose set in the reading face instead of the mono face.
 0.0.31 — Accepts a print the moment it arrives and renders it in the background, so the phone's print completes right away instead of hanging while the Dock prepares the page.
 0.0.30 — Says "Preparing" (not "Receiving") once a page has arrived, since by then it's fully received and the Dock is rendering it.

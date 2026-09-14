@@ -142,8 +142,10 @@ class PrinterScreen(private val act: AppCompatActivity) : Screen {
         jobList.removeAllViews()
         if (anyWaiting) {
             jobList.addView(Ui.sectionHeader(c, "Waiting to print"))
-            for (p in pending) jobList.addView(mirrorCard(p))
-            for (job in waiting) jobList.addView(jobCard(job))
+            for (p in pending) jobList.addView(swipeToDiscard(mirrorCard(p), enabled = !busy,
+                onTap = { if (!busy) pickSheetForMirror(p) }, onDiscard = { CloudAgent.get(c).dismiss(p.id); refresh() }))
+            for (job in waiting) jobList.addView(swipeToDiscard(jobCard(job), enabled = !busy,
+                onTap = { if (!busy) pickSheetFor(job) }, onDiscard = { job.delete(); refresh() }))
         }
     }
 
@@ -207,17 +209,16 @@ class PrinterScreen(private val act: AppCompatActivity) : Screen {
         layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER)
     }
 
-    // while a print is running the queue is not actionable — dimmed and unclickable
+    // while a print is running the queue is not actionable — dimmed, and the swipe
+    // wrapper is created with enabled=false so neither tap nor swipe fires
     private fun mirrorCard(p: CloudAgent.Pending): View = Ui.card(c, ripple = !busy).apply {
         orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
         alpha = if (busy) 0.5f else 1f
         addView(LinearLayout(c).apply {
             orientation = LinearLayout.VERTICAL
             addView(Ui.displayText(c, p.name, 16f, Ui.TEXT, weight = 600))
-            addView(Ui.monoText(c, if (busy) "from ${p.from}" else "from ${p.from} · tap to choose a sheet", 11f).apply { setPadding(0, dp(3), 0, 0) })
+            addView(Ui.monoText(c, if (busy) "from ${p.from}" else "from ${p.from} · swipe to discard", 11f).apply { setPadding(0, dp(3), 0, 0) })
         }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        isClickable = !busy
-        if (!busy) setOnClickListener { pickSheetForMirror(p) }
     }
     private fun jobCard(job: File): View = Ui.card(c, ripple = !busy).apply {
         orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
@@ -225,13 +226,62 @@ class PrinterScreen(private val act: AppCompatActivity) : Screen {
         addView(LinearLayout(c).apply {
             orientation = LinearLayout.VERTICAL
             addView(Ui.displayText(c, job.name.substringAfter('-').removeSuffix(".pdf"), 16f, Ui.TEXT, weight = 600))
-            addView(Ui.monoText(c, if (busy) "in the queue" else "tap to choose a sheet · hold to discard", 11f).apply { setPadding(0, dp(3), 0, 0) })
+            addView(Ui.monoText(c, if (busy) "in the queue" else "tap to choose · swipe to discard", 11f).apply { setPadding(0, dp(3), 0, 0) })
         }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        isClickable = !busy
-        if (!busy) {
-            setOnClickListener { pickSheetFor(job) }
-            setOnLongClickListener { job.delete(); refresh(); true }
+    }
+
+    /** Wrap a waiting-job card so swiping it left reveals a red discard button (trash icon,
+     *  no label); a tap still picks a sheet. Disabled while a print runs. */
+    private fun swipeToDiscard(card: View, enabled: Boolean, onTap: () -> Unit, onDiscard: () -> Unit): View {
+        val reveal = dp(72)
+        val container = FrameLayout(c).apply {
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
         }
+        val trash = FrameLayout(c).apply {
+            background = GradientDrawable().apply { setColor(Ui.RED); cornerRadius = dp(16).toFloat() }
+            addView(ImageView(c).apply {
+                setImageResource(R.drawable.ic_trash); setColorFilter(Ui.ON_ACCENT)
+                layoutParams = FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER)
+            })
+            isClickable = true; setOnClickListener { onDiscard() }
+            visibility = View.INVISIBLE
+        }
+        container.addView(trash, FrameLayout.LayoutParams(reveal, FrameLayout.LayoutParams.MATCH_PARENT, Gravity.END).apply { topMargin = dp(8) })
+        container.addView(card)
+        if (enabled) {
+            val slop = android.view.ViewConfiguration.get(c).scaledTouchSlop
+            var downX = 0f; var downY = 0f; var startTx = 0f; var mode = 0   // 0 undecided, 1 horizontal drag, 2 vertical
+            val revealF = reveal.toFloat()
+            card.setOnTouchListener { _, ev ->
+                when (ev.actionMasked) {
+                    android.view.MotionEvent.ACTION_DOWN -> { downX = ev.rawX; downY = ev.rawY; startTx = card.translationX; mode = 0; true }
+                    android.view.MotionEvent.ACTION_MOVE -> {
+                        val dx = ev.rawX - downX; val dy = ev.rawY - downY
+                        if (mode == 0 && (kotlin.math.abs(dx) > slop || kotlin.math.abs(dy) > slop))
+                            mode = if (kotlin.math.abs(dx) > kotlin.math.abs(dy)) 1 else 2
+                        if (mode == 1) {
+                            card.translationX = kotlin.math.max(-revealF - dp(20), kotlin.math.min(0f, startTx + dx))
+                            trash.visibility = if (card.translationX < -dp(6)) View.VISIBLE else View.INVISIBLE
+                        }
+                        mode == 1
+                    }
+                    android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                        val dx = ev.rawX - downX; val dy = ev.rawY - downY
+                        if (mode == 1) {
+                            val open = card.translationX < -revealF * 0.5f
+                            card.animate().translationX(if (open) -revealF else 0f).setDuration(180).start()
+                            if (!open) trash.visibility = View.INVISIBLE
+                        } else if (kotlin.math.abs(dx) < slop && kotlin.math.abs(dy) < slop && ev.actionMasked == android.view.MotionEvent.ACTION_UP) {
+                            if (card.translationX != 0f) { card.animate().translationX(0f).setDuration(160).start(); trash.visibility = View.INVISIBLE }
+                            else onTap()
+                        }
+                        true
+                    }
+                    else -> false
+                }
+            }
+        }
+        return container
     }
 
     private fun setState(led: RingView.Led, t: String, s: String) {

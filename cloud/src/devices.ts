@@ -48,7 +48,7 @@ export const notifyDockPeers = (dockId: string) => {
 export const pushDockSheets = (phoneId: string, dockId: string) => {
   const dock = dockId ? getDevice(dockId) : undefined;
   const sheets = dockId ? dockSheets(dockId).map((r) => ({
-    id: r.sheet_id, name: r.name, address: r.address, link: r.link, model: r.model,
+    id: r.sheet_id, name: r.name, address: r.address, link: r.link, key: r.key, model: r.model,
     tag_uid: r.tag_uid, tag_programmed: !!r.tag_programmed,
   })) : [];
   sendToDevice(phoneId, { t: "dock_sheets", dock: dockId || null, dock_name: dock ? deviceLabel(dock) : null, sheets });
