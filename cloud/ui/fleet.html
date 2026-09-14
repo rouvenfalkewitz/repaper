@@ -109,7 +109,7 @@ function deviceStats(d) {
     low ? statTile(ICON.sheet, sheets.length, `${low} low`, "warn")
         : statTile(ICON.sheet, sheets.length, sheets.length === 1 ? "sheet" : "sheets"),
     statTile(ICON.printer, jobs, "today"),
-    statTile(ICON.phone, p2gOn ? "On" : "Off", "print2go", p2gOn ? "ok" : "muted"),
+    `<div class="dstat ${p2gOn ? "ok" : "muted"}"><span class="di">${ICON.phone}</span><span class="dcheck">${p2gOn ? ICON.check : ICON.x}</span><span class="dl">print2go</span></div>`,
   ];
 }
 function statusPill(d) {

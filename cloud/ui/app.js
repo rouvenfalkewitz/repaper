@@ -115,7 +115,7 @@ const NAV = [
   { href: "/activity", key: "activity", label: "Activity", icon: "pulse", group: "Manage" },
   { href: "/org", key: "org", label: "Organisation", icon: "people", group: "Manage" },
   { href: "/updates", key: "updates", label: "Updates", icon: "download", group: "Manage" },
-  { href: "/products", key: "products", label: "How it works", icon: "sparkle", tag: "tour", group: "Explore" },
+  { href: "/products", key: "products", label: "How it works", icon: "sparkle", group: "Explore" },
   { href: "/billing", key: "billing", label: "Billing", icon: "card", tag: "preview", group: "Explore" },
   { href: "/shop", key: "shop", label: "Shop", icon: "bag", tag: "preview", group: "Explore" },
 ];
@@ -131,7 +131,7 @@ function renderShell() {
     const head = n.group && n.group !== lastGroup ? (lastGroup = n.group, `<div class="navlabel">${n.group}</div>`) : "";
     return `${head}<a href="${n.href}" class="${n.key === active ? "active" : ""}">${ICON[n.icon]}<span>${n.label}</span>${n.tag ? `<span class="tag">${n.tag}</span>` : ""}</a>`;
   }).join("");
-  side.innerHTML = `<div class="sidetop"><a href="/" class="sidelogo">${LOGO}</a><button class="cmdk-trigger" type="button" onclick="openCmdK()" title="Search — ⌘K" aria-label="Search (Command K)">${ICON.search}</button></div>
+  side.innerHTML = `<a href="/" class="sidelogo">${LOGO}</a>
     <nav class="nav">${navItems}</nav>
     <div class="foot"><div class="userbar" id="userbar"></div></div>`;
   initCmdK();

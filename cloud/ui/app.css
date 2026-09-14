@@ -836,3 +836,11 @@ a.stat-tile:hover, .dev:hover {
 .secretline { display: flex; align-items: center; gap: 10px; justify-content: center; flex-wrap: wrap }
 .secretline .mono { font-size: .75rem; color: var(--text-2); background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; overflow-wrap: anywhere; letter-spacing: .12em }
 .twofa-setup .codebig { font-size: 1.5rem; letter-spacing: .26em }
+
+/* Print2Go tile: a check / x instead of On/Off */
+.dstat .dcheck { display: inline-grid; place-items: center; color: var(--text-2) }
+.dstat .dcheck svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round }
+.dstat.ok .dcheck { color: var(--accent-text) }
+.dstat.muted .dcheck { color: var(--text-3) }
+/* keep nav labels on one line */
+.nav a > span:not(.tag) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0 }
