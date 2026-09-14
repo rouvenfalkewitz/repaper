@@ -15,13 +15,14 @@
   <main class="main">
     <div class="pagehead"><h1 id="hello">Welcome</h1><span class="mono" id="orgName"></span></div>
 
-    <div id="alerts"></div>
+    <div class="attn" id="attn"></div>
 
-    <div class="dash-hero" id="hero"><span class="skl" style="height:150px;border-radius:16px"></span><span class="skl" style="height:150px;border-radius:16px"></span></div>
+    <div class="cmd-hero" id="hero">
+      <span class="skl" style="height:210px;border-radius:16px"></span>
+      <span class="skl" style="height:210px;border-radius:16px"></span>
+    </div>
 
     <div class="stat-tiles" id="tiles"></div>
-
-    <div class="chartcard" id="chart" hidden></div>
 
     <div class="dash-cols">
       <div>
@@ -39,7 +40,8 @@
 
 <script src="/app.js"></script>
 <script>
-el("tiles").innerHTML = `<span class="skl" style="height:72px;border-radius:16px"></span>`.repeat(4);
+const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+el("tiles").innerHTML = `<span class="skl" style="height:72px;border-radius:16px"></span>`.repeat(3);
 el("devs").innerHTML = skeletons("rows", 2);
 el("feed").innerHTML = skeletons("rows", 3);
 
@@ -51,6 +53,18 @@ function greet(name) {
   return name ? `${g}, ${name.split(" ")[0]}` : g;
 }
 
+/* count from 0 → value once, on first paint */
+function countUp(node, to) {
+  if (!node) return;
+  if (RM || to <= 0) { node.textContent = to.toLocaleString(); return; }
+  const dur = 900, t0 = performance.now();
+  (function tick(t) {
+    const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+    node.textContent = Math.round(to * e).toLocaleString();
+    if (p < 1) requestAnimationFrame(tick);
+  })(t0);
+}
+
 function tiles(devices, latest) {
   const docks = devices.filter(isDock);
   const sheets = devices.reduce((n, d) => n + ((d.status || {}).sheets || []).length, 0);
@@ -60,6 +74,28 @@ function tiles(devices, latest) {
     <a class="stat-tile" href="/sheets"><i>Sheets</i><b>${sheets}</b><div class="sub">across the fleet</div></a>
     <a class="stat-tile" href="/activity"><i>Jobs today</i><b>${jobs}</b><div class="sub">pages put on paper</div></a>
     <a class="stat-tile ${behind ? "warn" : "good"}" href="/updates"><i>Software</i><b>${behind ? behind : "✓"}</b><div class="sub">${behind ? `device${behind === 1 ? "" : "s"} can update` : "everything current"}</div></a>`;
+}
+
+/* the attention strip: everything that might want a look, most urgent first.
+   Each item is a shortcut straight to the page (and filter) that fixes it. */
+function attention(fleet, latest, alerts) {
+  const devices = fleet.devices;
+  const pending = devices.filter(d => d.approved === false).length;
+  const printing = devices.filter(d => (d.status || {}).state === "printing");
+  const low = (alerts || []).filter(a => a.level === "err").length;
+  const behind = devices.filter(isDock).filter(d => latest && d.version !== latest && !(d.target_version && d.target_version !== d.version)).length;
+  const offline = devices.filter(d => !d.online && d.approved !== false).length;
+
+  const chips = [];
+  if (printing.length) chips.push(`<a class="attn-chip live" href="/fleet?filter=online"><span class="ic">${ICON.printer || ICON.dock}</span><b class="n">${printing.length}</b> printing now</a>`);
+  if (pending) chips.push(`<a class="attn-chip warn" href="/fleet?filter=pending"><span class="ic">${ICON.warn}</span><b class="n">${pending}</b> waiting for approval</a>`);
+  if (low) chips.push(`<a class="attn-chip warn" href="/sheets"><span class="ic">${ICON.sheet}</span><b class="n">${low}</b> low battery</a>`);
+  if (behind) chips.push(`<a class="attn-chip info" href="/updates"><span class="ic">${ICON.download}</span><b class="n">${behind}</b> can update</a>`);
+  if (offline) chips.push(`<a class="attn-chip" href="/fleet?filter=offline"><span class="ic">${ICON.dock}</span><b class="n">${offline}</b> offline</a>`);
+
+  return chips.length
+    ? chips.join("")
+    : `<div class="attn-ok"><span class="ic">${ICON.check}</span>All good — every device online and current.</div>`;
 }
 
 function jobsSeries(devices) {
@@ -75,27 +111,54 @@ function jobsSeries(devices) {
   return { keys, vals: keys.map(k => byDay.get(k)) };
 }
 
-/* the hero: what RePaper saves, and how the fleet is doing right now */
+/* the 14-day area chart, sized to sit inside the hero card (no big number of its own) */
+function heroChart(series) {
+  const days = series.keys, vals = series.vals;
+  const W = 560, H = 96, PAD = 4, TOP = 8;
+  const max = Math.max(4, ...vals);
+  const x = i => PAD + (i / (days.length - 1)) * (W - 2 * PAD);
+  const y = v => H - PAD - (v / max) * (H - PAD - TOP);
+  let path = `M ${x(0)} ${y(vals[0])}`;
+  for (let i = 1; i < vals.length; i++) {
+    const cx = (x(i - 1) + x(i)) / 2;
+    path += ` C ${cx} ${y(vals[i - 1])}, ${cx} ${y(vals[i])}, ${x(i)} ${y(vals[i])}`;
+  }
+  const area = path + ` L ${x(vals.length - 1)} ${H - PAD} L ${x(0)} ${H - PAD} Z`;
+  const last = vals.length - 1;
+  return `<div class="herochart">
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="pages printed per day, last 14 days">
+      <defs><linearGradient id="hf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1EE3A5" stop-opacity=".26"/><stop offset="1" stop-color="#1EE3A5" stop-opacity="0"/></linearGradient></defs>
+      <path class="area" d="${area}" fill="url(#hf)"/><path class="line" d="${path}"/>
+    </svg>
+    <span class="chart-dot" style="left:${(x(last) / W * 100).toFixed(2)}%;top:${(y(vals[last]) / H * 100).toFixed(2)}%"></span>
+  </div>`;
+}
+
+/* hero: one impact card (pages all-time + trend) beside the live device donut */
 function hero(fleet) {
   const devices = fleet.devices;
   const s14 = jobsSeries(devices);
   const recent = s14.vals.reduce((a, b) => a + b, 0);
   const today = s14.vals[s14.vals.length - 1];
   const total = fleet.pages_total ?? recent;
-  const pages = `<div class="herocard pages-ever">
+  const hasTrend = recent > 0;
+
+  const impact = `<div class="herocard impact pages-ever">
     <span class="lbl">Pages printed — all time</span>
-    <b>${total.toLocaleString()}</b>
-    <div class="sub">Every one on reusable e-paper instead of thrown-away printouts.</div>
+    <b id="pagesNum">0</b>
+    <div class="sub">Every one on reusable e-paper instead of a thrown-away printout.</div>
+    ${hasTrend ? heroChart(s14) : ""}
     <span class="mono">${recent} in the last 14 days · ${today} today</span>
   </div>`;
 
   const online = devices.filter(d => d.online && d.approved !== false).length;
   const pending = devices.filter(d => d.approved === false).length;
   const offline = devices.length - online - pending;
+  const printing = devices.filter(d => (d.status || {}).state === "printing");
   const segs = [
-    { n: online, color: "#1EE3A5", label: "Online" },
-    { n: offline, color: "#364139", label: "Offline" },
-    { n: pending, color: "#FFB020", label: "Waiting for approval" },
+    { n: online, color: "#1EE3A5", label: "Online", f: "online" },
+    { n: offline, color: "#364139", label: "Offline", f: "offline" },
+    { n: pending, color: "#FFB020", label: "Waiting for approval", f: "pending" },
   ].filter(x => x.n > 0);
   const R = 46, C = 2 * Math.PI * R;
   let acc = 0;
@@ -109,65 +172,33 @@ function hero(fleet) {
   const donut = `<div class="herocard">
     <span class="lbl">Devices right now</span>
     <div class="donutwrap">
-      <svg class="donut" viewBox="0 0 108 108">
-        <circle class="track" cx="54" cy="54" r="${R}"/>${paths}
-        <text x="54" y="52">${devices.length}</text><text class="cap" x="54" y="66">DEVICE${devices.length === 1 ? "" : "S"}</text>
-      </svg>
+      <a class="donut-link" href="/fleet" aria-label="Open fleet">
+        <svg class="donut" viewBox="0 0 108 108">
+          <circle class="track" cx="54" cy="54" r="${R}"/>${paths}
+          <text x="54" y="52">${devices.length}</text><text class="cap" x="54" y="66">DEVICE${devices.length === 1 ? "" : "S"}</text>
+        </svg>
+      </a>
       <div class="legend">${segs.length ? segs.map(x =>
-        `<div class="lrow"><span class="ldot" style="background:${x.color}"></span>${x.label}<b>${x.n}</b></div>`).join("")
+        `<a class="lrow" href="/fleet?filter=${x.f}"><span class="ldot" style="background:${x.color}"></span>${x.label}<b>${x.n}</b></a>`).join("")
         : `<div class="lrow">No devices yet</div>`}</div>
-    </div></div>`;
-  return pages + donut;
-}
-
-/* pages printed across the fleet, last 14 days — one honest area chart */
-function jobsChart(series) {
-  const days = series.keys, vals = series.vals;
-  const total = vals.reduce((a, b) => a + b, 0);
-  const today = vals[vals.length - 1];
-  const W = 600, H = 150, PAD = 6, TOP = 16;
-  const max = Math.max(4, ...vals);
-  const x = i => PAD + (i / (days.length - 1)) * (W - 2 * PAD);
-  const y = v => H - PAD - (v / max) * (H - PAD - TOP);
-  // gentle smoothing: cubic segments through midpoints
-  let path = `M ${x(0)} ${y(vals[0])}`;
-  for (let i = 1; i < vals.length; i++) {
-    const cx = (x(i - 1) + x(i)) / 2;
-    path += ` C ${cx} ${y(vals[i - 1])}, ${cx} ${y(vals[i])}, ${x(i)} ${y(vals[i])}`;
-  }
-  const area = path + ` L ${x(vals.length - 1)} ${H - PAD} L ${x(0)} ${H - PAD} Z`;
-  const grid = [0.25, 0.5, 0.75].map(f => `<line class="grid" x1="${PAD}" x2="${W - PAD}" y1="${y(max * f)}" y2="${y(max * f)}" stroke-dasharray="3 5"/>`).join("");
-  const fmtDay = k => { const d = new Date(k + "T12:00:00"); return d.toLocaleDateString(undefined, { weekday: "short" }).slice(0, 2); };
-  return `
-    <div class="chart-head">
-      <span><span class="lbl">Pages printed · last 14 days</span><b>${total}</b></span>
-      <span class="today">${today} today</span>
     </div>
-    <div class="chart"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="pages printed per day">
-      <defs><linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#1EE3A5" stop-opacity=".28"/><stop offset="1" stop-color="#1EE3A5" stop-opacity="0"/>
-      </linearGradient></defs>
-      ${grid}
-      <path class="area" d="${area}"/>
-      <path class="line" d="${path}"/>
-    </svg>
-    <span class="chart-max mono">${max}</span>
-    <span class="chart-dot" style="left:${(x(vals.length - 1) / W * 100).toFixed(2)}%;top:${(y(today) / H * 100).toFixed(2)}%"></span></div>
-    <div class="chart-days">${days.map((k, i) => i % 2 === 1 ? `<span>${fmtDay(k)}</span>` : "").join("")}</div>`;
+    ${printing.length ? `<a class="printing-now" href="/fleet?filter=online"><span class="pdot"></span><b>${esc(printing[0].name || printing[0].kind)}</b> is printing${printing.length > 1 ? ` +${printing.length - 1}` : ""}</a>` : ""}
+  </div>`;
+  return impact + donut;
 }
 
 function deviceRow(d) {
-  const st = d.status || {}, off = !d.online;
+  const st = d.status || {}, off = !d.online, printing = st.state === "printing";
   const name = d.name || st.printer || d.kind;
   return `<div class="member"><span class="mrow">
       <span class="devic ${off ? "off" : ""}" style="width:34px;height:34px;border-radius:10px">${isDock(d) ? ICON.dock : ICON.phone}</span>
-      <span class="who2"><b>${esc(name)}</b><span class="mono">${off ? "seen " + ago(d.last_seen) : "online"}${d.version ? " · v" + esc(d.version) : ""}${d.approved === false ? " · waiting for approval" : ""}</span></span></span>
-    <span class="presence ${off ? "off" : ""}"><span class="dot"></span></span></div>`;
+      <span class="who2"><b>${esc(name)}</b><span class="mono">${printing ? "printing now" : off ? "seen " + ago(d.last_seen) : "online"}${d.version ? " · v" + esc(d.version) : ""}${d.approved === false ? " · waiting for approval" : ""}</span></span></span>
+    <span class="presence ${off ? "off" : ""} ${printing ? "printing" : ""}"><span class="dot"></span></span></div>`;
 }
 
 function feedRows(activity) {
   if (!activity.length) return `<div class="devmeta">Quiet so far — activity from your devices and team lands here.</div>`;
-  const label = { updated: "updated to", claimed: "claimed into", approved: "approved by", identify: "was asked to say hi", reboot: "was restarted", registered: "connected for the first time", joined: "joined", invited: "invited" };
+  const label = { updated: "updated to", claimed: "claimed into", approved: "approved by", identify: "was asked to say hi", reboot: "was restarted", registered: "connected for the first time", joined: "joined", invited: "invited", printed: "printed", online: "came online", role_changed: "role changed" };
   return activity.slice(0, 8).map(e => {
     const when = new Date(e.at * 1000);
     const t = when.toLocaleDateString() === new Date().toLocaleDateString()
@@ -178,6 +209,7 @@ function feedRows(activity) {
   }).join("");
 }
 
+let heroAnimated = false;
 async function load() {
   const [fleet, al, rel, act] = await Promise.all([
     api("/api/fleet"), api("/api/alerts").catch(() => null),
@@ -185,19 +217,14 @@ async function load() {
   ]);
   el("hello").textContent = greet((fleet.user || {}).name || ME?.name);
   el("orgName").textContent = fleet.org || "";
+  setHTML("attn", attention(fleet, rel?.latest, al?.alerts));
   setHTML("tiles", tiles(fleet.devices, rel?.latest));
   setHTML("hero", hero(fleet));
-  const s14 = jobsSeries(fleet.devices);
-  const busy = s14.vals.reduce((a, b) => a + b, 0) >= 8;
-  el("chart").hidden = !busy;
-  if (busy) setHTML("chart", jobsChart(s14));
+  if (!heroAnimated) { heroAnimated = true; countUp(el("pagesNum"), fleet.pages_total ?? 0); }
+  else { const n = el("pagesNum"); if (n) n.textContent = (fleet.pages_total ?? 0).toLocaleString(); }
   setHTML("devs", fleet.devices.length ? fleet.devices.map(deviceRow).join("")
     : `<div class="devmeta">No devices yet. Claim your first on the <a class="seeall" href="/fleet">Fleet page</a> — or install <a class="seeall" href="/updates">RePaper Go</a> on a phone.</div>`);
   setHTML("feed", feedRows(act?.activity || []));
-  if (al && al.alerts?.length && typeof renderAlerts === "function") renderAlerts(al.alerts);
-  else if (al && al.alerts?.length) {
-    setHTML("alerts", al.alerts.map(a => `<div class="notice ${a.level === "err" ? "err" : ""}" style="margin-bottom:10px">${ICON.warn}<div><b>${esc(a.title)}</b><span>${esc(a.text)}</span></div></div>`).join(""));
-  } else setHTML("alerts", "");
 }
 
 document.addEventListener("me-ready", () => load().catch(() => {}));

@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark light"><meta name="theme-color" content="#0C100F">
+<meta name="robots" content="noindex">
+<title>RePaper Cloud · Products</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,600;62..125,700;62..125,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/tokens.css"><link rel="stylesheet" href="/app.css">
+<style>
+/* ── Products showcase — a self-contained explainer that can seed the marketing site.
+      Everything is drawn in CSS/SVG on the shared tokens; no external art. ── */
+.show { max-width: 1080px }
+.show section { margin: 0 0 var(--s-9) }
+.eyebrow { display: inline-flex; align-items: center; gap: 8px; font: 700 .6875rem var(--font-display); font-stretch: 112%; letter-spacing: .16em; text-transform: uppercase; color: var(--accent-text); margin: 0 0 var(--s-4) }
+.eyebrow::before { content: ""; width: 22px; height: 1px; background: currentColor; opacity: .6 }
+.show h1.disp { margin: 0; font-family: var(--font-display); font-weight: 800; font-size: clamp(2.6rem, 6vw, 4.5rem); line-height: .96; letter-spacing: -.035em; font-stretch: 118% }
+.show h1.disp em { font-style: normal; color: var(--accent-text) }
+.lede { margin: var(--s-5) 0 0; color: var(--text-2); font-size: 1.1875rem; line-height: 1.55; max-width: 44ch }
+
+/* hero */
+.hero { position: relative; display: grid; grid-template-columns: 1.05fr .95fr; gap: var(--s-7); align-items: center; padding: var(--s-6) 0 var(--s-7);
+  border-bottom: 1px solid var(--border) }
+.hero .cta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: var(--s-6) }
+.hero .btn.primary { padding: 13px 22px }
+.hero .btn.big { font-size: 1rem }
+.heroart { position: relative; aspect-ratio: 5 / 4; border-radius: var(--r-card); overflow: hidden; border: 1px solid var(--border);
+  background: radial-gradient(120% 120% at 70% 10%, var(--carbon-3), var(--carbon) 62%);
+  display: grid; place-items: center }
+.heroart::after { content: ""; position: absolute; inset: 0; background: radial-gradient(50% 45% at 50% 48%, rgba(30,227,165,.16), transparent 70%); pointer-events: none }
+/* a large e-paper sheet, mid-refresh, held in a soft glow */
+.bigsheet { position: relative; width: 62%; aspect-ratio: 3 / 2; border-radius: 10px; padding: 7%;
+  background: linear-gradient(160deg, var(--carbon-4), var(--carbon-3)); box-shadow: 0 26px 60px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.03);
+  transform: rotate(-4deg) }
+.bigsheet .panel { position: absolute; inset: 7%; border-radius: 4px; background: var(--epaper-panel); overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.6), inset 0 -10px 24px rgba(0,0,0,.06) }
+.bigsheet .panel::before { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,.55) 50%, transparent 60%);
+  animation: sheen 4.6s var(--ease-out) infinite }
+@keyframes sheen { 0%, 55% { transform: translateX(-120%) } 80%, 100% { transform: translateX(120%) } }
+.bigsheet .ln { position: absolute; height: 8%; background: #14181c; border-radius: 2px }
+.bigsheet .ln.t { left: 12%; top: 16%; width: 60%; height: 12% }
+.bigsheet .ln.a { left: 12%; top: 38%; width: 72% }
+.bigsheet .ln.b { left: 12%; top: 52%; width: 56% }
+.bigsheet .ln.r { left: 12%; top: 68%; width: 40%; background: var(--epaper-red) }
+.bigsheet .ln.s { left: 56%; top: 68%; width: 30%; background: #14181c }
+.bigsheet .nfc { position: absolute; right: 9%; bottom: 8%; width: 16%; aspect-ratio: 1; border-radius: 50%; border: 2px solid var(--accent);
+  box-shadow: 0 0 14px rgba(30,227,165,.6); opacity: .0; animation: tapin 4.6s var(--ease-out) infinite }
+@keyframes tapin { 0%, 45% { opacity: 0; transform: scale(.6) } 60% { opacity: 1; transform: scale(1) } 85%, 100% { opacity: 0; transform: scale(1.5) } }
+.heroplug { position: absolute; left: var(--s-5); bottom: var(--s-5); display: flex; align-items: center; gap: 9px; font: 500 .8125rem var(--font-body); color: var(--text-2) }
+.heroplug .d { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: var(--glow); animation: var(--ring-breathe) }
+
+/* how it works: connected steps */
+.flowhead { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s-4); flex-wrap: wrap; margin-bottom: var(--s-6) }
+.flowhead h2 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: clamp(1.6rem, 3vw, 2.2rem); letter-spacing: -.02em; text-transform: none; color: var(--text) }
+.flowhead p { margin: 6px 0 0; color: var(--text-2); max-width: 42ch }
+.flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s-4); position: relative }
+.flowline { position: absolute; left: 8%; right: 8%; top: 34px; height: 2px; background: linear-gradient(90deg, var(--border), var(--border-strong), var(--border)); z-index: 0 }
+.step { position: relative; z-index: 1; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--s-5) var(--s-4) var(--s-5);
+  display: grid; gap: 10px; align-content: start; transition: border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out) }
+.step:hover { border-color: var(--border-strong); transform: translateY(-2px) }
+.step .node { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--carbon); border: 1px solid var(--border-strong);
+  font: 800 1.0625rem var(--font-display); color: var(--accent-text); position: relative }
+.step .node svg { position: absolute; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; color: var(--accent-text); opacity: 0 }
+.step.lead .node { border-color: var(--accent); box-shadow: var(--glow) }
+.step h3 { margin: 4px 0 0; font-family: var(--font-display); font-weight: 700; font-size: 1.0625rem; letter-spacing: -.01em; color: var(--text) }
+.step p { margin: 0; color: var(--text-2); font-size: .9375rem; line-height: 1.5 }
+.step .tag { justify-self: start; margin-top: 2px; font-family: var(--font-mono); font-size: .6875rem; color: var(--text-3); border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px }
+
+/* product family */
+.fam { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s-4) }
+.pcard { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); overflow: hidden;
+  display: grid; grid-template-rows: 190px auto; transition: border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out) }
+.pcard:hover { border-color: var(--border-strong); transform: translateY(-2px) }
+.pstage { position: relative; display: grid; place-items: center; border-bottom: 1px solid var(--border);
+  background: radial-gradient(120% 120% at 30% 15%, var(--carbon-3), var(--carbon) 68%); overflow: hidden }
+.pstage::after { content: ""; position: absolute; inset: 0; background: radial-gradient(45% 55% at 50% 55%, rgba(30,227,165,.13), transparent 72%) }
+.pbody { padding: var(--s-5); display: grid; gap: 8px; align-content: start }
+.pbody .kicker { font: 700 .625rem var(--font-display); font-stretch: 112%; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3) }
+.pbody h3 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 1.375rem; letter-spacing: -.02em; color: var(--text) }
+.pbody p { margin: 2px 0 0; color: var(--text-2); font-size: .9375rem; line-height: 1.55 }
+.pbody .chips { margin-top: 10px }
+.pbody .chips span { color: var(--text-2) }
+/* device art (elevated versions of the shop primitives) */
+.artring { width: 84px; height: 84px; border-radius: 50%; border: 6px solid var(--accent); box-shadow: 0 0 26px rgba(30,227,165,.55), inset 0 0 20px rgba(30,227,165,.3); animation: var(--ring-breathe); position: relative; z-index: 1 }
+.artring.light { border-color: var(--mist); box-shadow: 0 0 16px rgba(167,176,170,.32), inset 0 0 12px rgba(167,176,170,.2); animation: none }
+.artmirror { position: absolute; z-index: 1; right: calc(50% - 78px); top: 50%; width: 30px; height: 30px; transform: translateY(-50%); border-radius: 8px; border: 2px solid var(--accent); box-shadow: 0 0 12px rgba(30,227,165,.45) }
+.artmirror::before { content: ""; position: absolute; left: -24px; top: 50%; width: 18px; height: 2px; transform: translateY(-50%); background: var(--accent); opacity: .5 }
+.artphone { position: relative; z-index: 1; width: 78px; height: 132px; border-radius: 16px; background: var(--carbon); border: 2px solid var(--carbon-5); box-shadow: 0 12px 30px rgba(0,0,0,.5); display: grid; place-items: center }
+.artphone::before { content: ""; position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 20px; height: 3px; border-radius: 2px; background: var(--carbon-5) }
+.artphone .pr { width: 34px; height: 34px; border-radius: 50%; border: 4px solid var(--accent); box-shadow: 0 0 14px rgba(30,227,165,.55); animation: var(--ring-breathe) }
+.artsheet { position: relative; z-index: 1; width: 150px; height: 92px; background: var(--carbon-4); border-radius: 8px; padding: 9px; box-shadow: 0 14px 30px rgba(0,0,0,.45) }
+.artsheet .p { position: absolute; inset: 9px; border-radius: 3px; background: var(--epaper-panel) }
+.artsheet i { position: absolute; height: 6px; background: #14181c; border-radius: 2px; z-index: 1 }
+.artsheet i.t { left: 22px; top: 22px; width: 62px; height: 9px }
+.artsheet i.a { left: 22px; top: 40px; width: 96px }
+.artsheet i.r { left: 22px; top: 54px; width: 44px; background: var(--epaper-red) }
+.artsheet i.s { left: 74px; top: 54px; width: 40px }
+.artsheet i.b { left: 22px; top: 68px; width: 70px }
+
+/* print2go band */
+.band { position: relative; border: 1px solid var(--border); border-radius: var(--r-card); overflow: hidden;
+  background: var(--surface); padding: var(--s-7); display: grid; grid-template-columns: 1fr auto; gap: var(--s-6); align-items: center }
+.band::before { content: ""; position: absolute; right: -80px; top: -80px; width: 380px; height: 380px; border-radius: 50%; background: radial-gradient(circle, rgba(30,227,165,.16), transparent 62%) }
+.band h2 { margin: 0 0 10px; font-family: var(--font-display); font-weight: 700; font-size: clamp(1.5rem, 3vw, 2rem); letter-spacing: -.02em; text-transform: none; color: var(--text) }
+.band p { margin: 0; color: var(--text-2); max-width: 52ch; line-height: 1.6 }
+.p2gflow { display: flex; align-items: center; gap: 14px; position: relative; z-index: 1 }
+.p2gnode { display: grid; place-items: center; width: 66px; height: 66px; border-radius: 18px; background: var(--carbon); border: 1px solid var(--border-strong); color: var(--accent-text) }
+.p2gnode svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round }
+.p2garrow { color: var(--text-3) }
+.p2gnode.mini { width: 52px; height: 52px; border-radius: 14px }
+.p2gnode.mini svg { width: 20px; height: 20px }
+
+/* sustainability stat band */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-4) }
+.statbox { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--s-5) }
+.statbox b { display: block; font-family: var(--font-display); font-weight: 800; font-size: 2.75rem; letter-spacing: -.03em; line-height: 1; color: var(--accent-text) }
+.statbox .u { font-size: 1.25rem; color: var(--text-2); font-weight: 700 }
+.statbox span { display: block; margin-top: 10px; color: var(--text-2); font-size: .9375rem; line-height: 1.5 }
+
+/* closing cloud tie-in */
+.closer { text-align: center; padding: var(--s-7) 0 0 }
+.closer h2 { margin: 0 auto; font-family: var(--font-display); font-weight: 700; font-size: clamp(1.6rem, 3.4vw, 2.4rem); letter-spacing: -.02em; text-transform: none; color: var(--text); max-width: 20ch }
+.closer p { margin: var(--s-4) auto 0; color: var(--text-2); max-width: 48ch; line-height: 1.6 }
+.closer .cta { display: flex; gap: 12px; justify-content: center; margin-top: var(--s-6); flex-wrap: wrap }
+
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; gap: var(--s-5) }
+  .heroart { order: -1; max-width: 460px }
+  .flow { grid-template-columns: repeat(2, 1fr) } .flowline { display: none }
+  .fam { grid-template-columns: 1fr }
+  .band { grid-template-columns: 1fr; gap: var(--s-5) } .p2gflow { flex-wrap: wrap }
+  .stats { grid-template-columns: 1fr }
+}
+</style>
+</head>
+<body data-page="products">
+<div class="layout">
+  <aside class="side" id="side"></aside>
+  <main class="main">
+    <div class="show">
+
+      <!-- HERO -->
+      <section class="hero">
+        <div>
+          <p class="eyebrow">The RePaper system</p>
+          <h1 class="disp">Print it once.<br><em>Reuse the paper&nbsp;forever.</em></h1>
+          <p class="lede">RePaper turns any print into a crisp image on a reusable e-paper sheet — no ink, no waste, and it holds the page with the power off.</p>
+          <div class="cta">
+            <a class="btn primary big" href="/fleet">Set up your fleet</a>
+            <a class="btn outline big" href="/shop">See the hardware</a>
+          </div>
+        </div>
+        <div class="heroart">
+          <div class="bigsheet">
+            <div class="panel"></div>
+            <span class="ln t"></span><span class="ln a"></span><span class="ln b"></span><span class="ln r"></span><span class="ln s"></span>
+            <span class="nfc"></span>
+          </div>
+          <div class="heroplug"><span class="d"></span>reusable e-paper · holds at 0&nbsp;W</div>
+        </div>
+      </section>
+
+      <!-- HOW IT WORKS -->
+      <section>
+        <div class="flowhead">
+          <div>
+            <p class="eyebrow">How it works</p>
+            <h2>From your phone to paper in four taps</h2>
+            <p>No drivers, no app to force on anyone. If it can print, it can print to RePaper.</p>
+          </div>
+        </div>
+        <div class="flow">
+          <div class="flowline"></div>
+          <div class="step lead">
+            <div class="node">1</div>
+            <h3>Print like normal</h3>
+            <p>Hit Print in any app on any phone, tablet or laptop on the Wi-Fi.</p>
+            <span class="tag">AirPrint · IPP · Mopria</span>
+          </div>
+          <div class="step">
+            <div class="node">2</div>
+            <h3>The Dock renders it</h3>
+            <p>The Dock receives the job and lays it out for the exact sheet you'll use.</p>
+            <span class="tag">dithered on-device</span>
+          </div>
+          <div class="step">
+            <div class="node">3</div>
+            <h3>Tap a sheet</h3>
+            <p>Hold any RePaper sheet to the Dock. One tap and the image writes on.</p>
+            <span class="tag">NFC</span>
+          </div>
+          <div class="step">
+            <div class="node">4</div>
+            <h3>It just holds</h3>
+            <p>Take the sheet anywhere. It keeps the page sharp with no battery draw.</p>
+            <span class="tag">0&nbsp;W bistable</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- PRODUCT FAMILY -->
+      <section>
+        <p class="eyebrow">The family</p>
+        <div class="flowhead">
+          <div><h2>Four parts, one account</h2>
+          <p>Mix them however a room needs. Same sheets, same fleet, same login.</p></div>
+        </div>
+        <div class="fam">
+
+          <div class="pcard">
+            <div class="pstage"><span class="artsheet"><span class="p"></span><i class="t"></i><i class="a"></i><i class="r"></i><i class="s"></i><i class="b"></i></span></div>
+            <div class="pbody">
+              <span class="kicker">The paper</span>
+              <h3>RePaper Sheets</h3>
+              <p>Reusable black-white-red e-paper in notice, label and panel sizes. Rewrite them thousands of times; they hold the last page for months.</p>
+              <div class="chips"><span>2.9″ · 4.2″ · 7.5″</span><span>months on a coin cell</span></div>
+            </div>
+          </div>
+
+          <div class="pcard">
+            <div class="pstage"><span class="artring"></span></div>
+            <div class="pbody">
+              <span class="kicker">The printer</span>
+              <h3>The Dock</h3>
+              <p>The base station for a whole room. Always on, everyone on the network can print, and it writes jobs straight onto sheets over NFC.</p>
+              <div class="chips"><span>AirPrint · IPP</span><span>NFC write</span><span>light ring</span></div>
+            </div>
+          </div>
+
+          <div class="pcard">
+            <div class="pstage"><span class="artphone"><span class="pr"></span></span></div>
+            <div class="pbody">
+              <span class="kicker">The pocket printer</span>
+              <h3>RePaper Go</h3>
+              <p>The app that turns a phone into the printer. Print from anywhere, tap a sheet over Bluetooth, and it joins your fleet on its own.</p>
+              <div class="chips"><span>Android</span><span>iPhone soon</span><span>Bluetooth LE</span></div>
+            </div>
+          </div>
+
+          <div class="pcard">
+            <div class="pstage"><span class="artring light"></span><span class="artmirror"></span></div>
+            <div class="pbody">
+              <span class="kicker">The relay</span>
+              <h3>Dock Light</h3>
+              <p>A network printer with no radios of its own — the most affordable way to make a room printable. Jobs land on a Go or Dock you mirror it to.</p>
+              <div class="chips"><span>AirPrint · IPP</span><span>Cloud mirror</span></div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- PRINT2GO -->
+      <section>
+        <div class="band">
+          <div>
+            <p class="eyebrow">Print2Go</p>
+            <h2>Any job can finish on a phone</h2>
+            <p>Send a print to a Dock and it can also surface on the phones nearby — first one to grab it writes the sheet. Pages travel through RePaper Cloud encrypted and are deleted the moment they land. Perfect for field work, pop-ups and desks without their own Dock.</p>
+          </div>
+          <div class="p2gflow">
+            <div class="p2gnode"><svg viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="9" rx="3"/><circle cx="12" cy="13.5" r="2"/><path d="M8 9V7a4 4 0 0 1 8 0v2"/></svg></div>
+            <span class="p2garrow">→</span>
+            <div class="p2gnode mini"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></div>
+            <div class="p2gnode mini"><svg viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SUSTAINABILITY -->
+      <section>
+        <p class="eyebrow">Why e-paper</p>
+        <div class="flowhead"><div><h2>The math that made us build it</h2></div></div>
+        <div class="stats">
+          <div class="statbox"><b>0<span class="u">&nbsp;ink</span></b><span>Nothing is consumed to make a page. A sheet you rewrite today looks new tomorrow.</span></div>
+          <div class="statbox"><b>0<span class="u">&nbsp;W</span></b><span>E-paper is bistable — it draws power only while changing, then holds the image indefinitely.</span></div>
+          <div class="statbox"><b>1000s</b><span>of refreshes per sheet. One sheet quietly replaces a small mountain of throw-away printouts.</span></div>
+        </div>
+      </section>
+
+      <!-- CLOSER -->
+      <section class="closer">
+        <h2>One console for every sheet, Dock and phone.</h2>
+        <p>RePaper Cloud claims your devices, ships updates over the air, and shows what's printing across every site — without ever storing what's on the page.</p>
+        <div class="cta">
+          <a class="btn primary big" href="/">Open the dashboard</a>
+          <a class="btn outline big" href="/fleet">Claim a device</a>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status"><span class="ic"></span><span class="tx"></span></div>
+<script src="/app.js"></script>
+</body>
+</html>

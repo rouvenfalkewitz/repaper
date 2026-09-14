@@ -13,7 +13,7 @@
 <div class="layout">
   <aside class="side" id="side"></aside>
   <main class="main">
-    <div class="pagehead"><h1>Fleet</h1><div class="filters" id="filters"></div></div>
+    <div class="pagehead"><h1>Fleet</h1><div class="fleet-controls"><div class="viewtoggle" id="viewtoggle"></div><div class="filters" id="filters"></div></div></div>
     <div id="alerts"></div>
     <div class="fleet" id="fleet"></div>
   </main>
@@ -33,6 +33,12 @@
 <script>
 let S = { devices: [] };
 let FILTER = (() => { try { return localStorage.getItem("fleetFilter") || "all"; } catch { return "all"; } })();
+let VIEW = (() => { try { return localStorage.getItem("fleetView") || "grid"; } catch { return "grid"; } })();
+const params = new URLSearchParams(location.search);
+if (params.get("filter")) { FILTER = params.get("filter"); try { localStorage.setItem("fleetFilter", FILTER); } catch {} }
+if (params.get("view") === "list" || params.get("view") === "grid") { VIEW = params.get("view"); try { localStorage.setItem("fleetView", VIEW); } catch {} }
+let OPEN_DEVICE = params.get("device") || null;
+let OPEN_CLAIM = params.get("claim") === "1";
 const FILTERS = [
   ["all", "All", () => true],
   ["online", "Online", d => d.online],
@@ -52,10 +58,20 @@ document.addEventListener("click", e => {
   try { localStorage.setItem("fleetFilter", FILTER); } catch {}
   renderFilters(); render();
 });
+function renderViewToggle() {
+  setHTML("viewtoggle", [["grid", ICON.grid, "Cards"], ["list", ICON.list, "List"]].map(([k, ic, label]) =>
+    `<button class="vbtn ${VIEW === k ? "on" : ""}" data-v="${k}" title="${label} view" aria-label="${label} view">${ic}</button>`).join(""));
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest(".vbtn"); if (!b) return;
+  VIEW = b.dataset.v; try { localStorage.setItem("fleetView", VIEW); } catch {}
+  renderViewToggle(); render();
+});
+renderViewToggle();
 el("fleet").innerHTML = skeletons("cards", 2);
 
 function card(d, showSite = true) {
-  const st = d.status || {}, sheets = st.sheets || [], off = !d.online;
+  const st = d.status || {}, sheets = st.sheets || [], off = !d.online, printing = st.state === "printing";
   const light = d.kind === "dock-light";
   const name = d.name || st.printer || (light ? "Dock Light" : d.kind === "dock" ? "Dock" : "Go");
   // no echoes: the printer name only when it differs from the card title,
@@ -83,24 +99,54 @@ function card(d, showSite = true) {
     ${d.approved === false ? `<div class="notice" style="margin:8px 0 0"><b style="color:var(--amber)">Waiting for approval</b><span>A member added this device.${ME?.role === "admin" ? "" : " An admin activates it."}</span>${ME?.role === "admin" ? `<button class="btn primary small" data-act="approve" style="margin-left:auto">Approve</button>` : ""}</div>` : ""}
     <div class="dchips">${chips}</div>
     <div class="dev-foot">
-      <span class="presence ${off ? "off" : ""}"><span class="dot"></span><b>${off ? "seen " + ago(d.last_seen) : "online"}</b></span>
+      <span class="presence ${off ? "off" : ""} ${printing ? "printing" : ""}"><span class="dot"></span><b>${off ? "seen " + ago(d.last_seen) : printing ? "printing now" : "online"}</b></span>
       <span class="iconrow"><button class="iconbtn" data-act="identify" title="Identify" aria-label="Identify" ${off ? "disabled" : ""}>${ICON.ping}</button><button class="iconbtn" data-act="name" title="Rename" aria-label="Rename">${ICON.pencil}</button><button class="iconbtn" data-act="details" title="Details" aria-label="Details">${ICON.info}</button><button class="iconbtn danger" data-act="remove" title="Remove" aria-label="Remove">${ICON.trash}</button></span>
     </div></div>`;
 }
 
+/* one dense row for the list view — same data as a card, scan-optimised */
+function listRow(d, showSite = true) {
+  const st = d.status || {}, sheets = st.sheets || [], off = !d.online, printing = st.state === "printing", light = d.kind === "dock-light";
+  const name = d.name || st.printer || (light ? "Dock Light" : d.kind === "dock" ? "Dock" : "Go");
+  const sub = [light ? "Dock Light" : d.kind === "go" ? "Go" : "Dock", showSite && d.site ? d.site : ""].filter(Boolean).join(" · ");
+  const phones = (d.mirror_phones || []).length;
+  const count = d.print2go ? `${phones} phone${phones === 1 ? "" : "s"}` : d.kind === "go" ? "—" : `${sheets.length} sheet${sheets.length === 1 ? "" : "s"}`;
+  const low = sheets.filter(x => x.battery_volts != null && x.battery_volts * 1000 < 2700).length;
+  const status = d.approved === false ? `<span class="fstat warn">${ICON.warn}Waiting</span>`
+    : off ? `<span class="fstat off"><span class="dot"></span>seen ${ago(d.last_seen)}</span>`
+    : printing ? `<span class="fstat"><span class="presence printing"><span class="dot"></span></span>printing</span>`
+    : `<span class="fstat"><span class="presence"><span class="dot"></span></span>online</span>`;
+  return `<div class="frow ${off ? "off" : ""}" data-id="${esc(d.id)}">
+    <span class="fcell fname"><span class="devic ${off ? "off" : ""}" style="width:32px;height:32px;border-radius:9px">${d.kind === "go" ? ICON.phone : ICON.dock}</span><span class="devwho"><b>${esc(name)}</b><span class="mono">${esc(sub)}</span></span></span>
+    <span class="fcell">${status}</span>
+    <span class="fcell mono">${d.version ? "v" + esc(d.version) : "—"}${d.target_version && d.target_version !== d.version ? ` <span class="dchip mono">↑ ${esc(d.target_version)}</span>` : ""}</span>
+    <span class="fcell mono">${count}${low ? ` <span class="dchip mono warn">${low} low</span>` : ""}</span>
+    <span class="fcell fact-cell"><span class="iconrow"><button class="iconbtn" data-act="identify" title="Identify" aria-label="Identify" ${off ? "disabled" : ""}>${ICON.ping}</button><button class="iconbtn" data-act="details" title="Details" aria-label="Details">${ICON.info}</button><button class="iconbtn" data-act="name" title="Rename" aria-label="Rename">${ICON.pencil}</button><button class="iconbtn danger" data-act="remove" title="Remove" aria-label="Remove">${ICON.trash}</button></span></span>
+  </div>`;
+}
+const LIST_HEAD = `<div class="frow head"><span class="fcell">Device</span><span class="fcell">Status</span><span class="fcell">Software</span><span class="fcell">Sheets</span><span class="fcell"></span></div>`;
+
 function render() {
+  const list = VIEW === "list";
+  el("fleet").classList.toggle("aslist", list);
   const fn = (FILTERS.find(([k]) => k === FILTER) || FILTERS[0])[2];
   const shown = S.devices.filter(fn);
   const bySite = new Map();
   for (const d of shown) { const k = d.site || ""; if (!bySite.has(k)) bySite.set(k, []); bySite.get(k).push(d); }
+  const grouped = bySite.size > 1;
   let html = "";
-  if (bySite.size > 1) {
+  if (grouped) {
     for (const [site, devs] of [...bySite.entries()].sort((a, b) => (a[0] || "~").localeCompare(b[0] || "~")))
-      html += `<div class="sitehead">${esc(site || "No site")}</div>` + devs.map(d => card(d, false)).join("");
-  } else html = shown.map(d => card(d)).join("");
+      html += `<div class="sitehead">${esc(site || "No site")}</div>` + (list
+        ? `<div class="flist">${LIST_HEAD}${devs.map(d => listRow(d, false)).join("")}</div>`
+        : devs.map(d => card(d, false)).join(""));
+  } else {
+    html = list ? `<div class="flist">${LIST_HEAD}${shown.map(d => listRow(d)).join("")}</div>` : shown.map(d => card(d)).join("");
+  }
   setHTML("fleet", html
     + (FILTER !== "all" && !shown.length ? `<div class="empty-hint" style="grid-column:1/-1">Nothing here — switch the filter above.</div>` : "")
-    + (FILTER === "all" ? `<button class="addcard" type="button" onclick="openModal('claim')"><span class="plus">${ICON.plus}</span><span>${S.devices.length ? "Claim a device" : "Claim your first device"}</span></button>` : "")
+    + (FILTER === "all" && !list ? `<button class="addcard" type="button" onclick="openModal('claim')"><span class="plus">${ICON.plus}</span><span>${S.devices.length ? "Claim a device" : "Claim your first device"}</span></button>` : "")
+    + (FILTER === "all" && list && S.devices.length ? `<button class="btn outline claimline" type="button" onclick="openModal('claim')">${ICON.plus}<span>Claim a device</span></button>` : "")
     + (S.devices.length ? "" : `<div class="empty-hint" style="grid-column:1/-1">A Dock shows its claim code on its settings page under <b>RePaper Cloud</b> once it is pointed at this cloud. Enter the code here and it joins your fleet.</div>`));
 }
 
@@ -115,6 +161,8 @@ async function load() {
   renderFilters();
   if (al) renderAlerts(al.alerts);
   if (!document.querySelector("dialog[open]")) render();
+  if (OPEN_DEVICE) { const id = OPEN_DEVICE; OPEN_DEVICE = null; if (S.devices.find(x => x.id === id)) openDetails(id); }
+  if (OPEN_CLAIM) { OPEN_CLAIM = false; openModal("claim"); }
 }
 
 function openDetails(id) {
@@ -206,7 +254,7 @@ el("edDlg").addEventListener("submit", async e => {
 });
 el("fleet").addEventListener("click", async e => {
   const b = e.target.closest("[data-act]"); if (!b) return;
-  const id = b.closest(".dev").dataset.id, act = b.dataset.act;
+  const id = b.closest("[data-id]").dataset.id, act = b.dataset.act;
   if (act === "details") return openDetails(id);
   if (modals[act]) return openModal(act, id);
   if (act === "approve") {

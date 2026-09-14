@@ -32,7 +32,7 @@ const STATIC: Record<string, [string, string]> = {
 /* signed-in pages: one route each, same shell */
 const APP_PAGES: Record<string, string> = {
   "/": "dashboard.html", "/fleet": "fleet.html", "/org": "org.html", "/account": "account.html",
-  "/billing": "billing.html", "/shop": "shop.html",
+  "/billing": "billing.html", "/shop": "shop.html", "/products": "products.html",
   "/sheets": "sheets.html", "/activity": "activity.html", "/updates": "updates.html",
 };
 app.get("/team", (_req, reply) => reply.redirect("/org"));   // team lives inside the organisation now

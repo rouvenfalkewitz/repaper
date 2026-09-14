@@ -10,13 +10,15 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 
 /* ── app shell ── */
 .layout { display: flex; min-height: 100svh }
-.side { width: var(--nav-col); flex: none; border-right: 1px solid var(--border); padding: var(--s-5) var(--s-3); display: flex; flex-direction: column; gap: var(--s-6); position: sticky; top: 0; height: 100svh }
+.side { width: var(--nav-col); flex: none; border-right: 1px solid var(--border); padding: var(--s-5) var(--s-3); display: flex; flex-direction: column; gap: var(--s-5); position: sticky; top: 0; height: 100svh; overflow-y: auto; scrollbar-width: none } .side::-webkit-scrollbar { display: none }
 .sidelogo { display: block; padding: 2px 10px } .sidelogo .logo { height: 22px }
 .nav { display: grid; gap: 2px }
-.nav a { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--r-control); color: var(--text-2); text-decoration: none; font: 500 .9375rem var(--font-body); transition: background var(--dur-fast) var(--ease-out) }
+.navlabel { font: 700 .5625rem var(--font-display); font-stretch: 112%; letter-spacing: .14em; text-transform: uppercase; color: var(--text-3); padding: 12px 12px 4px } .navlabel:first-child { padding-top: 2px }
+.nav a { position: relative; display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--r-control); color: var(--text-2); text-decoration: none; font: 500 .9375rem var(--font-body); transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out) }
 .nav a svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; color: var(--text-3); flex: none }
-.nav a:hover { background: var(--surface); color: var(--text) }
+.nav a:hover { background: var(--surface); color: var(--text) } .nav a:hover svg { color: var(--text-2) }
 .nav a.active { background: var(--accent-tint); color: var(--accent-text) } .nav a.active svg { color: var(--accent-text) }
+.nav a.active::before { content: ""; position: absolute; left: calc(-1 * var(--s-3)); top: 50%; transform: translateY(-50%); width: 3px; height: 20px; border-radius: 0 3px 3px 0; background: var(--accent); box-shadow: var(--glow) }
 .nav .tag { margin-left: auto; font: 700 .5625rem var(--font-display); font-stretch: 112%; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); border: 1px solid var(--border); border-radius: 999px; padding: 2px 7px }
 .minitag { margin-left: 7px; font: 700 .5625rem var(--font-display); font-stretch: 112%; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-text); background: var(--accent-tint); border-radius: 999px; padding: 2px 7px; vertical-align: middle }
 .side .foot { margin-top: auto }
@@ -42,8 +44,10 @@ section[data-sec] > h2:first-child { margin-top: 0 }
 @media (max-width: 720px) {
   .layout { flex-direction: column }
   .side { width: auto; height: auto; position: static; flex-direction: row; align-items: center; gap: var(--s-3); border-right: 0; border-bottom: 1px solid var(--border); padding: 10px var(--s-3); overflow-x: auto }
+  .side { overflow-y: visible }
   .sidelogo { padding: 0 } .sidelogo .logo { height: 20px }
-  .nav { display: flex; gap: 2px } .nav a { padding: 7px 10px; white-space: nowrap } .nav .tag { display: none }
+  .nav { display: flex; gap: 2px } .nav a { padding: 7px 10px; white-space: nowrap } .nav .tag, .navlabel { display: none }
+  .nav a.active::before { display: none }
   .side .foot { margin: 0 0 0 auto } .userchip { padding: 4px; border: 0; background: none } .userchip .who3, .userchip .iconbtn { display: none }
   .main { flex: 1 1 auto; margin: 0; padding: var(--s-5) var(--s-4) var(--s-8) }
 }
@@ -451,3 +455,134 @@ a.stat-tile:hover { border-color: var(--border-strong); transform: translateY(-1
 .lightmirror { position: absolute; right: calc(50% - 60px); top: 50%; width: 26px; height: 26px; transform: translateY(-50%); border-radius: 7px; border: 2px solid var(--accent); box-shadow: 0 0 12px rgba(30,227,165,.4) }
 .lightmirror::after { content: "→"; position: absolute; left: -20px; top: 50%; transform: translateY(-50%); color: var(--text-3); font-size: .8rem }
 .prodring.light { border-color: var(--text-2); box-shadow: 0 0 12px rgba(154,165,160,.3) }
+
+/* ══ Elevation pass ══════════════════════════════════════════════════════════
+   Adds shared depth + accent glow that echoes the /products showcase.
+   Structure and information architecture are unchanged — this only enriches the
+   existing surfaces. Self-contained so it's easy to review or lift out. */
+
+/* Panels lit from above: a hairline top-highlight + a whisper of contact shadow.
+   Invisible in isolation, but together the console stops looking flat. */
+.card, .herocard, .chartcard, .dev, a.stat-tile, .planbox, .statbox, .vscard, .prod, .band, .step {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.045), 0 1px 2px rgba(0,0,0,.20);
+}
+.herocard, .chartcard, .card, .dev, a.stat-tile, .planbox {
+  background-image: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0) 46%);
+}
+/* Interactive cards get a warmer, deeper lift on hover (the translateY is already set). */
+a.stat-tile:hover, .dev:hover {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 8px 22px rgba(0,0,0,.30);
+}
+
+/* The signature hero — pages printed, all-time — reads as the one lit element:
+   an accent hairline across the top and a soft glow under the number. */
+.cmd-hero .pages-ever, .dash-hero .pages-ever { position: relative; overflow: hidden }
+.cmd-hero .pages-ever::before, .dash-hero .pages-ever::before {
+  content: ""; position: absolute; inset: 0 0 auto 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: .5;
+}
+.pages-ever b { text-shadow: 0 0 26px rgba(30,227,165,.28) }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .pages-ever b { text-shadow: none } }
+:root[data-theme="light"] .pages-ever b { text-shadow: none }
+
+/* Device-kind badges feel more alive with a faint inner glow ringing the icon. */
+.devic:not(.off) { box-shadow: inset 0 0 0 1px rgba(30,227,165,.14), 0 0 16px -6px rgba(30,227,165,.5) }
+
+/* Live presence + status dots pick up a touch more bloom, matching the showcase rings. */
+.presence:not(.off) .dot, .live-dot { box-shadow: 0 0 0 3px var(--accent-tint), 0 0 12px rgba(30,227,165,.55) }
+
+/* Filter chips + section eyebrows: the active filter now carries the same accent bar
+   language as the sidebar, so selection reads consistently across the app. */
+.fchip.on { box-shadow: inset 0 0 0 1px rgba(30,227,165,.35), 0 0 18px -8px rgba(30,227,165,.6) }
+/* ════════════════════════════════════════════════════════════════════════════ */
+
+/* ══ Dashboard command-center ════════════════════════════════════════════════ */
+.attn { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: var(--s-5) }
+.attn a.attn-chip { display: inline-flex; align-items: center; gap: 9px; padding: 9px 14px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); text-decoration: none; font-size: .875rem; font-weight: 500; transition: border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out) }
+.attn a.attn-chip:hover { border-color: var(--text-3); transform: translateY(-1px) }
+.attn-chip .n { font-family: var(--font-display); font-weight: 800; font-size: 1rem; letter-spacing: -.01em }
+.attn-chip .ic { display: inline-grid } .attn-chip .ic svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; color: var(--text-3) }
+.attn-chip.warn { border-color: transparent; background: var(--amber-tint); color: var(--amber) } .attn-chip.warn .ic svg { color: var(--amber) }
+.attn-chip.info, .attn-chip.live { border-color: transparent; background: var(--accent-tint); color: var(--accent-text) } .attn-chip.info .ic svg, .attn-chip.live .ic svg { color: var(--accent-text) }
+.attn-chip.live { box-shadow: inset 0 0 0 1px rgba(30,227,165,.3), 0 0 18px -8px rgba(30,227,165,.7) }
+.attn-ok { display: flex; align-items: center; gap: 9px; color: var(--text-2); font-size: .9375rem; padding: 2px 0 }
+.attn-ok .ic { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent-tint); color: var(--accent-text); flex: none } .attn-ok .ic svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round }
+
+.cmd-hero { display: grid; grid-template-columns: 1.5fr 1fr; gap: var(--s-4); margin-bottom: var(--s-5); align-items: stretch }
+@media (max-width: 820px) { .cmd-hero { grid-template-columns: 1fr } }
+.herocard.impact { display: flex; flex-direction: column } .herocard.impact .sub { margin-bottom: auto }
+.herochart { position: relative; margin: 16px 0 10px; height: 96px }
+.herochart svg { display: block; width: 100%; height: 96px }
+.herochart .line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round }
+.donut-link { display: inline-grid; border-radius: 50%; transition: transform var(--dur-fast) var(--ease-out) } .donut-link:hover { transform: scale(1.03) } .donut-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px }
+.legend a.lrow { text-decoration: none; color: var(--text-2); border-radius: 8px; padding: 3px 5px; margin: -3px -5px; transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out) }
+.legend a.lrow:hover { background: var(--surface-2); color: var(--text) }
+.printing-now { display: inline-flex; align-items: center; gap: 9px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); color: var(--text-2); text-decoration: none; font-size: .875rem }
+.printing-now b { color: var(--text); font-weight: 600 }
+.printing-now .pdot { width: 9px; height: 9px; border-radius: 50%; flex: none }
+.printing-now .pdot, .presence.printing .dot { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint), 0 0 12px rgba(30,227,165,.6); animation: printpulse 1.15s ease-in-out infinite }
+.presence.printing b { color: var(--accent-text) }
+@keyframes printpulse { 0%, 100% { transform: scale(.82); opacity: .6 } 50% { transform: scale(1.12); opacity: 1 } }
+@media (prefers-reduced-motion: reduce) { .printing-now .pdot, .presence.printing .dot { animation: none } }
+/* ════════════════════════════════════════════════════════════════════════════ */
+
+/* ══ Fleet: view toggle + list view + sticky site headers ════════════════════ */
+.fleet-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end }
+.viewtoggle { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--surface); flex: none }
+.vbtn { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 999px; border: 0; background: transparent; color: var(--text-3); cursor: pointer; transition: color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out) }
+.vbtn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round }
+.vbtn:hover { color: var(--text) } .vbtn.on { background: var(--accent-tint); color: var(--accent-text) }
+.vbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+
+.fleet.aslist { display: block }
+.fleet .sitehead { position: sticky; top: 0; z-index: 3; background: linear-gradient(var(--bg) 62%, transparent); padding: 10px 0 6px; margin: 2px 0 -2px }
+.fleet.aslist .sitehead + .flist { margin-top: 6px }
+.flist { border: 1px solid var(--border); border-radius: var(--r-card); overflow: hidden; background: var(--surface); margin-bottom: var(--s-4);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.045), 0 1px 2px rgba(0,0,0,.20) }
+.frow { display: grid; grid-template-columns: minmax(0, 2.2fr) 1.1fr 1.2fr 1fr auto; gap: 14px; align-items: center; padding: 11px 16px; border-top: 1px solid var(--border); min-width: 0 }
+.frow:first-child { border-top: 0 }
+.frow.head { background: var(--surface-2); padding: 9px 16px }
+.frow.head .fcell { font-family: var(--font-display); font-stretch: 112%; font-weight: 700; font-size: .625rem; letter-spacing: .12em; text-transform: uppercase; color: var(--text-3) }
+.frow:not(.head) { transition: background var(--dur-fast) var(--ease-out) }
+.frow:not(.head):hover { background: var(--surface-2) }
+.frow.off .devwho b, .frow.off .fcell.mono { opacity: .72 }
+.fcell { min-width: 0 } .fcell.mono { font-family: var(--font-mono); font-size: .75rem; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.fname { display: flex; align-items: center; gap: 10px; min-width: 0 }
+.fname .devwho { min-width: 0 } .fname .devwho b { font-size: .9375rem; font-family: var(--font-display); font-weight: 600; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block }
+.fname .devwho .mono { display: block; font-size: .6875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.fstat { display: inline-flex; align-items: center; gap: 7px; font-size: .8125rem; color: var(--text-2); white-space: nowrap }
+.fstat .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: var(--glow); flex: none }
+.fstat.off .dot { background: var(--text-3); box-shadow: none }
+.fstat.warn { color: var(--amber) } .fstat.warn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round }
+.fstat .presence { display: inline-flex }
+.fact-cell { justify-self: end }
+.claimline { margin-top: var(--s-2) }
+@media (max-width: 760px) {
+  .frow { grid-template-columns: minmax(0, 1.7fr) 1fr auto; gap: 10px }
+  .frow .fcell:nth-child(3), .frow .fcell:nth-child(4) { display: none }
+}
+/* ════════════════════════════════════════════════════════════════════════════ */
+
+/* ══ ⌘K command palette ══════════════════════════════════════════════════════ */
+.cmdk-trigger { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 8px 12px; border-radius: var(--r-control); border: 1px solid var(--border); background: var(--surface); color: var(--text-3); cursor: pointer; font: 500 .8125rem var(--font-body); transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out) }
+.cmdk-trigger:hover { border-color: var(--border-strong); color: var(--text-2) }
+.cmdk-trigger .ct-l { display: inline-flex; align-items: center; gap: 8px; min-width: 0 }
+.cmdk-trigger svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: none }
+.cmdk-trigger kbd { font: 600 .625rem var(--font-mono); color: var(--text-3); background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 2px 6px; flex: none }
+
+.cmdk { position: fixed; inset: 0; z-index: 100; display: flex; align-items: flex-start; justify-content: center; padding: 12vh 16px 16px }
+.cmdk-back { position: absolute; inset: 0; background: rgba(12,16,15,.72); backdrop-filter: blur(4px) }
+.cmdk-panel { position: relative; width: min(600px, 100%); background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-card); box-shadow: var(--shadow-float); overflow: hidden; animation: rise var(--dur-base) var(--ease-out) both }
+.cmdk-inp { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border) }
+.cmdk-inp .ic { display: inline-grid; color: var(--text-3) } .cmdk-inp .ic svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round }
+.cmdk-inp input { flex: 1; border: 0; background: none; color: var(--text); font: inherit; font-size: 1rem; outline: none; min-width: 0 }
+.cmdk-inp kbd { font: 600 .625rem var(--font-mono); color: var(--text-3); background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 2px 6px }
+.cmdk-list { max-height: min(52vh, 420px); overflow-y: auto; padding: 6px }
+.cmdk-item { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 10px 12px; border: 0; background: transparent; color: var(--text); border-radius: var(--r-control); cursor: pointer; font: inherit }
+.cmdk-item .ci-ic { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: var(--surface-2); color: var(--text-2); flex: none } .cmdk-item .ci-ic svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round }
+.cmdk-item .ci-l { flex: 1; min-width: 0; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.cmdk-item .ci-s { font-family: var(--font-mono); font-size: .6875rem; color: var(--text-3); flex: none }
+.cmdk-item.sel { background: var(--accent-tint) } .cmdk-item.sel .ci-ic { background: var(--accent); color: var(--on-accent) } .cmdk-item.sel .ci-l { color: var(--accent-text) }
+.cmdk-empty { padding: 24px; text-align: center; color: var(--text-3); font-size: .9375rem }
+@media (max-width: 720px) { .cmdk-trigger { display: none } .cmdk { padding: 8vh 12px 12px } }
+/* ════════════════════════════════════════════════════════════════════════════ */

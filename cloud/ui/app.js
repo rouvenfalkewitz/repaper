@@ -37,6 +37,11 @@ const ICON = {
   copy: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>`,
   clock: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>`,
   mail: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m3.5 7 8.5 6 8.5-6"/></svg>`,
+  sparkle: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 13.8 9l5.5 1.8L13.8 12.6 12 18.1 10.2 12.6 4.7 10.8 10.2 9z"/><path d="M18.5 3.5v3M20 5h-3"/></svg>`,
+  printer: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8V4h10v4"/><rect x="4" y="8" width="16" height="8" rx="2"/><path d="M7 14h10v6H7z"/><circle cx="17" cy="11" r=".5" fill="currentColor"/></svg>`,
+  grid: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>`,
+  list: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>`,
+  corner: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6 3 12l6 6M3 12h12a4 4 0 0 0 4-4V6"/></svg>`,
 };
 /* a standard copy-button: icon + label, flips to ✓ Copied for a moment */
 function copyBtnHtml(id, label = "Copy link") { return `<button class="btn outline" type="button" id="${id}">${ICON.copy}<span>${label}</span></button>`; }
@@ -94,14 +99,15 @@ async function signOut() { try { await api("/api/logout", {}); } catch {} locati
 const LOGO = `<svg class="logo" viewBox="0 0 6629.1 2338.6" role="img" aria-label="RePaper"><path class="ring" fill-rule="evenodd" d="M0 1169.3a1169.3 1169.3 0 1 0 2338.6 0a1169.3 1169.3 0 1 0 -2338.6 0ZM203.6 1169.3a965.7 965.7 0 1 0 1931.3 0a965.7 965.7 0 1 0 -1931.3 0Z"/><path class="letters" d="M355.9 1512.3V824.7H928.2Q1003.3 824.7 1052.6 855.6Q1101.8 886.5 1126.4 936.9Q1151 987.3 1151 1046.8Q1151 1112.2 1120.1 1165.7Q1089.1 1219.2 1026.9 1250.2L1167.5 1512.3H937.8L823.8 1283.6H559.5V1512.3ZM559.5 1133.1H861.7Q898.4 1133.1 920.4 1111.1Q942.3 1089 942.3 1052.5Q942.3 1027.9 932.4 1010.6Q922.5 993.4 904.6 984.5Q886.7 975.7 861.7 975.7H559.5Z M1257.9 1512.3V824.7H1974.7V975.7H1462.1V1091.1H1910.8V1237.2H1462.1V1361.4H1982.7V1512.3Z"/><path class="letters" d="M2489.5 1512.3V824.7H3020.1Q3087.7 824.7 3138.5 854.6Q3189.4 884.4 3217.7 937Q3246 989.7 3246 1058.4Q3246 1127.8 3217.2 1181.2Q3188.4 1234.6 3137.1 1264.1Q3085.7 1293.7 3018.3 1293.7H2693.1V1512.3ZM2693.1 1142.8H2961.6Q3006.8 1142.8 3030.2 1121Q3053.5 1099.3 3053.5 1059.4Q3053.5 1032.2 3042.9 1013.7Q3032.3 995.2 3012 985.4Q2991.6 975.7 2961.6 975.7H2693.1Z M3181.3 1512.3 3519.3 824.7H3745.7L4083.7 1512.3H3863.4L3811.5 1402.1H3442.5L3391.1 1512.3ZM3510.7 1253H3743.3L3680.7 1113.3Q3676.8 1103.9 3669.7 1086.8Q3662.7 1069.6 3655.1 1050.1Q3647.5 1030.6 3641.1 1013.8Q3634.7 997 3631.5 989H3624Q3616.7 1007.3 3607.1 1031.2Q3597.5 1055 3588.6 1077.4Q3579.7 1099.7 3573.3 1113.7Z M4153.5 1512.3V824.7H4684.1Q4751.7 824.7 4802.5 854.6Q4853.4 884.4 4881.7 937Q4910 989.7 4910 1058.4Q4910 1127.8 4881.2 1181.2Q4852.4 1234.6 4801.1 1264.1Q4749.7 1293.7 4682.3 1293.7H4357.1V1512.3ZM4357.1 1142.8H4625.6Q4670.8 1142.8 4694.2 1121Q4717.5 1099.3 4717.5 1059.4Q4717.5 1032.2 4706.9 1013.7Q4696.3 995.2 4676 985.4Q4655.6 975.7 4625.6 975.7H4357.1Z M4984.5 1512.3V824.7H5701.2V975.7H5188.7V1091.1H5637.4V1237.2H5188.7V1361.4H5709.2V1512.3Z M5817.5 1512.3V824.7H6389.7Q6464.9 824.7 6514.1 855.6Q6563.4 886.5 6588 936.9Q6612.6 987.3 6612.6 1046.8Q6612.6 1112.2 6581.7 1165.7Q6550.7 1219.2 6488.5 1250.2L6629.1 1512.3H6399.4L6285.3 1283.6H6021.1V1512.3ZM6021.1 1133.1H6323.3Q6360 1133.1 6381.9 1111.1Q6403.9 1089 6403.9 1052.5Q6403.9 1027.9 6394 1010.6Q6384.1 993.4 6366.1 984.5Q6348.2 975.7 6323.3 975.7H6021.1Z"/></svg>`;
 
 const NAV = [
-  { href: "/", key: "dashboard", label: "Dashboard", icon: "home" },
-  { href: "/fleet", key: "fleet", label: "Fleet", icon: "dock" },
-  { href: "/sheets", key: "sheets", label: "Sheets", icon: "sheet" },
-  { href: "/activity", key: "activity", label: "Activity", icon: "pulse" },
-  { href: "/org", key: "org", label: "Organisation", icon: "people" },
-  { href: "/updates", key: "updates", label: "Updates", icon: "download" },
-  { href: "/billing", key: "billing", label: "Billing", icon: "card", tag: "preview" },
-  { href: "/shop", key: "shop", label: "Shop", icon: "bag", tag: "preview" },
+  { href: "/", key: "dashboard", label: "Dashboard", icon: "home", group: "Overview" },
+  { href: "/fleet", key: "fleet", label: "Fleet", icon: "dock", group: "Manage" },
+  { href: "/sheets", key: "sheets", label: "Sheets", icon: "sheet", group: "Manage" },
+  { href: "/activity", key: "activity", label: "Activity", icon: "pulse", group: "Manage" },
+  { href: "/org", key: "org", label: "Organisation", icon: "people", group: "Manage" },
+  { href: "/updates", key: "updates", label: "Updates", icon: "download", group: "Manage" },
+  { href: "/products", key: "products", label: "How it works", icon: "sparkle", tag: "tour", group: "Explore" },
+  { href: "/billing", key: "billing", label: "Billing", icon: "card", tag: "preview", group: "Explore" },
+  { href: "/shop", key: "shop", label: "Shop", icon: "bag", tag: "preview", group: "Explore" },
 ];
 
 let ME = null;
@@ -110,9 +116,16 @@ const MEP = api("/api/me").then((m) => (ME = m)).catch(() => null);
 function renderShell() {
   const side = el("side"); if (!side) return;
   const active = document.body.dataset.page;
+  let lastGroup = "";
+  const navItems = NAV.map((n) => {
+    const head = n.group && n.group !== lastGroup ? (lastGroup = n.group, `<div class="navlabel">${n.group}</div>`) : "";
+    return `${head}<a href="${n.href}" class="${n.key === active ? "active" : ""}">${ICON[n.icon]}<span>${n.label}</span>${n.tag ? `<span class="tag">${n.tag}</span>` : ""}</a>`;
+  }).join("");
   side.innerHTML = `<a href="/" class="sidelogo">${LOGO}</a>
-    <nav class="nav">${NAV.map((n) => `<a href="${n.href}" class="${n.key === active ? "active" : ""}">${ICON[n.icon]}<span>${n.label}</span>${n.tag ? `<span class="tag">${n.tag}</span>` : ""}</a>`).join("")}</nav>
+    <button class="cmdk-trigger" type="button" onclick="openCmdK()" aria-label="Search (Command K)"><span class="ct-l">${ICON.search}<span>Search</span></span><kbd>⌘K</kbd></button>
+    <nav class="nav">${navItems}</nav>
     <div class="foot"><div class="userchip ${active === "account" ? "active" : ""}" id="userchip"></div></div>`;
+  initCmdK();
   MEP.then(() => { if (!ME) return;
     const defaultName = ME.org === (ME.name || "") || ME.org === ME.email.split("@")[0];
     const orgLine = ME.personal && defaultName ? "Personal"
@@ -123,6 +136,72 @@ function renderShell() {
     document.dispatchEvent(new CustomEvent("me-ready"));
   });
 }
+/* ── ⌘K command palette ── jump to any page, device or action from anywhere */
+const CMDK = { built: false, open: false, sel: 0, items: [], filtered: [], devices: null, devicesTried: false };
+function cmdkBaseItems() {
+  const pages = NAV.map((n) => ({ kind: "page", label: n.label, sub: "Page", icon: n.icon, run: () => (location.href = n.href) }));
+  pages.push({ kind: "page", label: "Account", sub: "Page", icon: "user", run: () => (location.href = "/account") });
+  const actions = [
+    { kind: "action", label: "Claim a device", sub: "Action", icon: "plus", run: () => (location.href = "/fleet?claim=1") },
+    { kind: "action", label: "Sign out", sub: "Action", icon: "out", run: () => signOut() },
+  ];
+  const devs = (CMDK.devices || []).map((d) => ({
+    kind: "device", label: d.name || (d.status || {}).printer || d.kind, sub: d.site ? `Device · ${d.site}` : "Device",
+    icon: d.kind === "go" ? "phone" : "dock", run: () => (location.href = `/fleet?device=${encodeURIComponent(d.id)}`),
+  }));
+  return [...pages, ...devs, ...actions];
+}
+function cmdkFilter(q) {
+  const all = CMDK.items;
+  q = q.trim().toLowerCase();
+  if (!q) return all.slice(0, 12);
+  const toks = q.split(/\s+/);
+  const scored = [];
+  for (const it of all) {
+    const hay = (it.label + " " + it.sub).toLowerCase();
+    if (toks.every((t) => hay.includes(t))) scored.push([it.label.toLowerCase().startsWith(q) ? 0 : hay.indexOf(q) < 0 ? 2 : 1, it]);
+  }
+  return scored.sort((a, b) => a[0] - b[0]).map((x) => x[1]).slice(0, 12);
+}
+function cmdkRender() {
+  const list = el("cmdkList"); if (!list) return;
+  if (!CMDK.filtered.length) { list.innerHTML = `<div class="cmdk-empty">No matches.</div>`; return; }
+  list.innerHTML = CMDK.filtered.map((it, i) => `<button class="cmdk-item ${i === CMDK.sel ? "sel" : ""}" data-i="${i}" role="option">
+    <span class="ci-ic">${ICON[it.icon] || ICON.search}</span><span class="ci-l">${esc(it.label)}</span><span class="ci-s">${esc(it.sub)}</span></button>`).join("");
+  const sel = list.querySelector(".cmdk-item.sel"); if (sel) sel.scrollIntoView({ block: "nearest" });
+}
+function cmdkSetQuery(q) { CMDK.filtered = cmdkFilter(q); CMDK.sel = 0; cmdkRender(); }
+function openCmdK() {
+  if (!CMDK.built) return;
+  CMDK.open = true; el("cmdk").hidden = false; document.body.style.overflow = "hidden";
+  CMDK.items = cmdkBaseItems(); const inp = el("cmdkInput"); inp.value = ""; cmdkSetQuery("");
+  requestAnimationFrame(() => inp.focus());
+  if (!CMDK.devicesTried) { CMDK.devicesTried = true; api("/api/fleet").then((f) => { CMDK.devices = f.devices || []; if (CMDK.open) { CMDK.items = cmdkBaseItems(); cmdkSetQuery(el("cmdkInput").value); } }).catch(() => {}); }
+}
+function closeCmdK() { CMDK.open = false; const d = el("cmdk"); if (d) d.hidden = true; document.body.style.overflow = ""; }
+function initCmdK() {
+  if (CMDK.built) return; CMDK.built = true;
+  const w = document.createElement("div");
+  w.className = "cmdk"; w.id = "cmdk"; w.hidden = true;
+  w.innerHTML = `<div class="cmdk-back" onclick="closeCmdK()"></div>
+    <div class="cmdk-panel" role="dialog" aria-modal="true" aria-label="Command palette">
+      <div class="cmdk-inp"><span class="ic">${ICON.search}</span><input id="cmdkInput" placeholder="Search pages, devices, actions…" autocomplete="off" spellcheck="false"><kbd>esc</kbd></div>
+      <div class="cmdk-list" id="cmdkList" role="listbox"></div>
+    </div>`;
+  document.body.appendChild(w);
+  el("cmdkInput").addEventListener("input", (e) => cmdkSetQuery(e.target.value));
+  el("cmdkList").addEventListener("click", (e) => { const b = e.target.closest(".cmdk-item"); if (!b) return; const it = CMDK.filtered[+b.dataset.i]; if (it) { closeCmdK(); it.run(); } });
+  el("cmdkList").addEventListener("mousemove", (e) => { const b = e.target.closest(".cmdk-item"); if (!b) return; const i = +b.dataset.i; if (i !== CMDK.sel) { CMDK.sel = i; cmdkRender(); } });
+}
+document.addEventListener("keydown", (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); CMDK.open ? closeCmdK() : openCmdK(); return; }
+  if (!CMDK.open) return;
+  if (e.key === "Escape") { e.preventDefault(); closeCmdK(); }
+  else if (e.key === "ArrowDown") { e.preventDefault(); CMDK.sel = Math.min(CMDK.filtered.length - 1, CMDK.sel + 1); cmdkRender(); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); CMDK.sel = Math.max(0, CMDK.sel - 1); cmdkRender(); }
+  else if (e.key === "Enter") { e.preventDefault(); const it = CMDK.filtered[CMDK.sel]; if (it) { closeCmdK(); it.run(); } }
+});
+
 /* flicker killer: only touch the DOM when the content actually changed */
 const _lastHTML = new Map();
 function setHTML(id, html) {
