@@ -1,3 +1,5 @@
+0.2.23 · 2026-09-14 · Discarding a waiting Print2Go job now cancels it for everyone (the Dock and every other phone), not just this device. Also: the discard button no longer stretches too tall when only one job is waiting; and the waiting-list state is now thread-safe.
+
 0.2.22 · 2026-09-14 · Print2Go reliability + fixes: the waiting list is rebuilt from the cloud on every reconnect, so a job already printed or expired elsewhere no longer lingers as a ghost; a failed Print2Go print no longer leaves a duplicate that could reprint; swipe-to-discard rebuilt (the delete button now actually deletes and sits cleanly at the edge); the queue shows a clear paused state while a print runs; signing out clears the queue and inherited labels.
 
 0.2.21 · 2026-09-14 · Fixes: tapping a sheet now prints a waiting Print2Go (inherited-label) job too — no more "nothing waiting to print" when a job is clearly there. Rebuilt swipe-to-discard so it tracks the finger, no longer fights the scroll, and shows a clean red panel.

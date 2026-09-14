@@ -30,8 +30,12 @@ class Job:
     def page_path(self, n: int) -> Path: return self.dir / f"page-{n}.png"
 
     def save(self) -> None:
+        # atomic: write a temp file then rename over meta.json, so a concurrent reader
+        # (the status loop, or a cross-thread state change) never sees a half-written file
         self.dir.mkdir(parents=True, exist_ok=True)
-        (self.dir / "meta.json").write_text(json.dumps(asdict(self), indent=2) + "\n")
+        tmp = self.dir / "meta.json.tmp"
+        tmp.write_text(json.dumps(asdict(self), indent=2) + "\n")
+        tmp.replace(self.dir / "meta.json")
 
     def next_page(self) -> Optional[int]:
         done = {p["page"] for p in self.printed}

@@ -165,6 +165,11 @@ class CloudAgent(threading.Thread):
         elif t == "mirror_done":
             j = msg.get("job") or {}
             if j.get("id"): self.dock._p2g_done[j["id"]] = j.get("on") or "a phone"
+        elif t == "mirror_cancelled":
+            # a phone discarded the job — hand off to the run-loop thread, which owns Job state
+            jid = (msg.get("job") or {}).get("id")
+            if jid:
+                with self.dock._p2g_cancel_lock: self.dock._p2g_cancel_ids.add(jid)
         elif t == "error":
             raise RuntimeError(msg.get("error") or "server error")
         return None

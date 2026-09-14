@@ -36,6 +36,8 @@ class Dock:
         self._p2g_taken: set[str] = set()    # cloud job ids a phone has claimed
         self._p2g_done: dict[str, str] = {}  # cloud job id → the phone that printed it
         self._p2g_checked: dict[str, float] = {}  # cloud job id → last time we polled its state
+        self._p2g_cancel_ids: set[str] = set()    # discards to apply on the run-loop thread
+        self._p2g_cancel_lock = threading.Lock()  # guards the hand-off from the cloud thread
         self.sheet_status: dict[str, dict] = {}         # sheet id → {battery_volts, temperature_c, online, seen, at}
         self._status_lock = threading.Lock()
         for sid in self.registry.ids():                 # last known readings survive a restart; "online" is unknown until the first scan
@@ -85,6 +87,12 @@ class Dock:
     def run(self):
         log.info("dock ready · transports: %s · sheets: %s", list(self.transports), self.registry.ids())
         while True:
+            # apply any phone-initiated discards on THIS thread (never mutate a Job from the
+            # cloud-agent thread — two writers on meta.json can lose an update)
+            if self._p2g_cancel_ids:
+                with self._p2g_cancel_lock:
+                    to_cancel = self._p2g_cancel_ids; self._p2g_cancel_ids = set()
+                for cid in to_cancel: self._p2g_cancel(cid)
             pending = [j for j in list_jobs() if j.state in ("pending", "printing")]
             if not pending:
                 self.state, self.current = "ready", None; time.sleep(0.5); continue
@@ -166,6 +174,22 @@ class Dock:
             self._p2g_taken.discard(cloud_id)                # released — back to waiting
         elif state == "claimed":
             self._p2g_taken.add(cloud_id)                    # a phone is printing it
+
+    def _p2g_cancel(self, cloud_id: str) -> None:
+        """A phone discarded this Print2Go job — cancel the local spool page waiting on it,
+        so the Dock stops waiting for a sheet and moves on. Runs on the run-loop thread.
+        (Only ever fires for a job the Dock hasn't claimed itself; a page the Dock is
+        printing can't be discarded.)"""
+        for key, cid in list(self._p2g_pages.items()):
+            if cid != cloud_id: continue
+            job_id = key.rsplit(":", 1)[0]
+            for j in list_jobs():
+                if j.id == job_id and j.state in ("pending", "printing"):
+                    j.state = "cancelled"; j.error = "discarded from a phone"; j.save()
+                    log.info("print2go: '%s' discarded from a phone — cancelled locally", j.name)
+            del self._p2g_pages[key]                        # done with this cloud id — prune the maps
+            self._p2g_taken.discard(cloud_id); self._p2g_done.pop(cloud_id, None); self._p2g_checked.pop(cloud_id, None)
+            break
 
     def _mark_printed_elsewhere(self, job: Job, page_no: int, who: str):
         job.printed.append({"page": page_no, "sheet": f"(phone) {who}", "at": time.time()})

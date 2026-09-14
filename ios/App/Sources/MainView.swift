@@ -98,7 +98,7 @@ struct MainView: View {
                             Group {
                                 ForEach(cloud.pending) { p in
                                     SwipeToDiscard(onTap: { if !busy { pickMirrorFor = p } },
-                                                   onDiscard: { cloud.dismiss(p.id) }) {
+                                                   onDiscard: { cloud.discardJob(p.id) }) {
                                         MirrorCard(pending: p, busy: busy)
                                     }
                                 }
@@ -520,6 +520,11 @@ struct MainView: View {
 ///  • the discard target is drawn ON TOP of the revealed strip — SwiftUI's `.offset`
 ///    moves pixels but NOT hit regions, so a target sitting *under* the shifted card
 ///    would never receive the tap (that was why "delete didn't work").
+private struct SwipeRowHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
 struct SwipeToDiscard<Content: View>: View {
     let onTap: () -> Void
     let onDiscard: () -> Void
@@ -527,6 +532,7 @@ struct SwipeToDiscard<Content: View>: View {
     @State private var offset: CGFloat = 0        // live x of the card (0 … -reveal)
     @State private var startOffset: CGFloat = 0   // offset captured at the start of a swipe
     @State private var dragging = false
+    @State private var rowHeight: CGFloat = 0     // measured card height, so the strip matches it exactly
     private let reveal: CGFloat = 76
 
     private var isOpen: Bool { offset <= -reveal + 8 }
@@ -534,6 +540,9 @@ struct SwipeToDiscard<Content: View>: View {
     var body: some View {
         ZStack(alignment: .trailing) {
             content
+                .background(GeometryReader { g in
+                    Color.clear.preference(key: SwipeRowHeightKey.self, value: g.size.height)
+                })
                 .offset(x: offset)
                 .contentShape(Rectangle())
                 .onTapGesture { if offset != 0 { snap(open: false) } else { onTap() } }
@@ -554,7 +563,9 @@ struct SwipeToDiscard<Content: View>: View {
 
             // the discard target: a red strip pinned to the trailing edge whose width
             // tracks the swipe, so the reveal grows cleanly from the right edge and the
-            // tap lands exactly where the red is drawn (only armed once fully open)
+            // tap lands exactly where the red is drawn (only armed once fully open).
+            // Its height is the MEASURED card height (never maxHeight:.infinity, which
+            // stretched it over the whole scroll area when only one card was present).
             Button { snap(open: false); onDiscard() } label: {
                 ZStack(alignment: .trailing) {
                     Ui.red
@@ -566,12 +577,12 @@ struct SwipeToDiscard<Content: View>: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16))
             }
             .buttonStyle(.plain)
-            .frame(width: max(0, -offset))
-            .frame(maxHeight: .infinity)
+            .frame(width: max(0, -offset), height: max(rowHeight - 8, 0))
             .padding(.top, 8)                     // matches the card's own .padding(.top, 8)
             .opacity(offset < -1 ? 1 : 0)
             .allowsHitTesting(isOpen)
         }
+        .onPreferenceChange(SwipeRowHeightKey.self) { rowHeight = $0 }
     }
 
     private func snap(open: Bool) {

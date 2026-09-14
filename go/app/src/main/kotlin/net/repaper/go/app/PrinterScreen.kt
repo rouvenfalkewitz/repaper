@@ -155,7 +155,7 @@ class PrinterScreen(private val act: AppCompatActivity) : Screen {
                 setTextColor(Ui.TEXT_3); setPadding(0, 0, 0, dp(2))
             })
             for (p in pending) jobList.addView(swipeToDiscard(mirrorCard(p), enabled = !busy,
-                onTap = { if (!busy) pickSheetForMirror(p) }, onDiscard = { CloudAgent.get(c).dismiss(p.id); refresh() }))
+                onTap = { if (!busy) pickSheetForMirror(p) }, onDiscard = { CloudAgent.get(c).discardJob(p.id); refresh() }))
             for (job in waiting) jobList.addView(swipeToDiscard(jobCard(job), enabled = !busy,
                 onTap = { if (!busy) pickSheetFor(job) }, onDiscard = { job.delete(); refresh() }))
         }

@@ -171,12 +171,15 @@ struct MirrorPending: Identifiable, Equatable {
     func jobDone(_ id: String) async { _ = try? await post("mirror-job/\(id)/done") }
     func jobReleased(_ id: String) async { _ = try? await post("mirror-job/\(id)/release") }
 
-    /// The user swiped a waiting Print2Go job away on this phone: stop offering it here
-    /// (it stays available to other devices — first to print still wins).
-    func dismiss(_ id: String) {
+    /// The user swiped a waiting Print2Go job away: cancel it for EVERYONE — the source
+    /// Dock and every other phone — not just here. Hidden optimistically; the cloud
+    /// removes it from the pool and broadcasts the removal (the local `dismissed` entry is
+    /// a fallback that keeps it hidden here if the round-trip fails).
+    func discardJob(_ id: String) {
         dismissed.insert(id)
         pending.removeAll { $0.id == id }
         NotificationCenter.default.post(name: .mirrorJobArrived, object: nil)
+        Task { _ = try? await post("mirror-job/\(id)/discard") }
     }
 
     /// The org's Print2Go Docks this phone can print from.

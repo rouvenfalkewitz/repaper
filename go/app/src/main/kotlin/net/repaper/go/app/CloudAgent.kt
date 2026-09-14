@@ -41,6 +41,11 @@ class CloudAgent(private val context: Context) {
     /** A Print2Go job offered but not yet claimed — first to actually print wins. */
     data class Pending(val id: String, val name: String, val from: String)
     @Volatile var pending: List<Pending> = emptyList(); private set
+    // `pending` is read-modify-written from three threads (WS callback, UI discard, IO
+    // takeJob) — a plain volatile ref isn't RMW-safe, so every mutation goes through this
+    // lock to avoid a lost update dropping or resurrecting a job
+    private val pendingLock = Any()
+    private fun mutatePending(f: (List<Pending>) -> List<Pending>) { synchronized(pendingLock) { pending = f(pending) } }
     // mutated from both the WS callback thread (remove/clear) and the UI thread (dismiss) —
     // synchronized so concurrent access can't corrupt it or throw
     private val dismissed = java.util.Collections.synchronizedSet(HashSet<String>())
@@ -109,7 +114,7 @@ class CloudAgent(private val context: Context) {
                 // reconnect is authoritative: drop the whole waiting list, then let the burst
                 // of mirror_job messages the server sends right after rebuild it from ground
                 // truth — otherwise a job resolved while we were briefly offline ghosts here.
-                pending = emptyList()
+                mutatePending { emptyList() }
                 onJobArrived?.invoke()
             }
             "claimed" -> {
@@ -121,7 +126,7 @@ class CloudAgent(private val context: Context) {
             "identify" -> {} // a phone has no LED ring; the app could vibrate later
             "signed_out" -> {
                 claimed = false; Prefs.setClaimed(context, false)   // the sign-in gate returns
-                pending = emptyList(); dismissed.clear()            // don't carry a signed-out queue forward
+                mutatePending { emptyList() }; dismissed.clear()    // don't carry a signed-out queue forward
                 InheritedSheets.set(JSONArray(), null)              // drop inherited Dock-Labels
                 onJobArrived?.invoke()
             }
@@ -130,13 +135,13 @@ class CloudAgent(private val context: Context) {
                 val job = msg.optJSONObject("job") ?: return
                 val id = job.optString("id")
                 if (id.isNotEmpty() && pending.none { it.id == id } && !dismissed.contains(id)) {
-                    pending = pending + Pending(id, job.optString("name", "job"), job.optString("from", "a Dock"))
+                    mutatePending { it + Pending(id, job.optString("name", "job"), job.optString("from", "a Dock")) }
                     onJobArrived?.invoke()
                 }
             }
             "mirror_taken", "mirror_done" -> {
                 val id = msg.optJSONObject("job")?.optString("id") ?: return
-                pending = pending.filterNot { it.id == id }
+                mutatePending { p -> p.filterNot { it.id == id } }
                 dismissed.remove(id)   // the job no longer exists — stop remembering it as dismissed
                 onJobArrived?.invoke()
             }
@@ -160,7 +165,7 @@ class CloudAgent(private val context: Context) {
 
     /** Claim a job + get its page (first wins). Returns the spooled file, or null if lost. */
     fun takeJob(id: String): java.io.File? {
-        pending = pending.filterNot { it.id == id }
+        mutatePending { p -> p.filterNot { it.id == id } }
         val obj = post("mirror-job/$id/take") ?: return null
         if (!obj.optBoolean("ok")) { DiagLog.log("take $id: lost the race or gone"); return null }
         val bytes = android.util.Base64.decode(obj.optString("data"), android.util.Base64.DEFAULT)
@@ -170,12 +175,15 @@ class CloudAgent(private val context: Context) {
     fun jobDone(id: String) { post("mirror-job/$id/done") }
     fun jobReleased(id: String) { post("mirror-job/$id/release") }
 
-    /** The user swiped a waiting Print2Go job away on this phone: stop offering it here
-     *  (it stays available to other devices — first to print still wins). */
-    fun dismiss(id: String) {
+    /** The user swiped a waiting Print2Go job away: cancel it for EVERYONE — the source
+     *  Dock and every other phone — not just here. Hidden optimistically; the cloud removes
+     *  it from the pool and broadcasts the removal (the local `dismissed` entry is a
+     *  fallback that keeps it hidden here if the round-trip fails). */
+    fun discardJob(id: String) {
         dismissed.add(id)
-        pending = pending.filterNot { it.id == id }
+        mutatePending { p -> p.filterNot { it.id == id } }
         onJobArrived?.invoke()
+        scope.launch { post("mirror-job/$id/discard") }
     }
 
     /** Relay a learned NFC tag up so the paired Dock and other phones converge (the one

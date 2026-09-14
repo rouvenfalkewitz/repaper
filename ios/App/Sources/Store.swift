@@ -2,7 +2,7 @@ import Foundation
 import UIKit
 import RePaperKit
 
-let GO_IOS_VERSION = "0.1.33"
+let GO_IOS_VERSION = "0.1.34"
 
 /// Which APNs environment this build's push tokens belong to. Development/Xcode
 /// builds get sandbox tokens; flip to "production" for TestFlight/App Store.

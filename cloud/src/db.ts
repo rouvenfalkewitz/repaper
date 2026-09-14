@@ -132,13 +132,17 @@ if (!dcols.includes("claimed_by")) db.exec("ALTER TABLE device ADD COLUMN claime
     created INTEGER NOT NULL,
     claimed_by TEXT,
     claimed_at INTEGER,
-    idem TEXT
+    idem TEXT,
+    discarded INTEGER NOT NULL DEFAULT 0
   )`);
   // idempotency key (dock's stable id for a page): a Dock that restarts and re-forwards
   // the same page is deduped instead of minting a second claimable job (double print).
   // Guard on dock_id (not just non-empty): a v1 table was just DROP+recreated WITH idem
   // above, but mjCols is the pre-drop snapshot — ALTERing then would be a duplicate column.
   if (mjCols.includes("dock_id") && !mjCols.includes("idem")) db.exec("ALTER TABLE mirror_job ADD COLUMN idem TEXT");
+  // a discarded job stays as a tombstone (not deleted) so its idem still dedupes a
+  // re-forward from a Dock that discarded it while offline — otherwise the job resurrects
+  if (mjCols.includes("dock_id") && !mjCols.includes("discarded")) db.exec("ALTER TABLE mirror_job ADD COLUMN discarded INTEGER NOT NULL DEFAULT 0");
   if (!dcols.includes("diag_at")) db.exec("ALTER TABLE device ADD COLUMN diag_at REAL");
   if (!dcols.includes("dormant")) db.exec("ALTER TABLE device ADD COLUMN dormant INTEGER NOT NULL DEFAULT 0"); // signed out but still a seat
   if (!dcols.includes("platform")) db.exec("ALTER TABLE device ADD COLUMN platform TEXT"); // ios | android for Go apps
@@ -234,7 +238,7 @@ export type DeviceRow = {
   approved: number; claimed_by: number | null; mirror_to: string | null; mirror_from: string | null; dormant: number;
   platform: string | null; push_token: string | null; push_env: string | null;
 };
-export type MirrorJobRow = { id: string; dock_id: string; name: string; type: string; path: string; created: number; claimed_by: string | null; claimed_at: number | null; idem: string | null };
+export type MirrorJobRow = { id: string; dock_id: string; name: string; type: string; path: string; created: number; claimed_by: string | null; claimed_at: number | null; idem: string | null; discarded: number };
 
 // ── orgs & users ────────────────────────────────────────────────────────────
 export const getOrg = (id: number) => db.prepare("SELECT * FROM org WHERE id=?").get(id) as OrgRow | undefined;
@@ -421,13 +425,17 @@ export const claimMirrorJob = (id: string, by: string): boolean =>
 /** Re-open a job the claimer couldn't finish. */
 export const releaseMirrorJob = (id: string) =>
   db.prepare("UPDATE mirror_job SET claimed_by=NULL, claimed_at=NULL WHERE id=?").run(id);
-/** Unclaimed jobs waiting for a given recipient (the source Dock, or a phone mirroring it). */
+/** Tombstone a discarded job: keep the row (so its idem still dedupes a re-forward) but
+ *  take it out of the pool. Purged later by age like any other job. */
+export const markMirrorDiscarded = (id: string) =>
+  db.prepare("UPDATE mirror_job SET discarded=1, claimed_by=NULL, claimed_at=NULL WHERE id=?").run(id);
+/** Unclaimed, non-discarded jobs waiting for a given recipient (the source Dock, or a phone mirroring it). */
 export const openMirrorJobsFor = (deviceId: string): MirrorJobRow[] => {
   const d = getDevice(deviceId);
   if (!d) return [];
   const dockId = d.kind === "go" ? d.mirror_from : d.id;   // a phone waits on its source Dock; a Dock on itself
   if (!dockId) return [];
-  return db.prepare("SELECT * FROM mirror_job WHERE dock_id=? AND claimed_by IS NULL ORDER BY created").all(dockId) as MirrorJobRow[];
+  return db.prepare("SELECT * FROM mirror_job WHERE dock_id=? AND claimed_by IS NULL AND discarded=0 ORDER BY created").all(dockId) as MirrorJobRow[];
 };
 export const staleMirrorJobs = (olderThan: number) =>
   db.prepare("SELECT * FROM mirror_job WHERE created < ?").all(olderThan) as MirrorJobRow[];

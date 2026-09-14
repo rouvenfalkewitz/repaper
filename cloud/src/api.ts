@@ -18,7 +18,7 @@ import {
   setOrgLogo, setUserName, setUserRole, updateCompany, updatePassword, useRecoveryCode, userApiKeys,
   COMPANY_FIELDS, DATA_DIR, type DeviceRow, type UserRow,
   addMirrorJob, claimMirrorJob, cleanupDockData, clearPushToken, deleteMirrorJob, deviceLabel, findByClaimCode, getMirrorJob,
-  isPrint2Go, markDormant, mirrorJobByIdem, mirrorJobsClaimedBy, mirrorPhones, print2goDocks, reactivateDevice, releaseMirrorJob,
+  isPrint2Go, markDormant, markMirrorDiscarded, mirrorJobByIdem, mirrorJobsClaimedBy, mirrorPhones, print2goDocks, reactivateDevice, releaseMirrorJob,
   setMirrorFrom, staleMirrorJobs,
 } from "./db.js";
 import { apnsConfigured, sendPush } from "./apns.js";
@@ -219,6 +219,8 @@ export const registerApi = (app: FastifyInstance) => {
     if (idemKey) {
       const existing = mirrorJobByIdem(d.id, idemKey);
       if (existing) {
+        // a discarded page stays cancelled — don't re-offer it (that's the resurrection bug)
+        if (existing.discarded) return { ok: true, job_id: existing.id, phones: 0, discarded: true };
         const phones = existing.claimed_by ? 0 : offerJob({ id: existing.id, dock_id: d.id, name: existing.name });
         return { ok: true, job_id: existing.id, phones, deduped: true };
       }
@@ -227,7 +229,7 @@ export const registerApi = (app: FastifyInstance) => {
     const path = join(MIRROR_DIR, jobId);
     writeFileSync(path, buf);
     addMirrorJob({ id: jobId, dock_id: d.id, name: jobName, type: type === "pdf" ? "pdf" : "png",
-                   path, created: Date.now(), claimed_by: null, claimed_at: null, idem: idemKey });
+                   path, created: Date.now(), claimed_by: null, claimed_at: null, idem: idemKey, discarded: 0 });
     const phones = offerJob({ id: jobId, dock_id: d.id, name: jobName });
     addEvent(d.id, "print2go_forwarded", `${jobName} → ${phones} device${phones === 1 ? "" : "s"}`);
     return { ok: true, job_id: jobId, phones };
@@ -240,7 +242,7 @@ export const registerApi = (app: FastifyInstance) => {
     const d = deviceAuth(req.body);
     if (!d) return reply.code(401).send({ error: "auth" });
     const j = getMirrorJob((req.params as { jid: string }).jid);
-    if (!j) return reply.code(404).send({ error: "no such job" });
+    if (!j || j.discarded) return reply.code(404).send({ error: "no such job" });   // gone or cancelled
     const eligible = j.dock_id === d.id || (d.kind === "go" && d.mirror_from === j.dock_id);
     if (!eligible) return reply.code(403).send({ error: "not your job" });
     // for a phone, read the page BEFORE committing the claim, so a read failure leaves the
@@ -264,7 +266,7 @@ export const registerApi = (app: FastifyInstance) => {
     const d = deviceAuth(req.body);
     if (!d) return reply.code(401).send({ error: "auth" });
     const j = getMirrorJob((req.params as { jid: string }).jid);
-    if (!j) return { state: "gone" };                                   // printed elsewhere or expired
+    if (!j || j.discarded) return { state: "gone" };                    // printed elsewhere, expired, or discarded
     if (j.dock_id !== d.id && d.mirror_from !== j.dock_id) return reply.code(403).send({ error: "not your job" });
     return { state: j.claimed_by ? (j.claimed_by === d.id ? "mine" : "claimed") : "open" };
   });
@@ -288,6 +290,29 @@ export const registerApi = (app: FastifyInstance) => {
     if (!d) return reply.code(401).send({ error: "auth" });
     const j = getMirrorJob((req.params as { jid: string }).jid);
     if (j && j.claimed_by === d.id) { releaseMirrorJob(j.id); offerJob(j); }
+    return { ok: true };
+  });
+
+  /* a phone discarded a waiting job — cancel it for EVERYONE: drop it from the pool, tell
+     the source Dock to cancel its local spool, and tell the other phones to remove the
+     card. A job already being printed (claimed elsewhere) can't be discarded out from
+     under the printer. */
+  app.post("/api/device/mirror-job/:jid/discard", async (req, reply) => {
+    const d = deviceAuth(req.body);
+    if (!d) return reply.code(401).send({ error: "auth" });
+    const j = getMirrorJob((req.params as { jid: string }).jid);
+    if (!j) return { ok: true };   // already gone
+    const eligible = j.dock_id === d.id || (d.kind === "go" && d.mirror_from === j.dock_id);
+    if (!eligible) return reply.code(403).send({ error: "not your job" });
+    if (j.claimed_by && j.claimed_by !== d.id) return { ok: false, reason: "printing" };   // in flight — leave it
+    addEvent(j.dock_id, "print2go_discarded", `${j.name} by ${deviceLabel(d)}`);
+    // tombstone (don't delete): the row's idem keeps deduping a re-forward from a Dock that
+    // discarded while offline, so the job can't resurrect. The page bytes are no longer
+    // needed, so drop the file; the tombstone row is purged later by age.
+    markMirrorDiscarded(j.id);
+    try { unlinkSync(j.path); } catch {}
+    sendToDevice(j.dock_id, { t: "mirror_cancelled", job: { id: j.id } });   // Dock cancels its local spool
+    for (const p of mirrorPhones(j.dock_id)) sendToDevice(p.id, { t: "mirror_taken", job: { id: j.id } });
     return { ok: true };
   });
 
