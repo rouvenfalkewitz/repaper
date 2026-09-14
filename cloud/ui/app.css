@@ -668,3 +668,52 @@ a.stat-tile:hover, .dev:hover {
   .userchip .who3, .userchip .uchev { display: none }
   .usermenu { position: fixed; left: auto; right: 12px; bottom: auto; top: 58px; width: min(220px, calc(100vw - 24px)) }
 }
+
+/* ══ Fleet page — device-box thumbnails, local-page access, richer cards ══════ */
+.fdart { flex: none; display: inline-grid; place-items: center }
+/* state on the reusable device art */
+.devbox.off::after, .devphone.off::after { opacity: 0 }
+.devbox.off .devring { border-color: var(--border-strong); box-shadow: none; animation: none }
+.devbox.off .golet .gomark::before, .devphone.off .gomark::before { border-color: var(--border-strong); box-shadow: none; animation: none }
+.devbox.off .golet .go, .devphone.off .gomark .go { color: var(--text-3) }
+.devbox.printing .devring { animation-duration: 1.15s }
+.devbox.printing .golet .gomark::before, .devphone.printing .gomark::before { animation-duration: 1.15s }
+
+/* the card header is one big click target for details */
+.dev .dev-top { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; background: transparent; border: 0; padding: 0; margin: 0 0 2px; cursor: pointer; color: inherit; font: inherit; border-radius: 10px }
+.dev .dev-top .devwho { flex: 1; min-width: 0 }
+.dev .dev-top .dev-go { flex: none; color: var(--text-3); opacity: 0; transform: translateX(-4px); transition: opacity var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out) }
+.dev .dev-top .dev-go svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round }
+.dev:hover .dev-top .dev-go { opacity: 1; transform: none }
+.dev .dev-top:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px }
+.dev.printing { border-color: rgba(30,227,165,.42) }
+
+/* the local-page row — one click to the Dock's own page */
+.lanrow { display: flex; align-items: center; gap: 9px; margin-top: 10px; padding: 8px 11px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text-2); text-decoration: none; transition: border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out) }
+.lanrow:hover { border-color: var(--accent); background: var(--surface-2) }
+.lanrow .lg { display: inline-grid; color: var(--text-3); flex: none } .lanrow:hover .lg { color: var(--accent-text) }
+.lanrow .lg svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round }
+.lanrow .ll { font: 600 .8125rem var(--font-body); color: var(--text-2); flex: none } .lanrow:hover .ll { color: var(--text) }
+.lanrow .addr { font-family: var(--font-mono); font-size: .75rem; color: var(--text-3); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right }
+.lanrow .ext { display: inline-grid; color: var(--text-3); flex: none } .lanrow:hover .ext { color: var(--accent-text) }
+.lanrow .ext svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round }
+.lanrow.off { opacity: .5; pointer-events: none }
+
+/* list view: art thumbnail + name as a details button */
+.frow .fname { background: transparent; border: 0; padding: 0; margin: 0; cursor: pointer; color: inherit; font: inherit }
+.frow .fname:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px }
+.frow .fname .fdart { flex: none }
+
+/* site headers carry a count */
+.sitehead { display: flex; align-items: center; gap: 9px }
+.sitehead span { font-family: var(--font-mono); font-size: .6875rem; color: var(--text-3); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 1px 8px; letter-spacing: 0 }
+
+/* details modal: the device, actions and the local-page note up top */
+.det-hero { display: flex; align-items: center; gap: 16px }
+.det-art { flex: none }
+.det-actions { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; min-width: 0 }
+.det-actions .btn svg { width: 16px; height: 16px }
+.det-note { display: flex; align-items: flex-start; gap: 8px; margin: 12px 0 2px; color: var(--text-3); font-size: .8125rem; line-height: 1.5 }
+.det-note svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; margin-top: 2px }
+.det-note b { color: var(--text-2); font-family: var(--font-mono) }
+/* ════════════════════════════════════════════════════════════════════════════ */

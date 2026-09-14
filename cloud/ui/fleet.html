@@ -42,9 +42,26 @@ let OPEN_CLAIM = params.get("claim") === "1";
 const FILTERS = [
   ["all", "All", () => true],
   ["online", "Online", d => d.online],
+  ["printing", "Printing", d => (d.status || {}).state === "printing"],
   ["offline", "Offline", d => !d.online],
   ["pending", "Needs approval", d => d.approved === false],
 ];
+/* the state-aware device box — the product art, live: glowing when online,
+   dimmed when offline, pulsing when printing. Reuses .devbox / .devphone / .gomark. */
+function deviceArt(d, box = 60) {
+  const off = !d.online, printing = (d.status || {}).state === "printing";
+  const cls = [off ? "off" : "", printing ? "printing" : ""].filter(Boolean).join(" ");
+  if (d.kind === "go") { const pw = Math.round(box * 92 / 166); return `<span class="devphone ${cls}" style="--pw:${pw}px"><span class="gomark"><span class="go">GO</span></span></span>`; }
+  if (d.kind === "dock-light") return `<span class="devbox light ${cls}" style="--box:${box}px"><span class="devring"></span><span class="golet"><span class="gomark"><span class="go">GO</span></span></span></span>`;
+  return `<span class="devbox ${cls}" style="--box:${box}px"><span class="devring"></span></span>`;
+}
+/* the Dock's local page — surfaced right on the card so it's one click away */
+function lanRow(d) {
+  const st = d.status || {}; if (d.kind === "go" || !st.lan) return "";
+  const off = !d.online, addr = st.lan.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  return `<a class="lanrow ${off ? "off" : ""}" href="${esc(st.lan)}" target="_blank" rel="noopener" title="${off ? "The Dock is offline" : "Opens the Dock's own page — reachable on its network"}"${off ? ' aria-disabled="true" tabindex="-1"' : ""}>
+    <span class="lg">${ICON.globe}</span><span class="ll">Local page</span><span class="addr">${esc(addr)}</span><span class="ext">${ICON.external}</span></a>`;
+}
 function renderFilters() {
   const counts = Object.fromEntries(FILTERS.map(([k, , fn]) => [k, S.devices.filter(fn).length]));
   if (FILTER !== "all" && !counts[FILTER]) FILTER = "all";
@@ -91,16 +108,18 @@ function card(d, showSite = true) {
     low ? `<span class="dchip mono warn">${low} low battery</span>` : "",
     away && !low ? `<span class="dchip mono dim">${away} out of range</span>` : "",
   ].filter(Boolean).join("");
-  return `<div class="dev ${off ? "off" : ""}" data-id="${esc(d.id)}">
-    <div class="dev-top">
-      <span class="devic ${off ? "off" : ""}">${d.kind === "go" ? ICON.phone : ICON.dock}</span>
+  return `<div class="dev ${off ? "off" : ""} ${printing ? "printing" : ""}" data-id="${esc(d.id)}">
+    <button class="dev-top" data-act="details" title="Open details">
+      <span class="fdart">${deviceArt(d)}</span>
       <span class="devwho"><b>${esc(name)}</b>${sub ? `<span class="mono">${esc(sub)}</span>` : ""}</span>
-    </div>
-    ${d.approved === false ? `<div class="notice" style="margin:8px 0 0"><b style="color:var(--amber)">Waiting for approval</b><span>A member added this device.${ME?.role === "admin" ? "" : " An admin activates it."}</span>${ME?.role === "admin" ? `<button class="btn primary small" data-act="approve" style="margin-left:auto">Approve</button>` : ""}</div>` : ""}
+      <span class="dev-go">${ICON.chevright}</span>
+    </button>
+    ${d.approved === false ? `<div class="notice" style="margin:10px 0 0"><b style="color:var(--amber)">Waiting for approval</b><span>A member added this device.${ME?.role === "admin" ? "" : " An admin activates it."}</span>${ME?.role === "admin" ? `<button class="btn primary small" data-act="approve" style="margin-left:auto">Approve</button>` : ""}</div>` : ""}
     <div class="dchips">${chips}</div>
+    ${lanRow(d)}
     <div class="dev-foot">
       <span class="presence ${off ? "off" : ""} ${printing ? "printing" : ""}"><span class="dot"></span><b>${off ? "seen " + ago(d.last_seen) : printing ? "printing now" : "online"}</b></span>
-      <span class="iconrow"><button class="iconbtn" data-act="identify" title="Identify" aria-label="Identify" ${off ? "disabled" : ""}>${ICON.ping}</button><button class="iconbtn" data-act="name" title="Rename" aria-label="Rename">${ICON.pencil}</button><button class="iconbtn" data-act="details" title="Details" aria-label="Details">${ICON.info}</button><button class="iconbtn danger" data-act="remove" title="Remove" aria-label="Remove">${ICON.trash}</button></span>
+      <span class="iconrow"><button class="iconbtn" data-act="identify" title="Identify" aria-label="Identify" ${off ? "disabled" : ""}>${ICON.ping}</button><button class="iconbtn" data-act="name" title="Rename" aria-label="Rename">${ICON.pencil}</button><button class="iconbtn danger" data-act="remove" title="Remove" aria-label="Remove">${ICON.trash}</button></span>
     </div></div>`;
 }
 
@@ -116,12 +135,15 @@ function listRow(d, showSite = true) {
     : off ? `<span class="fstat off"><span class="dot"></span>seen ${ago(d.last_seen)}</span>`
     : printing ? `<span class="fstat"><span class="presence printing"><span class="dot"></span></span>printing</span>`
     : `<span class="fstat"><span class="presence"><span class="dot"></span></span>online</span>`;
+  const openBtn = d.kind !== "go" && st.lan
+    ? `<a class="iconbtn" href="${esc(st.lan)}" target="_blank" rel="noopener" title="Open local page" aria-label="Open local page"${off ? ' aria-disabled="true" tabindex="-1"' : ""}>${ICON.external}</a>`
+    : "";
   return `<div class="frow ${off ? "off" : ""}" data-id="${esc(d.id)}">
-    <span class="fcell fname"><span class="devic ${off ? "off" : ""}" style="width:32px;height:32px;border-radius:9px">${d.kind === "go" ? ICON.phone : ICON.dock}</span><span class="devwho"><b>${esc(name)}</b><span class="mono">${esc(sub)}</span></span></span>
+    <button class="fcell fname" data-act="details" title="Open details"><span class="fdart">${deviceArt(d, 34)}</span><span class="devwho"><b>${esc(name)}</b><span class="mono">${esc(sub)}</span></span></button>
     <span class="fcell">${status}</span>
     <span class="fcell mono">${d.version ? "v" + esc(d.version) : "—"}${d.target_version && d.target_version !== d.version ? ` <span class="dchip mono">↑ ${esc(d.target_version)}</span>` : ""}</span>
     <span class="fcell mono">${count}${low ? ` <span class="dchip mono warn">${low} low</span>` : ""}</span>
-    <span class="fcell fact-cell"><span class="iconrow"><button class="iconbtn" data-act="identify" title="Identify" aria-label="Identify" ${off ? "disabled" : ""}>${ICON.ping}</button><button class="iconbtn" data-act="details" title="Details" aria-label="Details">${ICON.info}</button><button class="iconbtn" data-act="name" title="Rename" aria-label="Rename">${ICON.pencil}</button><button class="iconbtn danger" data-act="remove" title="Remove" aria-label="Remove">${ICON.trash}</button></span></span>
+    <span class="fcell fact-cell"><span class="iconrow">${openBtn}<button class="iconbtn" data-act="identify" title="Identify" aria-label="Identify" ${off ? "disabled" : ""}>${ICON.ping}</button><button class="iconbtn" data-act="name" title="Rename" aria-label="Rename">${ICON.pencil}</button><button class="iconbtn danger" data-act="remove" title="Remove" aria-label="Remove">${ICON.trash}</button></span></span>
   </div>`;
 }
 const LIST_HEAD = `<div class="frow head"><span class="fcell">Device</span><span class="fcell">Status</span><span class="fcell">Software</span><span class="fcell">Sheets</span><span class="fcell"></span></div>`;
@@ -137,7 +159,7 @@ function render() {
   let html = "";
   if (grouped) {
     for (const [site, devs] of [...bySite.entries()].sort((a, b) => (a[0] || "~").localeCompare(b[0] || "~")))
-      html += `<div class="sitehead">${esc(site || "No site")}</div>` + (list
+      html += `<div class="sitehead">${esc(site || "No site")}<span>${devs.length}</span></div>` + (list
         ? `<div class="flist">${LIST_HEAD}${devs.map(d => listRow(d, false)).join("")}</div>`
         : devs.map(d => card(d, false)).join(""));
   } else {
@@ -194,25 +216,38 @@ function openDetails(id) {
       }
       return "";
     })();
-    el("detBody").innerHTML = `<div class="facts grid">${
+    const lanHost = st.lan ? st.lan.replace(/^https?:\/\//, "").replace(/\/$/, "") : "";
+    const acts = `<div class="det-hero">
+      <span class="fdart det-art">${deviceArt(d, 64)}</span>
+      <div class="det-actions">
+        ${st.lan ? `<a class="btn primary small openbtn ${d.online ? "" : "isoff"}" href="${esc(st.lan)}" target="_blank" rel="noopener">${ICON.external}<span>Open device page</span></a>` : ""}
+        <button class="btn outline small" onclick="identifyDevice('${esc(d.id)}', this)" ${d.online ? "" : "disabled"}>${ICON.ping}<span>Identify</span></button>
+        <button class="btn outline small" onclick="requestDiag('${esc(d.id)}', this)" ${d.online ? "" : "disabled"}>Request logs</button>
+        <button class="btn outline small" onclick="remoteReboot('${esc(d.id)}', this)" ${d.online ? "" : "disabled"}>Restart</button>
+      </div>
+    </div>${st.lan ? `<p class="det-note">${ICON.globe}<span>The device page opens only from the Dock's own network — <b>${esc(lanHost)}</b>.</span></p>` : ""}`;
+    el("detBody").innerHTML = acts + `<div class="facts grid">${
       fact("Kind", d.kind === "dock-light" ? "Dock Light" : d.kind) + fact("Printer", st.printer) + fact("Software", d.version) + fact("State", st.state)
       + (d.print2go ? fact("Print2Go", `on · ${(d.mirror_phones || []).length} phone${(d.mirror_phones || []).length === 1 ? "" : "s"}`) : "")
       + (d.kind === "go" && d.mirror_from_name ? fact("Prints from", d.mirror_from_name) : "")
       + (d.dormant ? fact("Status", "signed out (seat kept)") : "")
       + fact("Reader", st.identifier) + fact("Jobs today", st.jobs_today != null ? String(st.jobs_today) : "")
-      + (st.lan ? `<div class="fact"><i>Local page</i><b><a href="${esc(st.lan)}" target="_blank" rel="noopener" style="color:var(--accent-text)">${esc(st.lan.replace(/^http:\/\//, "").replace(/\/$/, ""))}</a></b></div>` : fact("Local page", st.web))
       + fact("Claimed", d.claimed_at ? new Date(d.claimed_at * 1000).toLocaleDateString() : "")
       + fact("Last seen", d.online ? "online now" : ago(d.last_seen)) + fact("Device id", d.id)
     }</div>${p2gCard}${sheets.length ? `<div><h2 style="margin-top:0">Sheets</h2><div class="dsheets">${rows}</div></div>` : ""}
     ${evts ? `<div><h2 style="margin-top:0">Activity</h2><div>${evts}</div></div>` : ""}
-    <div><h2 style="margin-top:0">Diagnostics</h2>${full.diag ? `<pre class="diaglog mono">${esc(full.diag.log)}</pre><div class="hint" style="color:var(--text-3);font-size:.75rem">captured ${ago(full.diag.at)}</div>` : `<div class="devmeta">No bundle yet — ask the device for its recent log.</div>`}
-    <div class="row" style="margin-top:10px">${st.lan ? `<a class="btn outline small" href="${esc(st.lan)}" target="_blank" rel="noopener">Open device page</a><span class="hint" style="color:var(--text-3);font-size:.75rem;flex-basis:100%">The device page opens only from the Dock's own network.</span>` : ""}<button class="btn outline small" onclick="requestDiag('${esc(d.id)}', this)" ${d.online ? "" : "disabled"}>Request diagnostics</button><button class="btn outline small" onclick="remoteReboot('${esc(d.id)}', this)" ${d.online ? "" : "disabled"}>Restart device</button></div></div>`;
+    <div><h2 style="margin-top:0">Diagnostics</h2>${full.diag ? `<pre class="diaglog mono">${esc(full.diag.log)}</pre><div class="hint" style="color:var(--text-3);font-size:.75rem">captured ${ago(full.diag.at)}</div>` : `<div class="devmeta">No bundle yet — use “Request logs” above.</div>`}</div>`;
     el("detDlg").showModal();
   }).catch(x => toast(x.message, "err"));
 }
 async function remoteReboot(id, b) {
   const done = busy(b, "Restarting…");
   try { await api(`/api/devices/${id}/reboot`, {}); done("Sent"); toast("The device restarts and reports back in about a minute."); }
+  catch (x) { done("Failed", true); toast(x.message, "err"); }
+}
+async function identifyDevice(id, b) {
+  const done = busy(b, "Saying hi…");
+  try { await api(`/api/devices/${id}/identify`, {}); done("Sent"); toast("The device says hi — watch its ring / log."); }
   catch (x) { done("Failed", true); toast(x.message, "err"); }
 }
 async function requestDiag(id, b) {
