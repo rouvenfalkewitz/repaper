@@ -717,3 +717,61 @@ a.stat-tile:hover, .dev:hover {
 .det-note svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; margin-top: 2px }
 .det-note b { color: var(--text-2); font-family: var(--font-mono) }
 /* ════════════════════════════════════════════════════════════════════════════ */
+
+/* ══ Fleet stat tiles + redesigned details modal ═════════════════════════════ */
+.dstats { display: flex; gap: 8px; margin-top: 10px }
+.dstat { flex: 1 1 0; min-width: 0; display: grid; gap: 5px; padding: 9px 11px; border-radius: 11px; background: var(--bg); border: 1px solid var(--border) }
+.dstat b { font-family: var(--font-display); font-weight: 800; font-size: 1.1875rem; letter-spacing: -.02em; line-height: 1; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.dstat b.txt { font-size: .9375rem; font-weight: 700; letter-spacing: -.01em }
+.dstat .dl { display: inline-flex; align-items: center; gap: 5px; min-width: 0; color: var(--text-3) }
+.dstat .dl > span { font: 700 .5625rem var(--font-display); font-stretch: 112%; letter-spacing: .07em; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.dstat .dl svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none }
+.dstat.warn { border-color: transparent; background: var(--amber-tint) } .dstat.warn b, .dstat.warn .dl { color: var(--amber) }
+.dev.off .dstat b { color: var(--text-2) }
+
+.presence .ver { font-family: var(--font-mono); font-size: .6875rem; color: var(--text-3); margin-left: 8px }
+.presence .ver.up { color: var(--accent-text); margin-left: 6px }
+
+/* redesigned details modal */
+.det-hero { display: flex; align-items: center; gap: 16px; margin-bottom: 14px }
+.det-art { flex: none }
+.det-headline { display: grid; gap: 9px; min-width: 0 }
+.det-sub { font-size: .75rem; color: var(--text-3); overflow-wrap: anywhere }
+.spill { display: inline-flex; align-items: center; gap: 8px; justify-self: start; font: 700 .6875rem var(--font-display); font-stretch: 112%; letter-spacing: .07em; text-transform: uppercase; padding: 5px 12px; border-radius: 999px; background: var(--surface-2); color: var(--text-2) }
+.spill .d { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); flex: none }
+.spill.ok, .spill.live { background: var(--accent-tint); color: var(--accent-text) }
+.spill.ok .d, .spill.live .d { background: var(--accent); box-shadow: var(--glow) }
+.spill.live .d { animation: printpulse 1.15s ease-in-out infinite }
+.spill.warn { background: var(--amber-tint); color: var(--amber) } .spill.warn .d { background: var(--amber) }
+.spill.off .d { background: var(--text-3) }
+.det-actions { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; margin: 0 }
+.det-actions .btn svg { width: 16px; height: 16px }
+.det-note { display: flex; align-items: flex-start; gap: 8px; margin: 12px 0 0; color: var(--text-3); font-size: .8125rem; line-height: 1.5 }
+.det-note svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; margin-top: 2px }
+.det-note b { color: var(--text-2); font-family: var(--font-mono) }
+.det-stats { margin: 16px 0 }
+.det-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-card); padding: 15px 17px }
+.det-card .facts.grid { gap: 13px 20px }
+.det-sec { margin-top: 20px } .det-sec > h2 { margin: 0 0 10px }
+.det-timeline { display: grid }
+.tl-item { display: flex; align-items: center; gap: 11px; padding: 5px 0; font-size: .8125rem }
+.tl-item .tl-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border-strong); flex: none }
+.tl-item .tl-time { color: var(--text-3); font-size: .6875rem; flex: none; min-width: 104px }
+.tl-item .tl-text { color: var(--text-2); min-width: 0 }
+/* sheet rows with a battery bar */
+.dsheet .sname { flex: 1; min-width: 0; display: grid; gap: 2px }
+.dsheet .sname b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.dsheet .sname .mono { font-size: .6875rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.sbat { display: flex; align-items: center; gap: 8px; flex: none }
+.sbg { width: 52px; height: 8px; border-radius: 5px; background: var(--surface-2); border: 1px solid var(--border); overflow: hidden }
+.sbg > span { display: block; height: 100%; background: linear-gradient(90deg, var(--re-700, #0B7259), var(--accent)) }
+.sbat.low .sbg > span { background: linear-gradient(90deg, #8f2f24, var(--red)) }
+.sbat .sv { font-size: .6875rem; color: var(--text-3); min-width: 42px; text-align: right }
+.sbat-off { font-size: .6875rem; color: var(--text-3) }
+/* ════════════════════════════════════════════════════════════════════════════ */
+
+/* update-available pill in the fleet card footer */
+.uppill { display: inline-flex; align-items: center; gap: 5px; flex: none; font: 700 .5625rem var(--font-display); font-stretch: 112%; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-text); background: var(--accent-tint); border-radius: 999px; padding: 4px 9px }
+.uppill svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round }
+.upi { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 7px; flex: none; color: var(--accent-text); background: var(--accent-tint) }
+.upi svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round }
