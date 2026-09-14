@@ -244,3 +244,9 @@ function spark(stats, w = 64, h = 18) {
 
 renderShell();
 document.addEventListener("click", (e) => { const d = el("edDlg"); if (d && e.target === d) closeModal(); const t = el("detDlg"); if (t && e.target === t) t.close(); });
+/* one-time nudge: let people discover the command palette */
+try {
+  if (!localStorage.getItem("cmdkHintSeen")) {
+    setTimeout(() => { if (el("toast")) { toast("Tip — press ⌘K to search anything"); try { localStorage.setItem("cmdkHintSeen", "1"); } catch {} } }, 1800);
+  }
+} catch {}

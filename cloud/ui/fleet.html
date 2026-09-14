@@ -15,7 +15,7 @@
   <main class="main">
     <div class="pagehead"><h1>Fleet</h1>
       <div class="fleet-controls">
-        <label class="fsearch"><span class="si"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></span><input id="fsearch" type="search" placeholder="Search devices…" autocomplete="off" spellcheck="false"></label>
+        <div class="fsearch"><span class="si"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg></span><input id="fsearch" type="search" placeholder="Search devices…" autocomplete="off" spellcheck="false"><button type="button" class="skbd" onclick="openCmdK()" title="Search everything — ⌘K">⌘K</button></div>
         <div class="viewtoggle" id="viewtoggle"></div>
       </div>
     </div>
@@ -95,6 +95,9 @@ renderViewToggle();
 el("fsearch").addEventListener("input", e => { Q = e.target.value.trim().toLowerCase(); render(); });
 el("fleet").innerHTML = skeletons("cards", 2);
 
+/* hand-drawn check / cross for the Print2Go tile — a little more human */
+const HAND_CHECK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.8 12.8c1.7 1 3.3 2.7 4.5 4.8.4.7 1.3.6 1.6-.2C11.9 12.4 15 7.4 20.6 3.6"/></svg>`;
+const HAND_X = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5.8c3.1 2.8 7.2 7.2 11.8 12.4"/><path d="M18 6C14.7 8.9 10.4 13.2 6 18.2"/></svg>`;
 /* the stats, as clear icon + value + unit tiles (equal width, uniform icons) */
 function statTile(icon, value, label, tone) {
   const isTxt = typeof value === "string" && isNaN(Number(value));
@@ -109,7 +112,7 @@ function deviceStats(d) {
     low ? statTile(ICON.sheet, sheets.length, `${low} low`, "warn")
         : statTile(ICON.sheet, sheets.length, sheets.length === 1 ? "sheet" : "sheets"),
     statTile(ICON.printer, jobs, "today"),
-    `<div class="dstat ${p2gOn ? "ok" : "muted"}"><span class="di">${ICON.phone}</span><span class="dcheck">${p2gOn ? ICON.check : ICON.x}</span><span class="dl">print2go</span></div>`,
+    `<div class="dstat ${p2gOn ? "ok" : "muted"}"><span class="di">${ICON.phone}</span><span class="dcheck hand">${p2gOn ? HAND_CHECK : HAND_X}</span><span class="dl">print2go</span></div>`,
   ];
 }
 function statusPill(d) {
