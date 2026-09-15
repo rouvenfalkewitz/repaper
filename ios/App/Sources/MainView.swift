@@ -534,11 +534,29 @@ struct SwipeToDiscard<Content: View>: View {
     @State private var dragging = false
     @State private var rowHeight: CGFloat = 0     // measured card height, so the strip matches it exactly
     private let reveal: CGFloat = 76
+    private let radius: CGFloat = 14              // matches the card's corner radius (Ui CardStyle)
 
     private var isOpen: Bool { offset <= -reveal + 8 }
 
     var body: some View {
         ZStack(alignment: .trailing) {
+            // the red action, BEHIND the card. It tucks `radius` under the card so the card's
+            // rounded corner sits over it (no seam), and rounds only its trailing corners —
+            // so the row and the action read as one continuous rounded shape, not a floating
+            // pill. Height is the measured card height (never maxHeight:.infinity, which
+            // stretched it over the whole scroll area when only one card was present).
+            ZStack(alignment: .trailing) {
+                Ui.red
+                Image(systemName: "trash")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(Ui.onAccent)
+                    .frame(width: reveal)
+            }
+            .frame(width: max(0, -offset) + radius, height: max(rowHeight - 8, 0))
+            .clipShape(UnevenRoundedRectangle(bottomTrailingRadius: radius, topTrailingRadius: radius, style: .continuous))
+            .padding(.top, 8)                     // matches the card's own .padding(.top, 8)
+            .opacity(offset < -1 ? 1 : 0)
+
             content
                 .background(GeometryReader { g in
                     Color.clear.preference(key: SwipeRowHeightKey.self, value: g.size.height)
@@ -561,26 +579,15 @@ struct SwipeToDiscard<Content: View>: View {
                         }
                 )
 
-            // the discard target: a red strip pinned to the trailing edge whose width
-            // tracks the swipe, so the reveal grows cleanly from the right edge and the
-            // tap lands exactly where the red is drawn (only armed once fully open).
-            // Its height is the MEASURED card height (never maxHeight:.infinity, which
-            // stretched it over the whole scroll area when only one card was present).
-            Button { snap(open: false); onDiscard() } label: {
-                ZStack(alignment: .trailing) {
-                    Ui.red
-                    Image(systemName: "trash")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(Ui.onAccent)
-                        .frame(width: reveal)
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-            }
-            .buttonStyle(.plain)
-            .frame(width: max(0, -offset), height: max(rowHeight - 8, 0))
-            .padding(.top, 8)                     // matches the card's own .padding(.top, 8)
-            .opacity(offset < -1 ? 1 : 0)
-            .allowsHitTesting(isOpen)
+            // a transparent tap-catcher over the revealed strip. SwiftUI's `.offset` moves
+            // pixels but NOT hit regions, so a tap on the (visually shifted-away) card would
+            // land on the card, never the red beneath — this catches it and discards.
+            Color.clear
+                .frame(width: max(0, -offset), height: max(rowHeight - 8, 0))
+                .padding(.top, 8)
+                .contentShape(Rectangle())
+                .onTapGesture { snap(open: false); onDiscard() }
+                .allowsHitTesting(isOpen)
         }
         .onPreferenceChange(SwipeRowHeightKey.self) { rowHeight = $0 }
     }

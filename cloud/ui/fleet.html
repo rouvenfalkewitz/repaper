@@ -240,13 +240,15 @@ function openDetails(id) {
       return `<div class="tl-item"><span class="tl-dot"></span><span class="tl-time mono">${t.toLocaleDateString([], { day: "numeric", month: "short" })} ${t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span><span class="tl-text">${esc(e.type)}${e.data ? " · " + esc(e.data) : ""}</span></div>`;
     }).join("");
     const p2gCard = (() => {
-      if (d.print2go) {
-        const ph = d.mirror_phones || [];
+      // use `full` (the just-fetched detail), not the possibly-stale list item `d` — a phone
+      // that paired after the fleet page loaded would otherwise be missing here
+      if (full.print2go) {
+        const ph = full.mirror_phones || [];
         const rows2 = ph.length ? ph.map(p => `<div class="dsheet"><span class="sname"><b>${esc(p.name)}</b></span><span class="spill ${p.online ? "ok" : "off"}" style="padding:4px 10px"><span class="d"></span>${p.online ? "online" : "offline"}</span></div>`).join("")
           : `<div class="devmeta">No phones are printing from this Dock yet. Turn on Print2Go on a RePaper Go device and pick this Dock.</div>`;
         return `<section class="det-sec"><h2>Print2Go</h2><p class="devmeta" style="margin:0 0 10px">Jobs sent to this Dock can also print on these phones — first to grab one prints it.</p><div class="dsheets">${rows2}</div><div class="hint" style="color:var(--text-3);font-size:.75rem;margin-top:8px">Pages travel through RePaper Cloud and are deleted on delivery.</div></section>`;
       }
-      if (d.kind === "go" && d.mirror_from_name) return `<section class="det-sec"><h2>Print2Go</h2><p class="devmeta" style="margin:0">Prints jobs sent to <b>${esc(d.mirror_from_name)}</b>.</p></section>`;
+      if (full.kind === "go" && full.mirror_from_name) return `<section class="det-sec"><h2>Print2Go</h2><p class="devmeta" style="margin:0">Prints jobs sent to <b>${esc(full.mirror_from_name)}</b>.</p></section>`;
       return "";
     })();
     const lanHost = st.lan ? st.lan.replace(/^https?:\/\//, "").replace(/\/$/, "") : "";
